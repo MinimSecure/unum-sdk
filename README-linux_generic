@@ -1,0 +1,175 @@
+Unum for Linux
+
+The "linux_generic" target is suited for building unum-v2 and all necessary
+dependencies for x86_64 architectures.
+
+
+Unum and Docker
+
+Check `extras/linux_generic/README-docker` for instructions on running Unum
+in a Docker container with basic Linux router facilities.
+
+
+Prerequisites
+
+To run the agent, the desired "base" MAC address must be registered with the
+server-side Minim application. The LAN network interface's MAC address is used
+for this value, by default, and may need to be artificially modified.
+
+As far as build dependencies, these vary depending on your system.
+On a fresh Ubuntu 16 install, for example:
+    sudo apt-get update
+    sudo apt-get install build-essential libtool pkg-config cmake \
+        libc6-pic ncurses-dev gawk automake zlib1g-dev
+
+
+Building
+
+Use the `build.sh` script to begin the build process. This script is a wrapper
+around the `make` command and accepts the same types of arguments. The default
+target will build and generate a tarball containing the resulting binaries and
+supporting files.
+
+As a regular user, run:
+    ./build.sh MODEL=linux_generic
+
+or, Build a debug version of the Unum agent:
+    ./build.sh MODEL=linux_generic UNUM_DEBUG=1
+
+The resulting tarball is placed into the `out/` directory relative to the
+project root. The original files used to make the tarball exist below the
+build root, in `build/linux_generic/rfs`.
+
+
+Installing
+
+The build process produces a tarball designed to be extracted inside a newly-
+created and empty directory.
+
+The recommended location is `/opt/unum`:
+    mkdir -p /opt/unum
+    tar -C /opt/unum -xf /path/to/linux_generic-2018.1016.tgz
+
+In addition, `/etc/opt/unum` and `/var/opt/unum` must be created:
+    mkdir -p /var/opt/unum /etc/opt
+    cp -r /opt/unum/dist/etc/opt/unum /etc/opt/
+
+Note that both directories (`/etc/opt/unum` and `/var/opt/unum`) must be
+writable by the user the agent is running as.
+
+The PATH and LD_LIBRARY_PATH environment variables also need to be adjusted
+to include the relevant Unum directories.
+
+For example, if Unum is installed in `/opt/unum`, add these lines to your
+user's shell profile (such as `~/.bashrc`):
+    export PATH="$PATH:/opt/unum/bin"
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/unum/lib"
+
+
+Usage
+
+The `unum` command and friends are installed under the `bin/` directory
+relative to the installation root (`/opt/unum/bin/`, for example).
+These commands are linked with dynamic libraries installed under the
+`lib/` directory relative to the installation root (eg. `/opt/unum/lib/`).
+Due to this, the environment variables `LD_LIBRARY_PATH` and `PATH` need to
+be amended. See "Installing" for instructions on doing this.
+
+With the shell environment configured, the `unum`, `uci`, and `iwinfo`
+commands can be used as expected.
+
+For example, output the entire UCI config:
+    uci show
+
+Print `unum` command usage:
+    unum -h
+
+Or run the agent as a daemon:
+    unum -d
+
+
+Runtime Configuration
+
+Unum for Linux uses UCI to manage the runtime configuration. The agent will
+attempt to modify this configuration (due to some action by the user in the
+Minim web application, for example) and expects that related components be
+sensitive to the changes made. This requires special support in the related
+components. For the most part, this is accomplished by generating a suitable
+configuration for the given component prior to starting it.
+
+Note: This is expected to change in the future with UCI being removed as a
+      direct dependency and replaced with a regular configuration file.
+
+Many times, all that is required is a shell script that reads the values stored
+in UCI and translates them to the component's own, standard configuration
+mechanism (ie. a bash script to create a valid `hostapd.conf` using the
+values in UCI). This script is then invoked prior to starting the component to
+synchronize the UCI config with the component's actual config.
+
+The `uci` command-line utility is installed and can be used to inspect and
+manipulate configuration settings. Services affected will need to have their
+configuration regenerated and then reloaded or restarted.
+
+
+Running `unum`
+
+In normal modes of operation, the `unum` command communicates with the Minim
+web application. This requires that the LAN interface's MAC address be known
+to the server before `unum` can activate and operate properly.
+
+When the agent is started, it will attempt to connect to Minim and activate
+itself with the server in a sort of handshake operation. On the first
+activation it receives a client certificate that is then used in subsequent
+requests to authenticate the client and server.
+
+Run `unum` as a daemon with '-d':
+    unum -d
+
+The bundled curl installation uses a `ca-certificates.crt` installed below
+the configured install root. It may be necessary to specify the full path to
+this file when starting the agent by using the '-c' option:
+    unum -d -c /etc/opt/unum/ca-certificates.crt
+
+See a list of available options with '-h':
+    unum -h
+
+
+Technical Notes
+
+Unum is designed to leverage tooling and programs that exist in many router-
+based distributions. The linux_generic target, specifically, leverages a
+handful of OpenWrt packages to perform its functions. UCI and `iwinfo` are
+both direct dependencies for the Unum agent, with ubus, libnl-tiny, and
+libubox as transitive dependencies.
+
+Some dependencies required patching to build successfully, and these patches
+are likely platform-specific and may not be suitable for targets other than
+Ubuntu 16. This may be improved in the future.
+
+
+Directory structure overview
+
+.                           Project root
+|- README-linux_generic     This file
+|- Makefile                 Main universal unum-v2 Makefile
+|- extras/linux_generic/
+|   - Dockerfile
+|   - sbin/                 Utilities for managing a Linux router
+|- rules/
+|   - linux_generic.mk      Makefile for linux_generic
+|- files/linux_generic/     Build and installation default files and scripts
+|- libs/linux_generic/      Unused at time of writing
+|- src/
+|   - <module>/             Each module (such as libubox, iwinfo, or unum)
+|                           has a folder under `src/` with at least a
+|       - Makefile          module-specific Makefile.
+|       - [patches/]        Patches for the module, applied before building,
+|       - [...]             as well as any other files used during the build.
+|- build/linux_generic      Build output directory.
+|   - obj/                  Staging directory containing sources as well as
+|                           build-time artifacts.
+|       - <module>/         Each module has a directory containing links to
+|                           the module source code and necessary build files.
+|   - rfs/                  Directory containing the built files used to
+|                           generate the final tarball.
+|- out/linux_generic/       Final distributable output directory.

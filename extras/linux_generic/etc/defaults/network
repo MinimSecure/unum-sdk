@@ -1,0 +1,46 @@
+# Network configuration
+
+package network
+
+# This settings define the network interfaces defined on a system.
+#
+# The configuration options defined here should follow standard 'network'
+# package options available in OpenWrt. Not all options are supported, but
+# those that are should behave identically to their OpenWrt counterpart.
+#
+# Note: Unlike other packages, the names of each interface ('loopback', 'lan',
+#       and 'wan') are significant and should not be changed. Unum and related
+#       components presume these sections exist and may fail or exhibit
+#       undefined behavior if these sections do not exist.
+#       The `ifname` option for each interface has no such restriction and can
+#       be changed freely.
+
+
+# The 'loopback' interface is used to configure the local loopback.
+config interface 'loopback'
+	option ifname  'lo'
+	option proto   'static'
+	option ipaddr  '127.0.0.1'
+	option netmask '255.0.0.0'
+
+
+# The 'lan' interface is used to configure the LAN network interface.
+# This interface is always a bridge that is created automatically, if it
+# does not already exist. Any other ethernet or wireless interface can be
+# added to the bridge to easily make it a part of the LAN.
+config interface 'lan'
+	option ifname    'eth2'
+	option device    'eth2'
+	option type      'bridge'  # Always 'bridge'. See notes above.
+	option proto     'static'  # Always 'static' for this interface
+	option ipaddr    '192.168.15.1'
+	option netmask   '255.255.255.0'
+	option up        '0'
+
+
+# The 'wan' interface is used to configure the WAN network interface.
+config interface 'wan'
+	option ifname 'eth1'
+	option proto  'dhcp'  # May also be 'static' with the 'ipaddr' and
+	                      # 'netmask' also defined.
+	option up     '0'
