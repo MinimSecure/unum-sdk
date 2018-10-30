@@ -1,0 +1,57 @@
+# DNS and DHCP configuration
+
+package dhcp
+
+# These settings configure dnsmasq which serves DHCP and DNS requests.
+#
+# The configuration options defined here should follow standard 'dhcp'
+# package options available in OpenWrt. Not all options are supported, but
+# those that are should behave identically to their OpenWrt counterpart.
+
+# Overall dnsmasq configuration
+config dnsmasq
+    option local       '/lan/'
+    option domain      'lan'
+    option leasefile   '/tmp/dhcp.leases'
+
+    option resolvfile  '/tmp/resolv.conf.auto'
+    #option noresolv   1         # Avoid using any resolv.conf
+    #list server       1.1.1.1   # and set explicit nameservers
+    #list server       1.0.0.1   # https://1.1.1.1/
+
+    #list interface    'lo'      # When both 'interface' and 'notinterface'
+    #list interface    'br-lan'  # options are empty, the interfaces defined
+    #list notinterface 'eth1'    # in `network` will be used automatically.
+
+    # Sane defaults, mostly unmodified from OpenWrt. These options are all
+    # guaranteed to be supported by the bundled start_dnsmasq.sh script.
+    option expandhosts       1
+    option nonegcache        0
+    option authoritative     1
+    option readethers        1
+    option domainneeded      1
+    option boguspriv         1
+    option filterwin2k       0
+    option localise_queries  1
+    option rebind_protection 1
+    option rebind_localhost  1
+    option nonwildcard       1
+    option localservice      1
+
+# DHCP pool for the 'lan' interface in `network` package config.
+config dhcp lan
+    option interface 'lan'  # Interface name from `network` package config.
+    option start     100    # Start IP leases here (ie. 192.168.15.100)
+    option limit     150    # Limit the total number of leases
+    option leasetime '12h'
+
+# DHCP pool for the 'wan' interface in `network` package config.
+config dhcp wan
+    option interface 'wan'
+    option ignore    1
+
+# Static DHCP reservations can be made by adding 'host' sections.
+#config host
+#    option ip   '192.168.15.114'
+#    option mac  '00:11:22:aa:bb::cc'
+#    option name 'some-device'

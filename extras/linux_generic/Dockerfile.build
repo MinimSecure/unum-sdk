@@ -1,0 +1,21 @@
+FROM ubuntu:16.04
+
+RUN apt-get update && \
+    apt-get install -y \
+        automake \
+        build-essential \
+        cmake \
+        curl \
+        gawk \
+        git \
+        libc6-pic \
+        libtool \
+        ncurses-dev \
+        pkg-config \
+        subversion \
+        vim
+
+WORKDIR /usr/local/src/unum
+COPY . .
+
+RUN ./build.sh MODEL=linux_generic

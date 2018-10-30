@@ -1,0 +1,78 @@
+# Wireless configuration
+
+package wireless
+
+# These settings configure hostapd and wpa_supplicant.
+#
+# The configuration options defined here should follow standard 'wireless'
+# package options available in OpenWrt. Not all options are supported, but
+# those that are should behave identically to their OpenWrt counterpart.
+#
+# Note: the startup scripts included with Unum use this file in addition
+#       to sections defined in the 'unum' config package.
+#
+# Note: no passphrase is included in the default configuration. If the 'key'
+#       option for a given wifi-iface is blank, one will be randomly generated
+#       prior to startup.
+
+# Default wifi-device configuration
+config wifi-device 'radio0'
+	option phy       'phy0'   # Phy device name for the wireless adapter
+	option ifname    'wlan0'  # Hostapd will create this interface, if needed
+	option disabled  0
+	option type    'mac80211' # Most wireless adapters support 'mac80211'
+	                          # (ie. nl80211- or cfg80211-based drivers)
+	                          # Alternatively, 'broadcom' is also supported
+	option hwmode     '11g'   # '11g' indicates 802.11g/n (2.4 GHz)
+	option channel    '11'    # transmitting on channel 11
+	option chanbw     '20'    # Non 802.11n channel width, in MHz.
+	option htmode     'HT20'  # 802.11n clients use 20MHz wide channels
+	option require_mode 'g'   # Require clients support this mode at minimum
+                              # For 802.11g/n, sane values are 'g' or 'n'
+
+# Network interface configuration for the 'radio0' device
+# Sets the ssid and passphrase, and supports WPA2-PSK CCMP for authenticating
+# wireless clients (ie. WPA2-Personal and AES in Counter mode with CBC-MAC)
+config wifi-iface 'default_radio0'
+	option device       'radio0' # Corresponding wifi-device section name
+	option network      'lan'    # Consider this interface to be a part of
+	                             # the 'lan' network in the network package
+	option disabled     0
+	option mode         'ap'     # Create an access point, also known as master
+	option ssid         'MinimSecure'
+	option encryption   'psk2+tkip+ccmp' # Allows only WPA2-PSK and CCMP (AES)
+	                                     # as the preferred encryption method,
+	                                     # falling back to TKIP if needed.
+	option rsn_preauth  '1'      # Allows WPA2-EAP pre-authentication
+	option key                   # If blank, a key will be randomly generated
+	option hidden       0        # Set to 1 to disable SSID broadcasting
+	option isolate      0        # Set to 1 to prevent wireless clients from
+	                             # communicating with each other.
+	option macaddr  '00:00:00:00:00:00' # Set the MAC address of the interface
+
+
+# 5GHz example configuration, disabled by default
+# By convention, radio1 is a 5GHz radio
+config wifi-device 'radio1'
+    option disabled 1
+    option phy      'phy1'
+    option ifname   'wlan1'
+	option type     'mac80211'
+	option hwmode       '11a'   # '11a' indicates 802.11n/ac (5 GHz)
+	option channel      '36'    # 5GHz channel. These vary by region, check
+	                            # your regulatory settings with `iw`:
+	                            #   `iw <phyname> reg`
+    option htmode       'VHT40' # 'VHT40' indicates 802.11ac with a channel
+                                # width of 40MHz
+	option require_mode 'n'  # Require clients support this mode at minimum
+	                         # For 802.11n/ac may be empty, 'n', or 'ac'
+
+# Network interface for the 'radio0' device, disabled by default
+config wifi-iface 'default_radio1'
+    option disabled  1
+	option device    'radio1'
+	option network   'lan'
+	option mode      'ap'
+	option ssid      'MinimSecure-5G'
+	option encryption 'psk2+tkip+ccmp'
+	option key

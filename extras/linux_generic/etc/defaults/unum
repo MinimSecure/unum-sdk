@@ -1,0 +1,56 @@
+# Unum agent runtime configuration
+
+package unum
+
+# Options here customize the runtime behavior of the "extras" scripts.
+# If Unum was built without CONFIG_EXTRAS
+
+# Section names in this package are prefixed with the agent profile
+# name, though this is not mandatory. Each section has a profile option
+# specifying exactly which profile that section belongs to.
+
+# Notes regarding unum integration:
+# - The 'unum' UCI package maps the agent's notion of radio0 and radio1 (if
+#   applicable) to a specific wifi-device section in the 'wireless' package.
+# - All config sections for each unum.radio, wireless.wifi-device,
+#   wireless.wifi-iface tuple must NOT be disabled in order to be setup when
+#   the startup.sh utility script is ran.
+# - By convention, Unum considers radio0 as 2.4GHz and radio1 as 5GHz.
+#   Confusing the two may lead to unpredictable results on the Minim server-
+#   side application, though any such behavior should be considered a bug.
+# - Section names should not be assumed the profile as names are often auto-
+#   generated. The 'profile' option in each section should be used to link
+#   a section to a given profile.
+
+config agent 'default'
+    option profile   'default'
+    option disabled  0
+
+# Startup options for profile 'default'
+config startup 'default_startup'
+    option profile                'default'
+    option replace_wifi_interface 1
+    option kill_wpa_supplicant    1
+    option rfkill_enable_wifi     1
+
+# Options for the next startup only for profile 'default'
+config next-startup 'default_next_startup'
+    option profile   'default'
+    option generate_shared_key 1
+
+# By convention, radio0 is a 802.11g/n (2.4GHz) radio
+# This radio is enabled by default, but the corresponding wifi-device (given
+# in the `radio` option) in the `wireless` package must configured and enabled
+# as well.
+config radio 'default_radio0'
+    option profile   'default'
+    option radio     'radio0'
+    option disabled  0
+
+# By convention, radio1 is a 802.11n/ac (5GHz) radio
+# Disabled by default, change or remove the disabled option below and modify
+# the UCI entry for 'wireless.radio1' as necessary.
+config radio 'default_radio1'
+    option profile   'default'
+    option radio     'radio1'
+    option disabled  1
