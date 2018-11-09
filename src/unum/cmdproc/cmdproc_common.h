@@ -66,7 +66,7 @@ typedef struct {
 #define CMD_RULE_END       0x10000000 // Empty rule indicating the end of the list
 
 // Pointer to command processing rules array for the platform
-extern CMD_RULE_t cmd_rules[];
+extern CMD_RULE_t cmd_platform_rules[];
 
 // Add command to the commands queue, retunrs 0 if successful
 int cmdproc_add_cmd(const char *cmd);

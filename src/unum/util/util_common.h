@@ -117,6 +117,14 @@ void util_restart(void);
 // Reboot the device
 void util_reboot(void);
 
+// Factory reset the device (triggers reboot if successful)
+// Some platforms (like linux_generic) might just ignore it.
+void util_factory_reset(void);
+
+// Platform specific factory reset function (used if the platform
+// does not define FACTORY_RESET_CMD)
+int __attribute__((weak)) util_platform_factory_reset(void);
+
 // Return uptime in specified fractions of the second (rounded to the low)
 unsigned long long util_time(unsigned int fraction);
 

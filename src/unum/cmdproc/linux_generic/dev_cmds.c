@@ -22,39 +22,8 @@
 //#define LOG_DST LOG_DST_CONSOLE
 //#define LOG_DBG_DST LOG_DST_CONSOLE
 
-// Command processing rules for the platform
-CMD_RULE_t cmd_rules[] = {
-    { "reboot",             // reboot the device
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = util_reboot }},
-    { "restart_agent",      // restart the agent
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = util_restart }},
-    { "wireless_scan",      // force wireless scan
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = cmd_wireless_initiate_scan }},
-    { "pull_router_config", // load and apply device config file
-      CMD_RULE_M_FULL | CMD_RULE_F_RETRY,
-      { .act_data = cmd_update_config }},
-    { "speedtest", // runs a speedtest
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = cmd_speedtest }},
-    { "do_ssdp_discovery", // schedule SSDP discovery
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = cmd_ssdp_discovery }},
-    { "do_mdns_discovery", // schedule mDNS discovery
-      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
-      { .act_data = cmd_mdns_discovery }},
-    { "port_scan", // port scan devices
-      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
-      { .act_data = cmd_port_scan }},
-    { "fetch_urls", // fetch URLs requested by the server
-      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
-      { .act_data = cmd_fetch_urls }},
-    // CMD_RULE_M_ANY must be the last one
-    { "shell_cmd", // generic commands, pass to shell
-      CMD_RULE_M_ANY | CMD_RULE_F_DATA,
-      { .act_data = cmd_to_shell }},
+// Command processing rules for the platform, the rules shared across all
+// platforms should be added to the cmd_gen_rules[] in cmdproc.c
+CMD_RULE_t cmd_platform_rules[] = {
     { NULL, CMD_RULE_END }  // End command rules
 };
-

@@ -38,6 +38,47 @@ char *cmd_q[CMD_Q_MAX_SIZE];
 static unsigned int cmd_q_start = 0;
 static unsigned int cmd_q_len = 0;
 
+// Generic command set. It contains all command rules that are the same
+// for all the platforms, the platform specific rules can be added
+// to the cmd_platform_rules[] array in the platform subfolder.
+static CMD_RULE_t cmd_gen_rules[] = {
+    { "reboot",             // reboot the device
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = util_reboot }},
+    { "restart_agent",      // restart the agent
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = util_restart }},
+    { "factory_reset",      // reset to factory defaults
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = util_factory_reset }},
+    { "wireless_scan",      // force wireless scan
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = cmd_wireless_initiate_scan }},
+    { "pull_router_config", // load and apply device config file
+      CMD_RULE_M_FULL | CMD_RULE_F_RETRY,
+      { .act_data = cmd_update_config }},
+    { "speedtest", // runs a speedtest
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = cmd_speedtest }},
+    { "do_ssdp_discovery", // schedule SSDP discovery
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = cmd_ssdp_discovery }},
+    { "do_mdns_discovery", // schedule mDNS discovery
+      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
+      { .act_data = cmd_mdns_discovery }},
+    { "port_scan", // port scan devices
+      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
+      { .act_data = cmd_port_scan }},
+    { "fetch_urls", // fetch URLs requested by the server
+      CMD_RULE_M_FULL | CMD_RULE_F_DATA,
+      { .act_data = cmd_fetch_urls }},
+    // CMD_RULE_M_ANY must be the last one
+    { "shell_cmd", // generic commands, pass to shell
+      CMD_RULE_M_ANY | CMD_RULE_F_DATA,
+      { .act_data = cmd_to_shell }},
+    { NULL, CMD_RULE_END }  // End command rules
+};
+
 
 // Generic processing function for commands running in shell.
 // The parameters: command name, shell command script content, content len
@@ -150,6 +191,39 @@ int cmdproc_add_cmd(const char *cmd)
     return ret;
 }
 
+// Find the rule matching the command "cmd" in the rule set "rule_set"
+// Returns: pointer to the rule or NULL if not found
+CMD_RULE_t *find_rule_by_cmd(CMD_RULE_t *rule_set, char *cmd)
+{
+    CMD_RULE_t *rule = NULL;
+
+    // Find the rule matching the command
+    for(rule = rule_set;
+        (rule->flags & CMD_RULE_END) == 0;
+        rule++)
+    {
+        if((rule->flags & CMD_RULE_M_FULL) != 0 &&
+           strcmp(rule->cmd, cmd) == 0)
+        {
+            break;
+        }
+        if((rule->flags & CMD_RULE_M_SUBSTR) != 0 &&
+           strncmp(rule->cmd, cmd, strlen(rule->cmd)) == 0)
+        {
+            break;
+        }
+        if((rule->flags & CMD_RULE_M_ANY) != 0)
+        {
+            break;
+        }
+    }
+    if((rule->flags & CMD_RULE_END) != 0) {
+        rule = NULL;
+    }
+
+    return rule;
+}
+
 // URL to request command data, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
@@ -207,28 +281,11 @@ static void cmdproc(THRD_PARAM_t *p)
             cmd_q_start = (cmd_q_start + 1) % CMD_Q_MAX_SIZE;
             --cmd_q_len;
 
-            // Find the rule for the command
-            for(rule = cmd_rules;
-                (rule->flags & CMD_RULE_END) == 0;
-                rule++)
-            {
-                if((rule->flags & CMD_RULE_M_FULL) != 0 &&
-                   strcmp(rule->cmd, cmd) == 0)
-                {
-                    break;
-                }
-                if((rule->flags & CMD_RULE_M_SUBSTR) != 0 &&
-                   strncmp(rule->cmd, cmd, strlen(rule->cmd)) == 0)
-                {
-                    break;
-                }
-                if((rule->flags & CMD_RULE_M_ANY) != 0)
-                {
-                    break;
-                }
-            }
-            if((rule->flags & CMD_RULE_END) != 0) {
-                rule = NULL;
+            // First try to see if any platform specific rule matches
+            rule = find_rule_by_cmd(cmd_platform_rules, cmd);
+            // If no platform rule matched try generic ones 
+            rule = rule ? rule : find_rule_by_cmd(cmd_gen_rules, cmd);
+            if(!rule) {
                 log("%s: unknown command <%s>\n", __func__, cmd);
                 break;
             }
