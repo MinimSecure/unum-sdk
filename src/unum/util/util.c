@@ -67,6 +67,26 @@ void util_reboot(void)
     util_restart();
 }
 
+// Factory reset the device (triggers reboot if successful)
+// Some platforms (like linux_generic) might just ignore it.
+void util_factory_reset(void)
+{
+#ifdef FACTORY_RESET_CMD
+    char *factory_reset_cmd = FACTORY_RESET_CMD;
+
+    log("%s: using %s\n", __func__, factory_reset_cmd);
+    system(factory_reset_cmd);
+    sleep(5);
+#else  // FACTORY_RESET_CMD
+    // The platform might provide the function otherwise it will be NULL
+    // (it's declared weak)
+    if(util_platform_factory_reset != NULL) {
+        util_platform_factory_reset();
+    }
+#endif // FACTORY_RESET_CMD
+    log("%s: not supported on the platform\n", __func__);
+}
+
 // Return uptime in specified fractions of the second (rounded to the low)
 unsigned long long util_time(unsigned int fraction)
 {
