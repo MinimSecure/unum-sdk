@@ -8,14 +8,20 @@ This repository contains the open source distribution of
 
 #### Status: in development
 
-Currently, the Unum agent can be built for Linux x86_64 targets. Tested with 
-Ubuntu 16 and 18. We are actively working to publish an OpenWrt feed, as well.
+Currently, the Unum agent can be built and installed on OpenWrt compatible
+devices, as well as Linux x86_64 targets. Tested with Ubuntu 16 and 18.
 
 
 ## Getting started
 
-The easiest way to try out Minim and the Unum agent on Linux 
-is using [Docker][4].
+The Unum agent is designed to operate on a network gateway device or wireless
+access point. Once installed, link your device with the Minim cloud to begin
+gaining insight into your network.
+
+
+### Docker Quick-start
+
+A simple way to try out Minim and the Unum agent on Linux is using [Docker][4].
 
 > Due to the Docker network configuration used (`macvlan`), only Linux hosts
 > can run the container.
@@ -30,6 +36,7 @@ for detailed instructions for that platform.
 
 Available platforms:
 
+ - [OpenWrt][7]: build an installable package for routers running OpenWrt
  - [Linux aka `linux_generic`][6]: build Unum for running directly on Linux
  - [Docker for Linux][5]: run a Linux router with Unum in a Docker container
 
@@ -45,3 +52,4 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [4]: https://www.docker.com
 [5]: extras/linux_generic/README-docker
 [6]: README-linux_generic
+[7]: https://github.com/MinimSecure/minim-openwrt-feed
