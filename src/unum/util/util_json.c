@@ -16,6 +16,10 @@
 
 #include "unum.h"
 
+// Max length of json value to print in logs
+#define MAX_JSON_VAL_LOG 512
+
+
 // Function for building libjansson JSON value from a template.
 // The created value must be freed by json_decref() libjansson function.
 // val - pointer to the value template
@@ -36,8 +40,9 @@ static json_t *util_tpl_to_json_val(JSON_VAL_TPL_t *val, char *key, int *perr)
     switch(val->type) {
         case JSON_VAL_STR:
             if(val->s && !(jval = json_string(val->s))) {
-                log("%s: error adding '%s' value '%s'\n",
-                    __func__, key, val->s);
+                log("%s: error adding '%s' value '%.*s%s'\n", __func__,
+                    key, val->s, MAX_JSON_VAL_LOG,
+                    (strlen(val->s) > MAX_JSON_VAL_LOG ? "..." : ""));
                 *perr = -1;
             }
             break;
@@ -97,8 +102,9 @@ static json_t *util_tpl_to_json_val(JSON_VAL_TPL_t *val, char *key, int *perr)
             }
             s = val->fs(key);
             if(s && !(jval = json_string(s))) {
-                log("%s: error adding '%s' value '%s'\n",
-                    __func__, key, s);
+                log("%s: error adding '%s' value '%.*s%s'\n", __func__,
+                    key, s, MAX_JSON_VAL_LOG,
+                    (strlen(s) > MAX_JSON_VAL_LOG ? "..." : ""));
                 *perr = -1;
             }
             break;

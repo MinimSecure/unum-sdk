@@ -27,7 +27,7 @@
 // URL to post and get router config, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define CFG_URL "%s/v3/unums/%s/router_configs"
+#define CFG_URL "%s/v3/unums/%s/router_configs/injest_raw_config"
 #define CFG_URL_HOST "https://api.minim.co"
 
 // UID of the last config that has been successfully
@@ -58,35 +58,6 @@ int cmd_update_config(char *cmd, char *s_unused, int len_unused)
 }
 #endif // CONFIG_DOWNLOAD_IN_AGENT
 
-// Prepare the config data wraped in JSON, if config is unchanged
-// or cannnot be retrieved at this time then NULL is returned.
-static char *config_json()
-{
-    char *config_str;
-    char *json_str;
-
-    config_str = platform_cfg_get_if_changed(&last_sent_uid, &new_uid, NULL);
-
-    // Can't get it or no changes
-    if(!config_str) {
-        return NULL;
-    }
-
-    JSON_OBJ_TPL_t tpl = {
-      { "raw_config",  { .type = JSON_VAL_STR, { .s = config_str }}},
-      { NULL }
-    };
-
-    json_str = util_tpl_to_json_str(tpl);
-
-    if(config_str) {
-        platform_cfg_free(config_str);
-        config_str = NULL;
-    }
-
-    return json_str;
-}
-
 static void config(THRD_PARAM_t *p)
 {
     http_rsp *rsp = NULL;
@@ -106,7 +77,8 @@ static void config(THRD_PARAM_t *p)
     util_wd_set_timeout(HTTP_REQ_MAX_TIME + CONFIG_PERIOD);
 
     for(;;) {
-        char *jstr = NULL;
+        char *cstr = NULL;
+        int cstr_len = 0;
         char *my_mac = util_device_mac();
         unsigned long delay;
         char url[256];
@@ -127,8 +99,8 @@ static void config(THRD_PARAM_t *p)
 
             // Prepare the config data JSON, if config is unchanged
             // or cannnot be retrieved at this time then NULL is returned.
-            jstr = config_json(&last_sent_uid, &new_uid);
-            if(!jstr) {
+            cstr = platform_cfg_get_if_changed(&last_sent_uid, &new_uid, &cstr_len);
+            if(!cstr) {
                 break;
             }
 
@@ -136,13 +108,14 @@ static void config(THRD_PARAM_t *p)
 
             // Send the config info
             rsp = http_post(url,
-                            "Content-Type: application/json\0"
+                            "Content-Type: application/octet-stream\0"
                             "Accept: application/json\0",
-                            jstr, strlen(jstr));
+                            cstr, cstr_len);
 
             // No longer need the JSON string
-            util_free_json_str(jstr);
-            jstr = NULL;
+            platform_cfg_free(cstr);
+            cstr = NULL;
+            cstr_len = 0;
 
             if(rsp == NULL || (rsp->code / 100) != 2) {
                 log("%s: request error, code %d%s\n",
@@ -157,9 +130,10 @@ static void config(THRD_PARAM_t *p)
             break;
         }
 
-        if(jstr) {
-            util_free_json_str(jstr);
-            jstr = NULL;
+        if(cstr) {
+            platform_cfg_free(cstr);
+            cstr = NULL;
+            cstr_len = 0;
         }
 
         if(rsp) {
