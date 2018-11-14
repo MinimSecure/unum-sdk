@@ -27,7 +27,7 @@
 // URL to post and get router config, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define CFG_URL "%s/v3/unums/%s/router_configs/injest_raw_config"
+#define CFG_URL "%s/v3/unums/%s/router_configs/raw"
 #define CFG_URL_HOST "https://api.minim.co"
 
 // UID of the last config that has been successfully
