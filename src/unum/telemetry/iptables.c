@@ -82,8 +82,9 @@ static char* read_iptables_rules_cmd(char *cmd, char *cmd_prefix,
         return buf;
     }
 
-    // Keep track of the rules ordering within chains
-    char *last_rule = NULL;
+    // Keep track of the rules ordering within chains (using separate storage
+    // for last_rule since we might realloc and lose the pointer)
+    char last_rule[MAX_IPT_ENTRY_LENGTH] = "";
     int last_rule_clen = 0;
     int rule_num = 0;
 
@@ -132,7 +133,7 @@ static char* read_iptables_rules_cmd(char *cmd, char *cmd_prefix,
         // Find out rule position in the chain
         char *ptr = strchr(rule, ' ');
         ptr = ptr ? strchr(ptr + 1, ' ') : NULL;
-        if(last_rule && ptr && (ptr - rule) == last_rule_clen &&
+        if(last_rule_clen > 0 && ptr && (ptr - rule) == last_rule_clen &&
            memcmp(last_rule, rule, last_rule_clen) == 0)
         {
            ++rule_num;
@@ -140,8 +141,10 @@ static char* read_iptables_rules_cmd(char *cmd, char *cmd_prefix,
         else
         {
             rule_num = 1;
-            last_rule = ptr ? rule : NULL;
             last_rule_clen = ptr ? (ptr - rule) : 0;
+            last_rule_clen = last_rule_clen <= sizeof(last_rule) ?
+                             last_rule_clen : sizeof(last_rule);
+            memcpy(last_rule, rule, last_rule_clen);
         }
 
         // Store the rule
