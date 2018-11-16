@@ -17,9 +17,11 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-// MD5 is available in mbedtls library
-#include <mbedtls/md5.h>
-
+#ifdef MD5_FROM_MBEDTLS
+#  include <mbedtls/md5.h>
+#else
+//TODO: alternative?
+#endif
 
 // Enable internal config download support, comment it out if
 // want the config download to be handled by a scripted command

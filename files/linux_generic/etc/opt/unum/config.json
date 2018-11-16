@@ -1,0 +1,4 @@
+{
+  "lan-if": "wlan0",
+  "wan-if": "eth0"
+}

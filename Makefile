@@ -27,12 +27,8 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
   MAKEFLAGS += -r
 endif
 
-# Choose the platform to build for (unless specified)
-ifeq ($(strip $(MODEL)),)
-  MODEL := $(shell cat ~/unum-v2-default-model)
-else
-  MODEL := $(strip $(MODEL))
-endif
+# Default platform to build for (unless specified)
+MODEL ?= linux_generic
 
 # Generate package version # (unless specified)
 ifeq ($(strip $(AGENT_VERSION)),)

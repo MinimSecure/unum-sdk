@@ -1,0 +1,22 @@
+# This file contains a base configuration for hostapd.
+# Copy this file to /etc/dnsmasq.conf and edit as necessary.
+# See http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+local=/lan/
+domain=lan
+expand-hosts
+dhcp-authoritative
+read-ethers
+domain-needed
+bogus-priv
+localise-queries
+stop-dns-rebind
+rebind-localhost-ok
+bind-interfaces
+local-service
+no-resolv
+server=1.1.1.1
+server=1.0.0.1
+
+# Remaining required config options:
+#interface=lo,wlan0
+#dhcp-range=192.168.127.100,192.168.127.150,12h

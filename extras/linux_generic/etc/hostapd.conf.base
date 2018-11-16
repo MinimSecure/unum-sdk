@@ -1,0 +1,19 @@
+# This file contains a base configuration for hostapd.
+# Copy this file to /etc/hostapd/hostapd.conf and edit as necessary.
+# See https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf
+driver=nl80211
+ctrl_interface=/var/run/hostapd
+country_code=US
+hw_mode=g
+channel=11
+macaddr_acl=0
+auth_algs=1
+wpa=2
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+
+# Complete this config file by adding these options:
+#interface=wlan0
+#ssid=MinimSecure
+#wpa_passphrase=

@@ -36,83 +36,13 @@
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
-    int ret = UCI_ERR_UNKNOWN;
-    struct uci_ptr ptr;
-    struct uci_context *ctx = NULL;
-    char *cfg_ptr = NULL;
-    size_t cfg_size = 0;
-
-    FILE *out = open_memstream(&cfg_ptr, &cfg_size);
-    if(out == NULL) {
-        log("%s: open_memstream() error: %s\n", __func__, strerror(errno));
-        return NULL;
-    }
-
-    for(;;)
-    {
-        ctx = uci_alloc_context();
-        if(!ctx) {
-            log("%s: uci_alloc_context() has failed\n", __func__);
-            break;
-        }
-
-        char **configs = NULL;
-        char **p;
-        ret = uci_list_configs(ctx, &configs);
-        if((ret != UCI_OK) || !configs) {
-            log("%s: uci_list_configs() returned %d\n", __func__, ret);
-            break;
-        }
-        for(p = configs; *p; p++) {
-            ret = uci_lookup_ptr(ctx, &ptr, *p, TRUE);
-            if(ret != UCI_OK) {
-                log("%s: uci_lookup_ptr() returned %d for <%s>\n",
-                    __func__, ret, *p);
-                break;
-            }
-            ret = uci_export(ctx, out, ptr.p, TRUE);
-            if(ret != UCI_OK) {
-                log("%s: uci_export() returned %d for <%s>\n",
-                    __func__, ret, *p);
-                break;
-            }
-        }
-        free(configs);
-
-        break;
-    }
-
-    if(out != NULL) {
-        fclose(out);
-        out = NULL;
-    }
-
-    if(ctx != NULL) {
-        uci_free_context(ctx);
-        ctx = NULL;
-    }
-
-    if(ret != UCI_OK && cfg_ptr != NULL) {
-        free(cfg_ptr);
-        cfg_ptr = NULL;
-        return cfg_ptr;
-    }
-
-    log_dbg("%s: config len: %lu\n", __func__, cfg_size);
-    log_dbg("%s: content:\n%.256s...\n", __func__, cfg_ptr);
-
-    if(p_len != NULL) {
-        // The data returned by open_memstream() includes the terminating 0,
-        // but the data length has to be incremented to account for it.
-        *p_len = cfg_size + 1;
-    }
-
-    return cfg_ptr;
+    return NULL;
 }
 
 // Calculate UID for the config passed in buf.
 static int calc_cfg_uid(char *buf, CONFIG_UID_t *p_uid)
 {
+#ifdef MD5_FROM_MBEDTLS
     mbedtls_md5_context md5;
 
     mbedtls_md5_init(&md5);
@@ -120,7 +50,7 @@ static int calc_cfg_uid(char *buf, CONFIG_UID_t *p_uid)
     mbedtls_md5_update(&md5, (unsigned char*)buf, strlen(buf));
     mbedtls_md5_finish(&md5, (unsigned char*)p_uid);
     mbedtls_md5_free(&md5);
-
+#endif
     return 0;
 }
 
@@ -171,57 +101,9 @@ void platform_cfg_free(char *buf)
 // - pointer to the config memory buffer
 // - config length
 // Returns: 0 - if ok or error
-// Note: cfg must be 0-terminated for Archer C2 (done automaticaly
-//       if data come from the HTTP response structure)
-// Note: For archer C2 this function reboots the device if
-//       successful (only returns if failed)
 int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 {
-    int ret = UCI_ERR_UNKNOWN;
-    struct uci_package *package = NULL;
-    struct uci_context *ctx = NULL;
-
-    FILE *input = fmemopen(cfg, cfg_len, "r");
-    if(input == NULL) {
-        log("%s: fmemopen() error: %s\n", __func__, strerror(errno));
-        return -1;
-    }
-
-    for(;;)
-    {
-        ctx = uci_alloc_context();
-        if(!ctx) {
-            log("%s: uci_alloc_context() has faileed\n", __func__);
-            break;
-        }
-        ret = uci_import(ctx, input, NULL, &package, FALSE);
-        if(ret == UCI_OK) {
-            struct uci_element *e;
-            // loop through all config sections and overwrite existing data
-            uci_foreach_element(&ctx->root, e) {
-                struct uci_package *p = uci_to_package(e);
-                ret = uci_commit(ctx, &p, true);
-            }
-        }
-
-        break;
-    }
-
-    if(ctx != NULL) {
-        uci_free_context(ctx);
-        ctx = NULL;
-    }
-
-    if(input != NULL) {
-        fclose(input);
-        input = NULL;
-    }
-
-    if(ret != UCI_OK) {
-        log("%s: error %d importing configuration\n",
-            __func__, ret);
-        return -2;
-    }
+    return 1;
 
 #ifdef DEBUG
     // Do not reboot if running config test

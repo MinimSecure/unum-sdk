@@ -13,24 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Dnsmasq management script
+# Starts the Unum agent in daemon mode.
 
 set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-dnsmasq_conf="$UNUM_VAR_DIR/dnsmasq.conf"
-
-if [[ ! -f "$dnsmasq_conf" ]]; then
-    loifname=lo
-    wanifname=$ifname_wan
-    lanifname=$ifname_lan
-
-    cp "$UNUM_INSTALL_ROOT/extras/etc/dnsmasq.conf.base" "$dnsmasq_conf"
-
-    echo "dhcp-range=192.168.127.100,192.168.127.150,12h" >> "$dnsmasq_conf"
-    echo "interface=lo,$ifname_lan" >> "$dnsmasq_conf"
-fi
-
-echo "Starting dnsmasq..."
-dnsmasq -C "$dnsmasq_conf"
+echo "Starting unum..."
+unum --daemonize --cfg-file "$UNUM_ETC_DIR/config.json"

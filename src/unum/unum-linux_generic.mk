@@ -26,22 +26,18 @@ LDFLAGS += -lm -lrt
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally
 # in case we need to share these additions a lot).
-ifneq ($(MBEDTLS),)
-  CPPFLAGS += -I$(TARGET_OBJ)/mbedtls/$(MBEDTLS)/include
-  LDFLAGS += -L$(TARGET_OBJ)/mbedtls/$(MBEDTLS)/lib -lmbedtls -lmbedx509 -lmbedcrypto
-endif
 ifneq ($(CURL),)
   CPPFLAGS += -I$(TARGET_OBJ)/curl/$(CURL)/include
   LDFLAGS += -L$(TARGET_OBJ)/curl/$(CURL)/lib/.libs -l:libcurl.so
   #LDFLAGS += -L$(TARGET_OBJ)/curl/$(CURL)/lib/.libs -l:libcurl.a
+else
+  LDFLAGS += -lcurl
 endif
 ifneq ($(JANSSON),)
   CPPFLAGS += -I$(TARGET_OBJ)/jansson/$(JANSSON)/src
-  LDFLAGS += -L$(TARGET_OBJ)/jansson/$(JANSSON)/src/.libs -l:libjansson.so -lm
-endif
-ifneq ($(UCI),)
-  CPPFLAGS += -I$(TARGET_OBJ)/uci/$(UCI)
-  LDFLAGS += -L$(TARGET_OBJ)/uci/$(UCI) -luci
+  LDFLAGS += -L$(TARGET_OBJ)/jansson/$(JANSSON)/src/.libs -l:libjansson.so
+else
+  LDFLAGS += -ljansson
 endif
 ifneq ($(IWINFO),)
   CPPFLAGS += -I$(TARGET_OBJ)/iwinfo/$(IWINFO)

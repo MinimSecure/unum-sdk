@@ -19,44 +19,16 @@ set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-valid_config || exit 1
+wanifname="$ifname_wan"
+lanifname="$ifname_lan"
 
-wanifname=$(uci get network.wan.ifname)
-lanifname=$(uci get network.lan.ifname)
-landevice=$(uci get network.lan.device || :)
-if [ -z "$landevice" ]; then
-    echo "Warning: defaulting network.lan.device to $lanifname"
-    landevice="$lanifname"
-    uci set network.lan.device=$lanifname
+wanip=$(awk '/^DHCPACK/ { print $3 }' <(dhclient -v 2>&1 || :))
+if [[ "$wanip" != "" ]]; then
+    echo "WAN IP address: $wanip"
+    ifconfig "$wanifname" "$wanip"
+else
+    echo "Warning: dhclient failed to assign a WAN IP address, continuing anyway"
 fi
 
-if ! ifconfig "$lanifname"; then
-    brctl addbr "$lanifname"
-    if [[ "$landevice" != "$lanifname" ]]; then
-        brctl addif "$lanifname" "$landevice"
-    fi
-    ifconfig "$lanifname" up
-fi
-
-if [[ $(uci get network.wan.proto) == "dhcp" ]]; then
-    wanip=$(awk '/^DHCPACK/ { print $3 }' <(dhclient -v 2>&1 || :))
-    if [[ "$wanip" != "" ]]; then
-        echo "WAN IP address: $wanip"
-        ifconfig "$wanifname" "$wanip"
-    else
-        echo "Warning: dhclient failed to assign a WAN IP address, continuing anyway"
-    fi
-fi
-
-#todo: configure loopback
-
-lanip=$(uci get network.lan.ipaddr)
-lannetmask=$(uci get network.lan.netmask)
-
-echo "LAN IP address: $lanip"
-ifconfig "$lanifname" "$lanip" netmask "$lannetmask"
-
-uci set network.lan.up=1
-uci set network.wan.up=1
-uci set network.loopback.up=1
-uci commit network
+echo "LAN IP address: 192.168.$subnet_simple.1"
+ifconfig "$lanifname" 192.168.$subnet_simple.1 netmask 255.255.255.0
