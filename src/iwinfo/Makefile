@@ -16,7 +16,7 @@
 
 MODULE := iwinfo
 VERSION ?= $(MODULE)-dev
-REPO_URL := git://git.openwrt.org/project/$(MODULE).git
+REPO_URL := https://github.com/MinimSecure/iwinfo-lite
 BUILD_PATH := $(TARGET_OBJ)/$(MODULE)
 SOURCE_PATH := $(BUILD_PATH)/$(VERSION)
 
@@ -36,17 +36,6 @@ $(SOURCE_PATH):
 	git clone $(REPO_URL) $(SOURCE_PATH)
 
 .configured: $(SOURCE_PATH)
-# By default, the build system creates links to pre-existing sources.
-# We can't patch the symlinks, so instead copy the source code directly
-# TODO: a bit wasteful, just apply the patches in situ?
-	if [ ! -d $(SOURCE_PATH)/.git ]; then \
-		cd "$(SOURCE_PATH)" && find * -type l -exec rm -fv {} \; && \
-		cd "$(TOP)/src/$(MODULE)/$(VERSION)" && \
-			find * -type f -exec \
-				cp -avf "$(TOP)/src/$(MODULE)/$(VERSION)/{}" "$(SOURCE_PATH)/{}" \; ; \
-	fi
-	cd $(SOURCE_PATH) && \
-		patch -st < $(BUILD_PATH)/patches/300-iwinfo-ubuntu-gnu-no-lua.patch
 	touch $@
 
 .compiled: .configured

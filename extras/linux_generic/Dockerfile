@@ -14,6 +14,10 @@ RUN apt-get update && \
         iptables \
         iputils-ping \
         iw \
+        libcurl3 \
+        libnl-3-200 \
+        libnl-genl-3-200 \
+        libjansson4 \
         net-tools \
         rfkill \
         usbutils \
@@ -26,8 +30,6 @@ COPY --from=build /usr/local/src/unum/out/linux_generic/* .
 RUN mkdir -p /opt/unum && \
     tar -C /opt/unum -xf /root/linux_generic*
 
-RUN mkdir -p /var/opt/unum && \
-    mkdir -p /etc/opt && \
-    cp -r /opt/unum/dist/etc/opt/unum /etc/opt/unum
+RUN bash /opt/unum/extras/install.sh --no-interactive --extras --profile
 
-RUN bash /opt/unum/extras/install_extras.sh
+RUN sed -i -e 's:wlan0:eth2:' -e 's:eth0:eth1:' /etc/opt/unum/config.json

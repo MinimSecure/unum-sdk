@@ -34,10 +34,7 @@ usage() {
     echo "  -h           Print this help text."
 }
 
-# Read interface names from stored UCI configuration.
-ifname_wan=$(uci get network.wan.ifname)
 ifname_wan_orig="$ifname_wan"
-ifname_lan=$(uci get network.lan.ifname)
 ifname_lan_orig="$ifname_lan"
 
 while getopts 'W:L:I:P:h' opt; do
@@ -55,27 +52,26 @@ while getopts 'W:L:I:P:h' opt; do
     esac
 done
 
+# Run configuration helper
+if [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
+    # Extras configuration file does not exist, presume this is a first-time start
+    config_interfaces.sh
+fi
+
 if [[ "$ifname_wan" != "$ifname_wan_orig" ]]; then
     echo "Setting WAN interface to $ifname_wan"
-    uci set network.wan.ifname=$ifname_wan
+    sed -i -e 's/ifname_wan=.*/ifname_wan='"$ifname_wan"'/' "$UNUM_INSTALL_DIR/extras.conf.sh"
 fi
 if [[ "$ifname_lan" != "$ifname_lan_orig" ]]; then
     echo "Setting LAN interface to $ifname_lan"
-    uci set network.lan.ifname=$ifname_lan
+    sed -i -e 's/ifname_lan=.*/ifname_lan='"$ifname_wan"'/' "$UNUM_INSTALL_DIR/extras.conf.sh"
 fi
-
-# Commit changes, even if we made none.
-uci commit network
-
-valid_config || exit 1
 
 stop_all.sh
 
-start_networking.sh
+start_networking.sh || sleep 1 && start_networking.sh
 start_hostapd.sh || \
     echo "Warning: failed to start hostapd, continuing without wireless anyway"
 start_dnsmasq.sh
 start_routing.sh
-
-echo "Starting unum..."
-nohup unum -d
+start_unum.sh

@@ -33,41 +33,19 @@ if [[ -z "$UNUM_INSTALL_ROOT" ]]; then
     export UNUM_INSTALL_ROOT=$(readlink -e "$(dirname "$BASH_SOURCE")/../..")
 fi
 
-export UNUM_ETC_DIR="/etc/opt/unum"
-export UNUM_VAR_DIR="/var/opt/unum"
+source "$UNUM_INSTALL_ROOT/.installed"
 
-# Ensure that Unum and its dependencies have the correct library path.
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$UNUM_INSTALL_ROOT/lib/"
-# Ensure the current PATH contains all the necessary binaries.
-export PATH="$PATH:$UNUM_INSTALL_ROOT/bin:$UNUM_INSTALL_ROOT/extras/sbin"
+export UNUM_ETC_DIR="${install_etc_dir:-/etc/opt/unum}"
+export UNUM_VAR_DIR="${install_var_dir:-/var/opt/unum}"
 
-uci() {
-    $(which uci) -q $@
-    return $?
-}
-export -f uci
+if [[ "$LD_LIBRARY_PATH" != *$UNUM_INSTALL_ROOT* ]]; then
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$UNUM_INSTALL_ROOT/lib/"
+fi
+if [[ "$PATH" != *$UNUM_INSTALL_ROOT* ]]; then
+    export PATH="$PATH:$UNUM_INSTALL_ROOT/bin:$UNUM_INSTALL_ROOT/extras/sbin"
+fi
 
-valid_config() {
-    declare -A required=( \
-        ["network.wan.ifname"]="WAN Interface" \
-        ["network.lan.ifname"]="LAN Interface" \
-        ["network.lan.device"]="LAN Device" )
-    declare -a errors
-    for key in "${!required[@]}"; do
-        if [ -z $(uci get "$key") ]; then
-            errors+=("${required[$key]} ($key) is required, but not set")
-        fi
-    done
-    if [[ -z "${errors[@]}" ]]; then
-        return 0
-    fi
-    echo "Invalid configuration! Found these problems:"
-    for err_msg in "${errors[@]}"; do
-        echo "  $err_msg"
-    done
-    return 1
-}
-export -f valid_config
+[[ -f "$UNUM_ETC_DIR/extras.conf.sh" ]] && source "$UNUM_ETC_DIR/extras.conf.sh"
 
 # Kills all processes matching the given input.
 # Sends the SIGTERM signal, then SIGKILL after two seconds.
@@ -82,89 +60,20 @@ killwait() {
 }
 export -f killwait
 
-# Helper function for iterating over multiple UCI config sections of the same
-# underlying type.
-#
-# Usage: uci_iter <mapcmd> <keypattern>
-#
-#   uci_iter "echo 'got a value: '" wireless.@wifi-ifaces[#].device
-#
-# Any "#" character in <keypattern> is replaced with an incrementing value
-# starting from 0 until an empty result is returned. For each non-empty record
-# found, <map-cmd> is invoked with the value fetched from UCI as the first
-# argument and the current iteration number and key as the second and third
-# arguments.
-#
-# A function used as <map-cmd> should accept arguments as:
-#   map-cmd <conf-value> <iter-index> <iter-key>
-uci_iter() {
-    local fn="$1"
-    shift
-    local i=0
-    local val=
-    local key=
-    local section=
-    # limit to 5 entries
-    while (( i < 5 )); do
-        key=${1/"#"/"$i"}
-        section=$(sed -E 's/(\.[\w_]+?)$//' <<< "$key")
-        # break if the section does not exist
-        uci get "$section" > /dev/null || break
-        val=$(uci get "$key" || :)
-        $fn "$val" "$i" "$key" || :
-        (( i++ ))
-    done
-}
-export -f uci_iter
-
-uci_bool() {
-    case "$(tr A-Z a-z <<< "$1")" in
-        y|1|on|yes) return 0
-                    ;;
-        n|0|off|no) return 1
-                    ;;
-        "")         return 2
-                    ;;
-        *)          return 3
-                    ;;
-    esac
-}
-export -f uci_bool
-
-uci_exclude_true() {
-    if ! uci_bool "$1"; then
-        # Config value is considered "no"; do not filter this value
-        echo "$2"
+declare prompt_val
+prompt() {
+    prompt_val="$2"
+    echo -n "---> $1 [$prompt_val]: "
+    read prompt_val
+    if [[ -z "$prompt_val" ]]; then
+        prompt_val="$2"
     fi
     return 0
 }
-export -f uci_exclude_true
-
-# Determine the currently active agent profile that should be used.
-if [[ -z "$UNUM_ACTIVE_PROFILE" ]]; then
-    # Presume the first enabled agent profile should be used unless already set.
-    first_active_agent=$(uci_iter uci_exclude_true "unum.@agent[#].disabled" | head -n1)
-    export UNUM_ACTIVE_PROFILE=$(uci get "unum.@agent[$first_active_agent].profile")
-    if [[ -z "$UNUM_ACTIVE_PROFILE" ]]; then
-        echo "warning: unable to determine active profile, falling back to profile 'default'"
-        export UNUM_ACTIVE_PROFILE="default"
+confirm() {
+    prompt "$1" "${2:-no}"
+    if [[ "$prompt_val" =~ ^[Yy](es)? ]]; then
+        return 0
     fi
-fi
-
-# mapcmd for determining the correct section for the active profile. Examples:
-#     startup_section=$(uci_iter uci_find_active_section "unum.@startup[#]" | head -n1)
-#     next_startup_section=$(uci_iter uci_find_active_section "unum.@next_startup[#]" | head -n1)
-#     radio_sections=$(uci_iter uci_find_active_section "unum.@radio[#]" | tr '\n' ' ')
-uci_find_active_section() {
-    local val="$1"
-    local idx="$2"
-    local key="$3"
-    local section=$(sed -E 's/(\.[\w_]+?)$//' <<< "$key")
-    if [[ $(uci get "$section.profile") == "$UNUM_ACTIVE_PROFILE" ]]; then
-        if ! uci_bool $(uci get "$section.disabled"); then
-            echo "$section"
-        fi
-    fi
-    return 0
+    return 1
 }
-export -f uci_find_active_section

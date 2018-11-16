@@ -69,12 +69,6 @@ ifneq ($(UNUM_AP_MODE),)
   CPPFLAGS += -DAP_MODE
 endif
 
-# Add define to enable hardware acceleration support
-# Note: this requires specific platform support.
-ifneq ($(UNUM_HARDWARE_ACCEL),)
-  CPPFLAGS += -DHARDWARE_ACCEL
-endif
-
 # Default goal
 all: unum
 

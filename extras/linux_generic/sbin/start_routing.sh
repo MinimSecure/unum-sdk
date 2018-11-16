@@ -19,10 +19,8 @@ set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-valid_config || exit 1
-
-ifname_wan=$(uci get network.wan.ifname)
-ifname_lan=$(uci get network.lan.ifname)
+ifname_wan="$ifname_wan"
+ifname_lan="$ifname_lan"
 
 echo "LAN interface: $ifname_lan"
 echo "WAN interface: $ifname_wan"

@@ -50,6 +50,6 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [2]: mailto:labs@minim.co
 [3]: https://my.minim.co/developers/sign_up
 [4]: https://www.docker.com
-[5]: extras/linux_generic/README-docker
-[6]: README-linux_generic
+[5]: extras/linux_generic/README-docker.md
+[6]: README-linux_generic.md
 [7]: https://github.com/MinimSecure/minim-openwrt-feed
