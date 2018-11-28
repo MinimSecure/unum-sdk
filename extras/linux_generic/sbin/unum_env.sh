@@ -77,3 +77,12 @@ confirm() {
     fi
     return 1
 }
+prompt_require() {
+    prompt_val="$2"
+    while true; do
+        prompt "$1" "$prompt_val"
+        if [[ ! -z "$prompt_val" ]]; then
+            return 0
+        fi
+    done
+}

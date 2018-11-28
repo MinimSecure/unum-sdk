@@ -56,22 +56,30 @@ done
 if [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
     # Extras configuration file does not exist, presume this is a first-time start
     config_interfaces.sh
+    config_hostapd.sh
+    config_dnsmasq.sh
 fi
 
 if [[ "$ifname_wan" != "$ifname_wan_orig" ]]; then
     echo "Setting WAN interface to $ifname_wan"
-    sed -i -e 's/ifname_wan=.*/ifname_wan='"$ifname_wan"'/' "$UNUM_INSTALL_DIR/extras.conf.sh"
+    sed -i -e 's/ifname_wan=.*/ifname_wan='"$ifname_wan"'/' "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 if [[ "$ifname_lan" != "$ifname_lan_orig" ]]; then
     echo "Setting LAN interface to $ifname_lan"
-    sed -i -e 's/ifname_lan=.*/ifname_lan='"$ifname_wan"'/' "$UNUM_INSTALL_DIR/extras.conf.sh"
+    sed -i -e 's/ifname_lan=.*/ifname_lan='"$ifname_wan"'/' "$UNUM_ETC_DIR/extras.conf.sh"
 fi
+
+# Source these again explicitly, in case the values have changed above
+source "$UNUM_ETC_DIR/extras.conf.sh"
 
 stop_all.sh
 
-start_networking.sh || sleep 1 && start_networking.sh
+config_routing.sh
+
+rfkill unblock wifi || :
+killwait wpa_supplicant || :
+
 start_hostapd.sh || \
     echo "Warning: failed to start hostapd, continuing without wireless anyway"
 start_dnsmasq.sh
-start_routing.sh
 start_unum.sh

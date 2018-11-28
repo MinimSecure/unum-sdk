@@ -46,3 +46,7 @@ iptables -A INPUT -i $ifname_wan -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Accept all output packets from anywhere
 iptables -A OUTPUT -j ACCEPT
+
+if which iptables-save 2> /dev/null; then
+    iptables-save
+fi

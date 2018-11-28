@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Hostapd management script
-
 set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
@@ -24,40 +22,9 @@ if [[ -z "$phyname_wlan" ]]; then
     exit 0
 fi
 
-phydev=$phyname_wlan
-hostapd_conf="$UNUM_VAR_DIR/hostapd-$phydev.conf"
-
-if [[ ! -f "$hostapd_conf" ]]; then
-    mkdir -p $(dirname "$hostapd_conf")
-
-    cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
-
-    echo "interface=$ifname_wlan" >> "$hostapd_conf"
-
-    prompt "Specify wireless SSID" "MinimSecure"
-    echo "ssid=$prompt_val" >> "$hostapd_conf"
-
-    prompt_val=
-    while [[ -z "$prompt_val" ]]; do
-        prompt "Specify wireless passphrase"
-    done
-    echo "wpa_passphrase=$prompt_val" >> "$hostapd_conf"
+if [[ ! -f "$install_var_dir/hostapd-$phyname_wlan.conf" ]]; then
+    $(dirname "$BASH_SOURCE")/config_hostapd.sh
 fi
-
-for ifn in $(iw dev | grep Interf | cut -d' ' -f2); do
-    if [[ -z "$ifn" ]]; then
-        continue
-    fi
-    echo "Removing existing WLAN interface $ifn"
-    iw dev "$ifn" del
-    sleep 1
-done
-
-rfkill unblock wifi || :
-killwait wpa_supplicant || :
-
-echo "Creating WLAN interface $ifname_wlan"
-iw phy $phydev interface add $ifname_wlan type monitor
 
 echo "Starting hostapd..."
 hostapd -B "$hostapd_conf"

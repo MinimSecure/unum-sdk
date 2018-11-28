@@ -1,5 +1,5 @@
 [Unit]
-Description=Unum manages and monitors your network
+Description=Unum agent
 Documentation=https://github.com/MinimSecure/unum-sdk
 After=network.target
 

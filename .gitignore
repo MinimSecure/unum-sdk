@@ -1,3 +1,10 @@
 build/*
 out/*
-
+debian
+!dist/debian
+dist/debian/**/*debhelper*
+dist/debian/unum-sdk
+dist/debian/*.substvars
+dist/debian/*.ex
+dist/debian/files
+!dist/make_dotdeb.sh
