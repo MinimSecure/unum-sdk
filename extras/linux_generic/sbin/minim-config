@@ -15,14 +15,16 @@
 
 [ $(id -u) != "0" ] && exec sudo "$0"
 
-service hostapd stop
-service dnsmasq stop
-service wpa_supplicant stop
-service unum stop
+service hostapd stop 
+service dnsmasq stop 
+service wpa_supplicant stop 
+service unum stop 
 
-killall -9 hostapd dnsmasq wpa_supplicant unum
+killall -9 hostapd dnsmasq wpa_supplicant unum 
 
-rfkill unblock wifi
+rfkill unblock wifi 
+
+rm -f /var/opt/unum/unum.key /var/opt/unum/unum.pem
 
 /opt/unum/extras/sbin/config_interfaces.sh
 /opt/unum/extras/sbin/config_hostapd.sh
@@ -55,6 +57,7 @@ start_retry() {
         sleep 1
         (( tries += 1 ))
     done
+    return 0
 }
 
 start_retry hostapd
