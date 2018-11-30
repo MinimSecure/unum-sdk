@@ -48,6 +48,7 @@ fi
 prompt_require "Specify WAN network interface" "$ifname_wan"
 ifname_wan="$prompt_val"
 
+hwaddr_lan_orig="$hwaddr_lan"
 prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan" prompt_validator_macaddr
 hwaddr_lan="$prompt_val"
 
@@ -98,5 +99,10 @@ if [[ ! -f "/etc/dhcpcd.conf.pre-unum" ]]; then
     mv /etc/dhcpcd.conf /etc/dhcpcd.conf.pre-unum
 fi
 mv /etc/dhcpcd.conf.tmp /etc/dhcpcd.conf
+
+if [[ "$hwaddr_lan_orig" != "$hwaddr_lan" ]]; then
+    # MAC address changed, existing client cert is no longer any good.
+    rm -fv /var/opt/unum/unum.key /var/opt/unum/unum.pem
+fi
 
 service dhcpcd restart

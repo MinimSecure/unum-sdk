@@ -86,6 +86,15 @@ make MODEL=linux_generic
 
 ## Installing
 
+The Unum agent requires libcurl (3 or later), libjansson4 (2.7 or later), and
+libnl-3-200 and libnl-genl-3-200 to run correctly.
+
+For Debian 9 or Ubuntu 18, for example:
+
+```bash
+sudo apt install -y gawk libcurl3 libnl-3-200 libnl-genl-3-200 libjansson4
+```
+
 Building the SDK results in a tarball containing the `unum` binary and required
 shared libraries, as well as default configuration files and some utility bash
 scripts. The tarball is designed to be extracted inside a newly-created and 

@@ -13,8 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[ $(id -u) != "0" ] && exec sudo "$0"
+# Utility script for managing a Linux router.
 
+# Run this script to configure the Unum installation and start all the services
+# needed for the operation of a Linux router and wireless access point.
+
+# If we are not root already, rerun this script with sudo.
+[[ $(id -u) != "0" ]] && exec sudo "$0" $@
+
+declare -r log_file="/var/opt/unum/minim-config.log"
+
+usage() {
+    echo "Usage: minim-config [--help|-h] [--no-interactive]"
+    if [[ "$1" == "-v" ]]; then
+        echo
+        echo "Manages configuration for hostapd, dnsmasq, dhcpcd, iptables, and the"
+        echo "unum agent itself."
+        echo
+        echo "This command controls every aspect of the above services, and will generate"
+        echo "configuration files (based on user input when run interactively), modify the"
+        echo "necessary system files, and start the services in the correct order."
+        echo
+        echo "Options:"
+        echo "  --no-interactive   Do not prompt for input; use existing configuration"
+        echo "  --help|-h          Print this usage text"
+    fi
+}
 seems_to_be_running() {
     local chk=$(service "$1" status | grep "active (running)")
     if [[ -z "$chk" ]]; then
@@ -24,39 +48,55 @@ seems_to_be_running() {
 }
 start_retry() {
     local -i tries=0
-    while (( tries < 3 )) && ! seems_to_be_running "$1"; do
-        service "$1" start
-        sleep 1
+    while ! seems_to_be_running "$1"; do
+        if (( tries > 3 )); then
+            echo "Failed to start $1 service after 3 attempts"
+            break
+        fi
+        service "$1" start >> "$log_file" 2>&1
+        sleep 5
         tries=$(( tries + 1 ))
     done
     return 0
 }
 
+# Parse command-line options
 declare -i interactively=1
-if [[ "$1" == "--no-interactive" ]]; then
-    interactively=0
-fi
+for arg in $@; do
+    case "$arg" in
+        --no-interactive)
+            interactively=0
+            ;;
+        --help|-h|-help)
+            usage -v
+            exit 0
+            ;;
+        *)
+            echo "unsupported option: $arg"
+            usage
+            exit 1
+    esac
+done
 
 if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
     echo 'unum is unconfigured, please re-run without `--no-interactive`:'
     echo '    minim-config'
 fi
 
-# Run in a sub-process to route output to a log file
-{
-    service hostapd stop
-    service dnsmasq stop
-    service wpa_supplicant stop
-    service unum stop
+echo "Stopping services..."
+echo "Stopping services..." > "$log_file"
 
-    killall -9 hostapd dnsmasq wpa_supplicant unum
+service hostapd stop        >> "$log_file" 2>&1
+service dnsmasq stop        >> "$log_file" 2>&1
+service wpa_supplicant stop >> "$log_file" 2>&1
+service unum stop           >> "$log_file" 2>&1
 
-    rfkill unblock wifi
+# Make doubly-sure that none of these are running
+killall -9 hostapd dnsmasq wpa_supplicant unum >> "$log_file" 2>&1
 
-    rm -fv /var/opt/unum/unum.key /var/opt/unum/unum.pem
-} >> /var/opt/unum/minim-config.log 2>&1
+rfkill unblock wifi >> "$log_file" 2>&1
 
-# Configuration
+# Configure the services, interactively if not disabled.
 declare interactive_flag=
 if (( ! interactively )); then
     interactive_flag="--no-interactive"
@@ -66,29 +106,31 @@ fi
 /opt/unum/extras/sbin/config_dnsmasq.sh
 /opt/unum/extras/sbin/config_routing.sh
 
-# Run in a sub-process to route output to a log file
-{
-    . /etc/opt/unum/extras.conf.sh
+# Source the extras.conf.sh file to get updated configuration values.
+. /etc/opt/unum/extras.conf.sh
 
-    ifconfig "$ifname_lan" down
-    ip link set "$ifname_lan" address "$hwaddr_lan"
-    ifconfig "$ifname_lan" up
+# Set MAC address on the LAN interface
+ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
+ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
+ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
 
-    sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq
-    sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd
+# Hack to fix /var/opt/unum in existing default dnsmasq and hostapd
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq >> "$log_file" 2>&1
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd >> "$log_file" 2>&1
 
-    sleep 1
+sleep 2
 
-    systemctl enable unum-aio
+# Eable the all-in-one service on boot
+systemctl enable unum-aio   >> "$log_file" 2>&1
 
-    systemctl disable unum
-    systemctl disable hostapd
-    systemctl disable dnsmasq
+# Disable everything that unum-aio will start
+systemctl disable unum      >> "$log_file" 2>&1
+systemctl disable hostapd   >> "$log_file" 2>&1
+systemctl disable dnsmasq   >> "$log_file" 2>&1
 
-    # leave wpa_supplicant disabled
-    systemctl disable wpa_supplicant
+# Disable wpa_supplicant because we are running an access point.
+systemctl disable wpa_supplicant    >> "$log_file" 2>&1
 
-    start_retry hostapd
-    start_retry dnsmasq
-    start_retry unum
-} >> /var/opt/unum/minim-config.log 2>&1
+start_retry hostapd
+start_retry dnsmasq
+start_retry unum
