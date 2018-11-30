@@ -43,6 +43,9 @@ systemctl disable unum
 systemctl disable hostapd
 systemctl disable dnsmasq
 
+# leave wpa_supplicant disabled
+systemctl disable wpa_supplicant
+
 seems_to_be_running() {
     local chk=$(service "$1" status | grep "active (running)")
     if [[ -z "$chk" ]]; then
