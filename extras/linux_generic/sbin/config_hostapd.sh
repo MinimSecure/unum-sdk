@@ -49,9 +49,9 @@ else
 fi
 # Update saved passphrase in extras.conf.sh
 if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh"; then
-    sed -i -E 's:^passphrase=.*:passphrase="'"$ssid"'":' "$UNUM_ETC_DIR/extras.conf.sh"
+    sed -i -E 's:^passphrase=.*:passphrase="'"$passphrase"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
-    echo "passphrase=\"$ssid\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
+    echo "passphrase=\"$passphrase\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 
 # iwinfo looks here for the hostapd conf
