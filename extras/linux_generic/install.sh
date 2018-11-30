@@ -31,6 +31,7 @@ declare install_var_dir="/var/opt/unum"
 declare -i install_systemd_service=0
 declare -i install_extras=0
 declare -i install_profile=0
+declare -i install_aio=0
 
 declare prompt_val
 prompt() {
@@ -84,6 +85,12 @@ for opt in $@; do
             ;;
         --profile)
             install_profile=1
+            ;;
+        --aio)
+            install_aio=1
+            ;;
+        --no-aio)
+            install_aio=0
             ;;
         --uninstall)
             uninstall=1
@@ -190,11 +197,13 @@ cp -f "$dist_dir/etc/opt/unum/config.json" "$install_etc_dir/config.json"
 
 if (( install_systemd_service )); then
     cp -f "$dist_dir/etc/systemd/system/unum.service" "/etc/systemd/system/unum.service"
+    cp -f "$dist_dir/etc/systemd/system/unum-aio.service" "/etc/systemd/system/unum-aio.service"
     if which systemctl > /dev/null 2>&1; then
         # this fails when ran inside a docker container
         systemctl daemon-reload > /dev/null 2>&1 || :
     fi
     echo "installed systemd service: /etc/systemd/system/unum.service"
+    echo "installed systemd service: /etc/systemd/system/unum-aio.service"
 fi
 
 if (( interactively )); then

@@ -23,7 +23,7 @@ case "$1" in
         service hostapd stop
         service dnsmasq stop
         /opt/unum/extras/install.sh \
-            --no-interactive --init --extras
+            --no-interactive --init --aio --extras
         mod_check=`awk '/^DNSMASQ_OPTS=.*unum.*$/ { print "1" }' /etc/default/dnsmasq`
         if [ -z "$mod_check" ]; then
             echo 'DNSMASQ_OPTS="--conf-file=/etc/opt/unum/dnsmasq.conf"' >> /etc/default/dnsmasq

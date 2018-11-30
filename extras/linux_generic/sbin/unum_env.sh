@@ -60,9 +60,13 @@ killwait() {
 }
 export -f killwait
 
+declare -i interactively=1
 declare prompt_val
 prompt() {
     prompt_val="$2"
+    if ! (( interactively )); then
+        return 0
+    fi
     echo -n "---> $1 [$prompt_val]: "
     read prompt_val
     if [[ -z "$prompt_val" ]]; then

@@ -32,6 +32,16 @@ start_retry() {
     return 0
 }
 
+declare -i interactively=1
+if [[ "$1" == "--no-interactive" ]]; then
+    interactively=0
+fi
+
+if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
+    echo 'unum is unconfigured, please re-run without `--no-interactive`:'
+    echo '    minim-config'
+fi
+
 # Run in a sub-process to route output to a log file
 {
     service hostapd stop
@@ -46,9 +56,13 @@ start_retry() {
     rm -fv /var/opt/unum/unum.key /var/opt/unum/unum.pem
 } >> /var/opt/unum/minim-config.log 2>&1
 
-# Interactive configuration
-/opt/unum/extras/sbin/config_interfaces.sh
-/opt/unum/extras/sbin/config_hostapd.sh
+# Configuration
+declare interactive_flag=
+if (( ! interactively )); then
+    interactive_flag="--no-interactive"
+fi
+/opt/unum/extras/sbin/config_interfaces.sh "$interactive_flag"
+/opt/unum/extras/sbin/config_hostapd.sh "$interactive_flag"
 /opt/unum/extras/sbin/config_dnsmasq.sh
 /opt/unum/extras/sbin/config_routing.sh
 
@@ -64,6 +78,8 @@ start_retry() {
     sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd
 
     sleep 1
+
+    systemctl enable unum-aio
 
     systemctl disable unum
     systemctl disable hostapd

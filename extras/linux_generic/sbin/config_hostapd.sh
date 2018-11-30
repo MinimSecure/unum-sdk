@@ -19,6 +19,10 @@ set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
+if [[ "$1" == "--no-interactive" ]]; then
+    interactively=0
+fi
+
 if [[ -z "$phyname_wlan" ]]; then
     echo "no wireless interface configured, not configuring hostapd"
     exit 0
