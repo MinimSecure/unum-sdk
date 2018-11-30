@@ -38,7 +38,7 @@ echo "ssid=$prompt_val" >> "$hostapd_conf"
 if grep -e '^ssid=' "$UNUM_ETC_DIR/extras.conf.sh"; then
     sed -i -E 's:^ssid=.*:ssid="'"$prompt_val"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
-    echo "ssid=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
+    echo "ssid=\"$prompt_val\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 
 prompt_require "Specify wireless passphrase" "$passphrase" prompt_validator_passphrase
@@ -47,7 +47,7 @@ echo "passphrase=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
 if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh"; then
     sed -i -E 's:^passphrase=.*:passphrase="'"$prompt_val"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
-    echo "passphrase=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
+    echo "passphrase=\"$prompt_val\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 
 # iwinfo looks here for the hostapd conf
