@@ -44,6 +44,10 @@ echo "ifname_bridge=\"$ifname_bridge\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "ifname_wan=\"$ifname_wan\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "hwaddr_lan=\"$hwaddr_lan\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "subnet_simple=\"$subnet_simple\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
+# ssid and passphrase are set in config_hostapd.sh -- save their values if
+# they exist.
+echo "ssid=\"$ssid\""                   >> "$UNUM_ETC_DIR/extras.conf.sh"
+echo "passphrase=\"$passphrase\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 
 source "$UNUM_ETC_DIR/extras.conf.sh"
 
