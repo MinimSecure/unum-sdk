@@ -15,40 +15,6 @@
 
 [ $(id -u) != "0" ] && exec sudo "$0"
 
-service hostapd stop 
-service dnsmasq stop 
-service wpa_supplicant stop 
-service unum stop 
-
-killall -9 hostapd dnsmasq wpa_supplicant unum 
-
-rfkill unblock wifi 
-
-rm -f /var/opt/unum/unum.key /var/opt/unum/unum.pem
-
-/opt/unum/extras/sbin/config_interfaces.sh
-/opt/unum/extras/sbin/config_hostapd.sh
-/opt/unum/extras/sbin/config_dnsmasq.sh
-/opt/unum/extras/sbin/config_routing.sh
-
-. /etc/opt/unum/extras.conf.sh
-
-ifconfig "$ifname_lan" down
-ip link set "$ifname_lan" address "$hwaddr_lan"
-ifconfig "$ifname_lan" up
-
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd
-
-sleep 1
-
-systemctl disable unum
-systemctl disable hostapd
-systemctl disable dnsmasq
-
-# leave wpa_supplicant disabled
-systemctl disable wpa_supplicant
-
 seems_to_be_running() {
     local chk=$(service "$1" status | grep "active (running)")
     if [[ -z "$chk" ]]; then
@@ -66,6 +32,47 @@ start_retry() {
     return 0
 }
 
-start_retry hostapd
-start_retry dnsmasq
-start_retry unum
+# Run in a sub-process to route output to a log file
+{
+    service hostapd stop
+    service dnsmasq stop
+    service wpa_supplicant stop
+    service unum stop
+
+    killall -9 hostapd dnsmasq wpa_supplicant unum
+
+    rfkill unblock wifi
+
+    rm -fv /var/opt/unum/unum.key /var/opt/unum/unum.pem
+} >> /var/opt/unum/minim-config.log 2>&1
+
+# Interactive configuration
+/opt/unum/extras/sbin/config_interfaces.sh
+/opt/unum/extras/sbin/config_hostapd.sh
+/opt/unum/extras/sbin/config_dnsmasq.sh
+/opt/unum/extras/sbin/config_routing.sh
+
+# Run in a sub-process to route output to a log file
+{
+    . /etc/opt/unum/extras.conf.sh
+
+    ifconfig "$ifname_lan" down
+    ip link set "$ifname_lan" address "$hwaddr_lan"
+    ifconfig "$ifname_lan" up
+
+    sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq
+    sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd
+
+    sleep 1
+
+    systemctl disable unum
+    systemctl disable hostapd
+    systemctl disable dnsmasq
+
+    # leave wpa_supplicant disabled
+    systemctl disable wpa_supplicant
+
+    start_retry hostapd
+    start_retry dnsmasq
+    start_retry unum
+} >> /var/opt/unum/minim-config.log 2>&1

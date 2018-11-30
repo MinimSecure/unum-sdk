@@ -34,20 +34,24 @@ cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
 echo "interface=$ifname_wlan" >> "$hostapd_conf"
 
 prompt_require "Specify wireless SSID" "${ssid:-MinimSecure}" prompt_validator_ssid
-echo "ssid=$prompt_val" >> "$hostapd_conf"
-if grep -e '^ssid=' "$UNUM_ETC_DIR/extras.conf.sh"; then
-    sed -i -E 's:^ssid=.*:ssid="'"$prompt_val"'":' "$UNUM_ETC_DIR/extras.conf.sh"
-else
-    echo "ssid=\"$prompt_val\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
-fi
+ssid="$prompt_val"
+echo "ssid=$ssid" >> "$hostapd_conf"
 
 prompt_require "Specify wireless passphrase" "$passphrase" prompt_validator_passphrase
-echo "wpa_passphrase=$prompt_val" >> "$hostapd_conf"
-echo "passphrase=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
-if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh"; then
-    sed -i -E 's:^passphrase=.*:passphrase="'"$prompt_val"'":' "$UNUM_ETC_DIR/extras.conf.sh"
+passphrase="$prompt_val"
+echo "wpa_passphrase=$passphrase" >> "$hostapd_conf"
+
+# Update saved ssid in extras.conf.sh
+if grep -e '^ssid=' "$UNUM_ETC_DIR/extras.conf.sh"; then
+    sed -i -E 's:^ssid=.*:ssid="'"$ssid"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
-    echo "passphrase=\"$prompt_val\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
+    echo "ssid=\"$ssid\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
+fi
+# Update saved passphrase in extras.conf.sh
+if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh"; then
+    sed -i -E 's:^passphrase=.*:passphrase="'"$ssid"'":' "$UNUM_ETC_DIR/extras.conf.sh"
+else
+    echo "passphrase=\"$ssid\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 
 # iwinfo looks here for the hostapd conf
