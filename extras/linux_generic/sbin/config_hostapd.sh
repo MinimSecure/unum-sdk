@@ -33,11 +33,15 @@ cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
 
 echo "interface=$ifname_wlan" >> "$hostapd_conf"
 
-prompt_require "Specify wireless SSID" "MinimSecure" prompt_validator_ssid
+prompt_require "Specify wireless SSID" "${ssid:-MinimSecure}" prompt_validator_ssid
 echo "ssid=$prompt_val" >> "$hostapd_conf"
 
-prompt_require "Specify wireless passphrase" "" prompt_validator_passphrase
+prompt_require "Specify wireless passphrase" "$passphrase" prompt_validator_passphrase
 echo "wpa_passphrase=$prompt_val" >> "$hostapd_conf"
+
+echo "ssid=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
+echo "passphrase=$prompt_val" >> "$UNUM_ETC_DIR/extras.conf.sh"
+
 
 # iwinfo looks here for the hostapd conf
 ln -sf "$hostapd_conf" "/var/run/hostapd-$phydev.conf"

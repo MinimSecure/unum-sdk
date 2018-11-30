@@ -34,7 +34,7 @@ rm -f /var/opt/unum/unum.key /var/opt/unum/unum.pem
 . /etc/opt/unum/extras.conf.sh
 
 ifconfig "$ifname_lan" down
-ip link set wlan0 address "$hwaddr_lan"
+ip link set "$ifname_lan" address "$hwaddr_lan"
 ifconfig "$ifname_lan" up
 
 sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq
