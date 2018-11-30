@@ -114,7 +114,7 @@ prompt_require() {
     fi
     while true; do
         prompt "$1" "$prompt_val"
-        if prompt_validator "$prompt_val"; then
+        if $prompt_validator "$prompt_val"; then
             return 0
         fi
     done
