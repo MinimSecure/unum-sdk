@@ -46,13 +46,13 @@ passphrase="$prompt_val"
 echo "wpa_passphrase=$passphrase" >> "$hostapd_conf"
 
 # Update saved ssid in extras.conf.sh
-if grep -e '^ssid=' "$UNUM_ETC_DIR/extras.conf.sh" > /dev/null; then
+if grep -e '^ssid=' "$UNUM_ETC_DIR/extras.conf.sh" > /dev/null 2>&1; then
     sed -i -E 's:^ssid=.*:ssid="'"$ssid"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
     echo "ssid=\"$ssid\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 fi
 # Update saved passphrase in extras.conf.sh
-if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh" > /dev/null; then
+if grep -e '^passphrase=' "$UNUM_ETC_DIR/extras.conf.sh" > /dev/null 2>&1; then
     sed -i -E 's:^passphrase=.*:passphrase="'"$passphrase"'":' "$UNUM_ETC_DIR/extras.conf.sh"
 else
     echo "passphrase=\"$passphrase\"" >> "$UNUM_ETC_DIR/extras.conf.sh"

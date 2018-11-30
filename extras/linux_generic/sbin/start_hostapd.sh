@@ -22,9 +22,9 @@ if [[ -z "$phyname_wlan" ]]; then
     exit 0
 fi
 
-if [[ ! -f "$install_var_dir/hostapd-$phyname_wlan.conf" ]]; then
+if [[ ! -f "$install_etc_dir/hostapd-$phyname_wlan.conf" ]]; then
     $(dirname "$BASH_SOURCE")/config_hostapd.sh
 fi
 
 echo "Starting hostapd..."
-hostapd -B "$hostapd_conf"
+hostapd -B -dd -t -f "$UNUM_VAR_DIR/hostapd.log" "$hostapd_conf"

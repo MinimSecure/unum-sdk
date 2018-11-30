@@ -19,7 +19,9 @@
 # needed for the operation of a Linux router and wireless access point.
 
 # If we are not root already, rerun this script with sudo.
-[[ $(id -u) != "0" ]] && exec sudo "$0" $@
+[[ $(id -u) != "0" ]] && \
+    echo "This command requires root privileges, automatically re-running with sudo" && \
+    exec sudo "$0" $@
 
 declare -r log_file="/var/opt/unum/minim-config.log"
 
@@ -70,6 +72,10 @@ if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
     echo '    minim-config'
 fi
 
+echo "Logging to $log_file"
+
+# Return to a known state (nothing running)
+
 echo "Stopping services..."
 echo "Stopping services..." > "$log_file"
 
@@ -81,9 +87,14 @@ service unum stop           >> "$log_file" 2>&1
 # Make doubly-sure that none of these are running
 killall -9 hostapd dnsmasq wpa_supplicant unum >> "$log_file" 2>&1
 
-rfkill unblock wifi >> "$log_file" 2>&1
+# Ensure wifi is enabled if rfkill is installed
+if which rfkill > /dev/null 2>&1; then
+    rfkill unblock wifi >> "$log_file" 2>&1
+fi
+
 
 # Configure the services, interactively if not disabled.
+
 declare interactive_flag=
 if (( ! interactively )); then
     interactive_flag="--no-interactive"
@@ -137,6 +148,7 @@ sleep 5
 echo "Starting unum..."
 service unum start
 
+# Print some diagnostic output to the log file
 if ! seems_to_be_running hostapd; then
     echo "hostapd is not running" >> "$log_file"
 fi

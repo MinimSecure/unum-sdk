@@ -33,14 +33,6 @@ case "$1" in
             sed -i -E 's:^[#]?DAEMON_CONF.*:DAEMON_CONF="/etc/opt/unum/hostapd-phy0.conf":' /etc/default/hostapd
             echo 'DAEMON_OPTS="-dd -t -f /var/opt/unum/hostapd.log"' >> /etc/default/hostapd
         fi
-        ln -sf /opt/unum/extras/sbin/minim-config /usr/bin/minim-config
-        echo
-        echo "Unum agent installed but additional configuration is required!"
-        echo
-        echo 'Use the `minim-config` utility to complete this configuration.'
-        echo 'In your terminal, run:'
-        echo '    minim-config'
-        echo
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

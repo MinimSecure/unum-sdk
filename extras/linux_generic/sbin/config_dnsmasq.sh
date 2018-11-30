@@ -23,8 +23,8 @@ dnsmasq_conf="$UNUM_ETC_DIR/dnsmasq.conf"
 
 if [[ ! -f "$dnsmasq_conf" ]]; then
     loifname=lo
-    wanifname=$ifname_wan
-    lanifname=$ifname_lan
+    wanifname="$ifname_wan"
+    lanifname="$ifname_lan"
 
     cp "$UNUM_INSTALL_ROOT/extras/etc/dnsmasq.conf.base" "$dnsmasq_conf"
 

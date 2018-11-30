@@ -17,7 +17,7 @@ set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-if [[ ! -f "$install_var_dir/dnsmasq.conf" ]]; then
+if [[ ! -f "$UNUM_ETC_DIR/dnsmasq.conf" ]]; then
     $(dirname "$BASH_SOURCE")/config_dnsmasq.sh
 fi
 
