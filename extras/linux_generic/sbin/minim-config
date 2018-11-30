@@ -46,19 +46,6 @@ seems_to_be_running() {
     fi
     return 0
 }
-start_retry() {
-    local -i tries=0
-    while ! seems_to_be_running "$1"; do
-        if (( tries > 3 )); then
-            echo "Failed to start $1 service after 3 attempts"
-            break
-        fi
-        service "$1" start >> "$log_file" 2>&1
-        sleep 5
-        tries=$(( tries + 1 ))
-    done
-    return 0
-}
 
 # Parse command-line options
 declare -i interactively=1
@@ -118,8 +105,6 @@ ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
 sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq >> "$log_file" 2>&1
 sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd >> "$log_file" 2>&1
 
-sleep 2
-
 # Eable the all-in-one service on boot
 systemctl enable unum-aio   >> "$log_file" 2>&1
 
@@ -131,6 +116,33 @@ systemctl disable dnsmasq   >> "$log_file" 2>&1
 # Disable wpa_supplicant because we are running an access point.
 systemctl disable wpa_supplicant    >> "$log_file" 2>&1
 
-start_retry hostapd
-start_retry dnsmasq
-start_retry unum
+sleep 2
+
+
+# Start the services
+
+# Start hostapd first because it must configure the wireless interface before
+# dnsmasq can bind to it.
+echo "Starting hostapd..."
+service hostapd start
+
+# Sleep seems to be necessary in between these starts
+sleep 5
+
+echo "Starting dnsmasq..."
+service dnsmasq start
+
+sleep 5
+
+echo "Starting unum..."
+service unum start
+
+if ! seems_to_be_running hostapd; then
+    echo "hostapd is not running" >> "$log_file"
+fi
+if ! seems_to_be_running dnsmasq; then
+    echo "dnsmasq is not running" >> "$log_file"
+fi
+if ! seems_to_be_running unum; then
+    echo "unum is not running" >> "$log_file"
+fi
