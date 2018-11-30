@@ -37,6 +37,9 @@ ifconfig "$ifname_lan" down
 ip link set wlan0 address "$hwaddr_lan"
 ifconfig "$ifname_lan" up
 
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd
+
 sleep 1
 
 systemctl disable unum
