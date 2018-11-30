@@ -9,29 +9,29 @@ source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 declare ifname_wan=$(cat /etc/opt/unum/config.json | grep 'wan-if' | sed -E 's/^\s+?"wan-if":\s+?"(\w+)".*$/\1/')
 declare ifname_lan=$(cat /etc/opt/unum/config.json | grep 'lan-if' | sed -E 's/^\s+?"lan-if":\s+?"(\w+)".*$/\1/')
 
-prompt "Specify LAN network interface name" "$ifname_lan"
+prompt_require "Specify LAN network interface name" "$ifname_lan"
 ifname_lan="$prompt_val"
 
 declare ifname_wlan
 declare phyname_wlan
 if confirm "Configure wireless interface?" "yes"; then
-    prompt "Specify wireless network interface name" "wlan0"
+    prompt_require "Specify wireless network interface name" "wlan0"
     ifname_wlan="$prompt_val"
-    prompt "Specify wireless phy device name" "phy0"
+    prompt_require "Specify wireless phy device name" "phy0"
     phyname_wlan="$prompt_val"
 fi
 
 declare ifname_bridge
 if [[ ! -z "$phyname_wlan" ]] && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
     echo "detected multiple LAN interfaces, configuring bridge"
-    prompt "Specify bridge interface" "br-lan"
+    prompt_require "Specify bridge interface" "br-lan"
     ifname_bridge="$prompt_val"
 fi
 
-prompt "Specify WAN network interface" "$ifname_wan"
+prompt_require "Specify WAN network interface" "$ifname_wan"
 ifname_wan="$prompt_val"
 
-prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan"
+prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan" prompt_validator_macaddr
 hwaddr_lan="$prompt_val"
 
 # Between 0 and 255, used as the third octet in LAN IP addresses

@@ -5,7 +5,6 @@ local=/lan/
 domain=lan
 expand-hosts
 dhcp-authoritative
-read-ethers
 domain-needed
 bogus-priv
 localise-queries
@@ -13,9 +12,6 @@ stop-dns-rebind
 rebind-localhost-ok
 bind-interfaces
 local-service
-no-resolv
-server=1.1.1.1
-server=1.0.0.1
 
 # Remaining required config options:
 #interface=lo,wlan0

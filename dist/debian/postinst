@@ -26,11 +26,12 @@ case "$1" in
             --no-interactive --init --extras
         mod_check=`awk '/^DNSMASQ_OPTS=.*unum.*$/ { print "1" }' /etc/default/dnsmasq`
         if [ -z "$mod_check" ]; then
-            echo 'DNSMASQ_OPTS="--conf-file=/var/opt/unum/dnsmasq.conf"' >> /etc/default/dnsmasq
+            echo 'DNSMASQ_OPTS="--conf-file=/etc/opt/unum/dnsmasq.conf"' >> /etc/default/dnsmasq
         fi
         mod_check=`awk '/^DAEMON_CONF.*unum.*$/ { print "1" }' /etc/default/hostapd`
         if [ -z "$mod_check" ]; then
-            sed -i -E 's:^[#]?DAEMON_CONF.*:DAEMON_CONF="/var/opt/unum/hostapd-phy0.conf":' /etc/default/hostapd
+            sed -i -E 's:^[#]?DAEMON_CONF.*:DAEMON_CONF="/etc/opt/unum/hostapd-phy0.conf":' /etc/default/hostapd
+            echo 'DAEMON_OPTS="-dd -t -f /var/opt/unum/hostapd.log"' >> /etc/default/hostapd
         fi
         ln -sf /opt/unum/extras/sbin/minim-config /usr/bin/minim-config
         echo

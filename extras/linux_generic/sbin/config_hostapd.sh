@@ -25,24 +25,19 @@ if [[ -z "$phyname_wlan" ]]; then
 fi
 
 phydev=$phyname_wlan
-hostapd_conf="$UNUM_VAR_DIR/hostapd-$phydev.conf"
+hostapd_conf="$UNUM_ETC_DIR/hostapd-$phydev.conf"
 
-if [[ ! -f "$hostapd_conf" ]]; then
-    mkdir -p $(dirname "$hostapd_conf")
+mkdir -p $(dirname "$hostapd_conf")
 
-    cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
+cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
 
-    echo "interface=$ifname_wlan" >> "$hostapd_conf"
+echo "interface=$ifname_wlan" >> "$hostapd_conf"
 
-    prompt "Specify wireless SSID" "MinimSecure"
-    echo "ssid=$prompt_val" >> "$hostapd_conf"
+prompt_require "Specify wireless SSID" "MinimSecure" prompt_validator_ssid
+echo "ssid=$prompt_val" >> "$hostapd_conf"
 
-    prompt_val=
-    while [[ -z "$prompt_val" ]]; do
-        prompt "Specify wireless passphrase"
-    done
-    echo "wpa_passphrase=$prompt_val" >> "$hostapd_conf"
-fi
+prompt_require "Specify wireless passphrase" "" prompt_validator_passphrase
+echo "wpa_passphrase=$prompt_val" >> "$hostapd_conf"
 
 # iwinfo looks here for the hostapd conf
 ln -sf "$hostapd_conf" "/var/run/hostapd-$phydev.conf"

@@ -19,7 +19,7 @@ set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-dnsmasq_conf="$UNUM_VAR_DIR/dnsmasq.conf"
+dnsmasq_conf="$UNUM_ETC_DIR/dnsmasq.conf"
 
 if [[ ! -f "$dnsmasq_conf" ]]; then
     loifname=lo

@@ -77,11 +77,44 @@ confirm() {
     fi
     return 1
 }
+prompt_validator_nonempty() {
+    if [[ -z "$1" ]]; then
+        return 1
+    fi
+    return 0
+}
+prompt_validator_macaddr() {
+    if [[ "$1" =~ ^[a-f0-9]{2}:[a-f0-9]{2}:[a-f0-9]{2}:[a-f0-9]{2}:[a-f0-9]{2}:[a-f0-9]{2}$ ]]; then
+        return 0
+    fi
+    return 1
+}
+prompt_validator_ssid() {
+    if (( ${#1} > 32 )); then
+        echo "ssid cannot be longer than 32 characters"
+        return 1
+    elif (( ${#1} == 0 )); then
+        echo "ssid cannot be empty"
+        return 1
+    fi
+    return 0
+}
+prompt_validator_passphrase() {
+    if (( ${#1} < 8 )); then
+        echo "passphrase must be at least 8 characters"
+        return 1
+    fi
+    return 0
+}
 prompt_require() {
     prompt_val="$2"
+    prompt_validator="$3"
+    if [[ -z "$prompt_validator" ]]; then
+        prompt_validate=prompt_validator_nonempty
+    fi
     while true; do
         prompt "$1" "$prompt_val"
-        if [[ ! -z "$prompt_val" ]]; then
+        if prompt_validator "$prompt_val"; then
             return 0
         fi
     done

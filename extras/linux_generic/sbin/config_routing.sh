@@ -48,5 +48,5 @@ iptables -A INPUT -i $ifname_wan -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A OUTPUT -j ACCEPT
 
 if which iptables-save 2> /dev/null; then
-    iptables-save
+    iptables-save > /etc/iptables/rules.v4
 fi
