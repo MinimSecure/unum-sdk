@@ -39,9 +39,9 @@ ifconfig "$ifname_lan" up
 
 sleep 1
 
-systemctl enable unum
-systemctl enable hostapd
-systemctl enable dnsmasq
+systemctl disable unum
+systemctl disable hostapd
+systemctl disable dnsmasq
 
 seems_to_be_running() {
     local chk=$(ps aux | grep "$1")
