@@ -44,7 +44,7 @@ systemctl disable hostapd
 systemctl disable dnsmasq
 
 seems_to_be_running() {
-    local chk=$(ps aux | grep "$1")
+    local chk=$(service "$1" status | grep "active (running)")
     if [[ -z "$chk" ]]; then
         return 1
     fi
@@ -55,7 +55,7 @@ start_retry() {
     while (( tries < 3 )) && ! seems_to_be_running "$1"; do
         service "$1" start
         sleep 1
-        (( tries += 1 ))
+        tries=$(( tries + 1 ))
     done
     return 0
 }
