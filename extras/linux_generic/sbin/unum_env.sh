@@ -110,7 +110,7 @@ prompt_require() {
     prompt_val="$2"
     prompt_validator="$3"
     if [[ -z "$prompt_validator" ]]; then
-        prompt_validate=prompt_validator_nonempty
+        prompt_validator=prompt_validator_nonempty
     fi
     while true; do
         prompt "$1" "$prompt_val"
