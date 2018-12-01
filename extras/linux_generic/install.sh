@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Generalized installation script that can be used to automate the installation
+# of different parts of the "extras" bundle.
+
 set -eo pipefail
 
 [[ $(id -u) != "0" ]] && \
@@ -20,10 +23,38 @@ set -eo pipefail
     echo "    sudo $0 $@" && \
     exit 1
 
+usage() {
+    echo "Usage: $0 [--no-interactive|--uninstall|--purge]"
+    echo "       $0 [--[no-]aio] [--[no-]profile] [--[no-]extras] [--[no-]init]"
+    if [[ "$1" == "-v" ]]; then
+        echo
+        echo "Automatically or interactively install various features included in the"
+        echo "Unum extras."
+        echo
+        echo "Modes:"
+        echo "  --no-interactive   Do not prompt for user input. Use this mode with"
+        echo "                     the uninstall mode or with options (listed below)"
+        echo "  --uninstall        Uninstall the Unum agent and related installed files"
+        echo "  --purge            Uninstall and remove configuration files, too"
+        echo
+        echo "Options:"
+        echo "  --[no-]profile     Install (or do not) a script in /etc/profile.d that"
+        echo "                     adds the unum command and extras, if enabled, to login"
+        echo "                     paths."
+        echo "  --[no-]init        Install (or do not) init scripts for the current"
+        echo "                     system, automatically detected."
+        echo "  --[no-]extras      Install (or do not) extra scripts that manage various"
+        echo "                     aspects of a Linux router."
+        echo "  --[no-]aio         Install (or do not) the unum 'all-in-one' service and"
+        echo "                     minim-config utility."
+    fi
+}
+
 declare -i interactively=1
 declare -r working_dir=$(dirname "$BASH_SOURCE")
 declare -r install_dir=$(readlink -e "$working_dir/..")
 declare -r dist_dir="$install_dir/dist"
+declare -r extras_dir="$install_dir/extras"
 
 declare install_etc_dir="/etc/opt/unum"
 declare install_var_dir="/var/opt/unum"
@@ -115,6 +146,15 @@ for opt in $@; do
             uninstall=1
             purge=1
             ;;
+        --help|-h|-help)
+            usage -v
+            exit 0
+            ;;
+        *)
+            echo "unsupported option: $opt"
+            usage
+            exit 1
+            ;;
     esac
 done
 
@@ -143,6 +183,7 @@ if (( uninstall )); then
         rm -rfv "$install_dir"|| :
         rm -fv /etc/profile.d/unum.sh || :
         rm -fv /etc/systemd/system/unum.service || :
+        rm -fv /usr/bin/minim-config || :
     else
         echo "did not uninstall unum, exiting without making any changes"
     fi
@@ -214,7 +255,7 @@ fi
 mkdir -p "$install_etc_dir"
 mkdir -p "$install_var_dir"
 
-declare unum_sh_path="$dist_dir/etc/profile.d/unum.sh"
+declare unum_sh_path="$extras_dir/etc/profile.d/unum.sh"
 if [[ ! -f "$unum_sh_path.orig" ]]; then
     mv "$unum_sh_path" "$unum_sh_path.orig"
 fi
@@ -238,14 +279,14 @@ cp -f "$dist_dir/etc/opt/unum/config.json" "$install_etc_dir/config.json"
 
 # Add minim-config utility to /usr/bin to avoid any PATH issues.
 if (( install_aio )); then
-    ln -sf /opt/unum/extras/sbin/minim-config /usr/bin/minim-config
+    ln -sf "$extras_dir/sbin/minim-config" "/usr/bin/minim-config"
     echo "installed minim-config: /usr/bin/minim-config"
 fi
 
 # Install systemd service for unum, and unum-aio if enabled.
 if (( install_systemd_service )); then
-    cp -f "$dist_dir/etc/systemd/system/unum.service" "/etc/systemd/system/unum.service"
-    (( install_aio )) && cp -f "$dist_dir/etc/systemd/system/unum-aio.service" "/etc/systemd/system/unum-aio.service"
+    cp -f "$extras_dir/systemd/unum.service" "/etc/systemd/system/unum.service"
+    (( install_aio )) && cp -f "$extras_dir/systemd/unum-aio.service" "/etc/systemd/system/unum-aio.service"
     if which systemctl > /dev/null 2>&1; then
         # this fails when ran inside a docker container
         systemctl daemon-reload > /dev/null 2>&1 || :
