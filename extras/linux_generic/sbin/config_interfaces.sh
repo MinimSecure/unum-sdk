@@ -1,49 +1,59 @@
 #!/usr/bin/env bash
-# (c) 2018 minim.co
+# Copyright 2018 Minim Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Network interface configuration helper
 
 set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-echo "This script will remove all existing interfaces defined"
-echo "in /etc/network/interfaces.d/*."
-
-if ! confirm "Continue?" "yes"; then
-    echo "Exiting without making any changes."
-    exit 0
+if [[ "$1" == "--no-interactive" ]]; then
+    interactively=0
 fi
-rm -fv /etc/network/interfaces.d/*
 
 declare ifname_wan=$(cat /etc/opt/unum/config.json | grep 'wan-if' | sed -E 's/^\s+?"wan-if":\s+?"(\w+)".*$/\1/')
 declare ifname_lan=$(cat /etc/opt/unum/config.json | grep 'lan-if' | sed -E 's/^\s+?"lan-if":\s+?"(\w+)".*$/\1/')
 
-prompt "Specify LAN network interface name" "$ifname_lan"
+prompt_require "Specify LAN network interface name" "$ifname_lan"
 ifname_lan="$prompt_val"
 
 declare ifname_wlan
 declare phyname_wlan
 if confirm "Configure wireless interface?" "yes"; then
-    prompt "Specify wireless network interface name" "wlan0"
+    prompt_require "Specify wireless network interface name" "wlan0"
     ifname_wlan="$prompt_val"
-    prompt "Specify wireless phy device name" "phy0"
+    prompt_require "Specify wireless phy device name" "phy0"
     phyname_wlan="$prompt_val"
 fi
 
 declare ifname_bridge
 if [[ ! -z "$phyname_wlan" ]] && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
     echo "detected multiple LAN interfaces, configuring bridge"
-    prompt "Specify bridge interface" "br-lan"
+    prompt_require "Specify bridge interface" "br-lan"
     ifname_bridge="$prompt_val"
 fi
 
-prompt "Specify WAN network interface" "$ifname_wan"
+prompt_require "Specify WAN network interface" "$ifname_wan"
 ifname_wan="$prompt_val"
 
-prompt "Enter MAC address for the LAN interface"
+hwaddr_lan_orig="$hwaddr_lan"
+prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan" prompt_validator_macaddr
 hwaddr_lan="$prompt_val"
 
 # Between 0 and 255, used as the third octet in LAN IP addresses
+# This assumes a subnet mask of 255.255.255.0 for the LAN network.
 subnet_simple="15"
 
 echo "ifname_lan=\"$ifname_lan\""       >  "$UNUM_ETC_DIR/extras.conf.sh"
@@ -53,53 +63,60 @@ echo "ifname_bridge=\"$ifname_bridge\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "ifname_wan=\"$ifname_wan\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "hwaddr_lan=\"$hwaddr_lan\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 echo "subnet_simple=\"$subnet_simple\"" >> "$UNUM_ETC_DIR/extras.conf.sh"
+# ssid and passphrase are set in config_hostapd.sh -- save their values if
+# they exist.
+echo "ssid=\"$ssid\""                   >> "$UNUM_ETC_DIR/extras.conf.sh"
+echo "passphrase=\"$passphrase\""       >> "$UNUM_ETC_DIR/extras.conf.sh"
 
+# Source configuration values again-- be sure we have the latest values.
 source "$UNUM_ETC_DIR/extras.conf.sh"
 
-if [[ ! -z "$phyname_wlan" ]]; then
-    # Configure a wireless interface
-    if [[ "$ifname_wlan" != "$ifname_lan" ]]; then
-        # Create the secondary lan ethernet interface
-        echo "auto $ifname_lan
-iface $ifname_lan inet manual
-pre-up ifconfig \$IFACE up
-post-down ifconfig \$IFACE down
-metric 0
-" > "/etc/network/interfaces.d/$ifname_lan"
+# Update the unum config.json file
+echo '{
+  "lan-if": "'"$ifname_lan"'",
+  "wan-if": "'"$ifname_wan"'"
+}' > "$UNUM_ETC_DIR/config.json"
 
-        # Create the bridge containing the lan and wlan interfaces
-        echo "auto $ifname_bridge
-iface $ifname_bridge inet static
-address 192.168.$subnet_simple.1
-netmask 255.255.255.0
-gateway 192.168.$subnet_simple.1
-bridge_ports $ifname_lan $ifname_wlan
-up /usr/sbin/brctl stp $ifname_bridge on
-" > "/etc/network/interfaces.d/$ifname_bridge"
+# This script embeds settings in /etc/dhcpcd.conf and uses these values as
+# sentinels (or markers) to automatically alter this configuration file.
+minim_start_sentinel='### managed by minim ###'
+minim_end_sentinel='### end managed by minim ###'
+conf_check=$(grep -n "$minim_start_sentinel" "/etc/dhcpcd.conf" | cut -d':' -f1 || :)
+end_check=$(grep -n "$minim_end_sentinel" "/etc/dhcpcd.conf" | cut -d':' -f1 || :)
 
+# Remove previous configuration embedded in /etc/dhcpcd.conf, if it's there
+if [[ ! -z "$conf_check" ]]; then
+    # $conf_check contains the line number with the sentinel
+    head "-n$(( conf_check - 1 ))" /etc/dhcpcd.conf > /etc/dhcpcd.conf.tmp
+    if [[ ! -z "$end_check" ]]; then
+        # $end_check contains line number with end sentinel
+        declare -i dhcpcd_lines=$(wc -l /etc/dhcpcd.conf | cut -d' ' -f1)
+        tail -n$(( dhcpcd_lines - end_check )) /etc/dhcpcd.conf >> /etc/dhcpcd.conf.tmp
     fi
-
-    # Create the wireless lan interface
-    echo "allow-hotplug $ifname_wlan
-iface $ifname_wlan inet manual
-hwaddress $hwaddr_lan
-hostapd /etc/hostapd/hostapd-$phyname_wlan.conf
-" > "/etc/network/interfaces.d/$ifname_wlan"
 else
-
-    # lan ethernet interface
-    echo "auto $ifname_lan
-iface $ifname_lan inet static
-address 192.168.$subnet_simple.1
-netmask 255.255.255.0
-gateway 192.168.$subnet_simple.1
-hwaddress $hwaddr_lan
-" > "/etc/network/interfaces.d/$ifname_lan"
+    # Otherwise just cat the whole file into our temp file
+    cat /etc/dhcpcd.conf > /etc/dhcpcd.conf.tmp
 fi
 
-# wan ethernet interface
-echo "auto $ifname_wan
-iface $ifname_wan inet dhcp
-" > "/etc/network/interfaces.d/$ifname_wan"
+# Append 'managed by minim' block to temp dhcpcd.conf file
+echo "### managed by minim ###
+# This section is autogenerated. DO NOT EDIT
+interface wlan0
+static ip_address=192.168.$subnet_simple.1/24
+static routers=192.168.$subnet_simple.1
+### end managed by minim ###" >> /etc/dhcpcd.conf.tmp
 
-service networking restart
+if [[ ! -f "/etc/dhcpcd.conf.pre-unum" ]]; then
+    # Keep a backup of the original dhcpcd.conf
+    mv /etc/dhcpcd.conf /etc/dhcpcd.conf.pre-unum
+fi
+
+# Replace the real /etc/dhcpcd.conf with the newly generated one
+mv /etc/dhcpcd.conf.tmp /etc/dhcpcd.conf
+
+if [[ "$hwaddr_lan_orig" != "$hwaddr_lan" ]]; then
+    # MAC address changed, existing client cert is no longer any good.
+    rm -fv /var/opt/unum/unum.key /var/opt/unum/unum.pem || :
+fi
+
+service dhcpcd restart

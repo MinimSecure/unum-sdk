@@ -21,7 +21,7 @@ HARDWARE = linux_generic
 AP_HARDWARE_TYPES =
 
 # Generic libs
-LDFLAGS += -lm -lrt
+LDFLAGS += -lrt
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally
@@ -46,7 +46,7 @@ endif
 
 LDFLAGS += -L$(TARGET_LIBS)/
 
-# Add hardware ID this LEDE build is for
+# Add hardware ID this build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
 
 # Define the path to where the agent will store variable files.
