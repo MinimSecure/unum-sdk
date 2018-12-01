@@ -1,0 +1,163 @@
+#!/bin/bash
+# Copyright 2018 Minim Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Utility script for managing a Linux router.
+
+# Run this script to configure the Unum installation and start all the services
+# needed for the operation of a Linux router and wireless access point.
+
+declare -r log_file="/var/opt/unum/minim-config.log"
+
+usage() {
+    echo "Usage: minim-config [--help|-h] [--no-interactive]"
+    if [[ "$1" == "-v" ]]; then
+        echo
+        echo "Manages configuration for hostapd, dnsmasq, dhcpcd, iptables, and the"
+        echo "unum agent itself."
+        echo
+        echo "This command controls every aspect of the above services, and will generate"
+        echo "configuration files (based on user input when run interactively), modify the"
+        echo "necessary system files, and start the services in the correct order."
+        echo
+        echo "Options:"
+        echo "  --no-interactive   Do not prompt for input; use existing configuration"
+        echo "  --help|-h          Print this usage text"
+    fi
+}
+seems_to_be_running() {
+    local chk=$(service "$1" status | grep "active (running)")
+    if [[ -z "$chk" ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# Parse command-line options
+declare -i interactively=1
+for arg in $@; do
+    case "$arg" in
+        --no-interactive)
+            interactively=0
+            ;;
+        --help|-h|-help)
+            usage -v
+            exit 0
+            ;;
+        *)
+            echo "unsupported option: $arg"
+            usage
+            exit 1
+    esac
+done
+
+# If we are not root already, rerun this script with sudo.
+# It is a bit wasteful to do this here since the new process will have to
+# re-parse options, but this avoids sudo and printing this message when
+# only usage text (--help option) is requested.
+[[ $(id -u) != "0" ]] && \
+    echo "This command requires root privileges, automatically re-running with sudo" && \
+    exec sudo "$0" $@
+
+if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
+    echo 'unum is unconfigured, please re-run without `--no-interactive`:'
+    echo '    minim-config'
+fi
+
+echo "Logging to $log_file"
+
+# Return to a known state (nothing running)
+
+echo "Stopping services..."
+echo "Stopping services..." > "$log_file"
+
+service hostapd stop        >> "$log_file" 2>&1
+service dnsmasq stop        >> "$log_file" 2>&1
+service wpa_supplicant stop >> "$log_file" 2>&1
+service unum stop           >> "$log_file" 2>&1
+
+# Make doubly-sure that none of these are running
+killall -9 hostapd dnsmasq wpa_supplicant unum >> "$log_file" 2>&1
+
+# Ensure wifi is enabled if rfkill is installed
+if which rfkill > /dev/null 2>&1; then
+    rfkill unblock wifi >> "$log_file" 2>&1
+fi
+
+
+# Configure the services, interactively if not disabled.
+
+declare interactive_flag=
+if (( ! interactively )); then
+    interactive_flag="--no-interactive"
+fi
+/opt/unum/extras/sbin/config_interfaces.sh "$interactive_flag"
+/opt/unum/extras/sbin/config_hostapd.sh "$interactive_flag"
+/opt/unum/extras/sbin/config_dnsmasq.sh
+/opt/unum/extras/sbin/config_routing.sh
+
+# Source the extras.conf.sh file to get updated configuration values.
+. /etc/opt/unum/extras.conf.sh
+
+# Set MAC address on the LAN interface
+ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
+ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
+ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
+
+# Hack to fix /var/opt/unum in existing default dnsmasq and hostapd
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq >> "$log_file" 2>&1
+sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd >> "$log_file" 2>&1
+
+# Eable the all-in-one service on boot
+systemctl enable unum-aio   >> "$log_file" 2>&1
+
+# Disable everything that unum-aio will start
+systemctl disable unum      >> "$log_file" 2>&1
+systemctl disable hostapd   >> "$log_file" 2>&1
+systemctl disable dnsmasq   >> "$log_file" 2>&1
+
+# Disable wpa_supplicant because we are running an access point.
+systemctl disable wpa_supplicant    >> "$log_file" 2>&1
+
+sleep 2
+
+
+# Start the services
+
+# Start hostapd first because it must configure the wireless interface before
+# dnsmasq can bind to it.
+echo "Starting hostapd..."
+service hostapd start
+
+# Sleep seems to be necessary in between these starts
+sleep 5
+
+echo "Starting dnsmasq..."
+service dnsmasq start
+
+sleep 5
+
+echo "Starting unum..."
+service unum start
+
+# Print some diagnostic output to the log file
+if ! seems_to_be_running hostapd; then
+    echo "hostapd is not running" >> "$log_file"
+fi
+if ! seems_to_be_running dnsmasq; then
+    echo "dnsmasq is not running" >> "$log_file"
+fi
+if ! seems_to_be_running unum; then
+    echo "unum is not running" >> "$log_file"
+fi

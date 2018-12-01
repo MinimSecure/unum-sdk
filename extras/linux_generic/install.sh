@@ -31,6 +31,10 @@ declare install_var_dir="/var/opt/unum"
 declare -i install_systemd_service=0
 declare -i install_extras=0
 declare -i install_profile=0
+declare -i install_aio=0
+
+declare -i uninstall=0
+declare -i purge=0
 
 declare prompt_val
 prompt() {
@@ -59,6 +63,19 @@ interactive_set_dirs() {
     prompt "Specify log file directory" $install_var_dir
     install_var_dir="$prompt_val"
 }
+confirm_install_dirs() {
+    while true; do
+        echo "storing config files in $install_etc_dir"
+        echo "log and temp runtime storage in $install_var_dir"
+
+        if confirm "are these correct?" "yes"; then
+            break
+        fi
+
+        interactive_set_dirs
+    done
+    return 0
+}
 
 # Handle command line options
 
@@ -85,17 +102,60 @@ for opt in $@; do
         --profile)
             install_profile=1
             ;;
+        --aio)
+            install_aio=1
+            ;;
+        --no-aio)
+            install_aio=0
+            ;;
         --uninstall)
             uninstall=1
             ;;
+        --purge)
+            uninstall=1
+            purge=1
+            ;;
     esac
 done
+
+# Handle uninstall
+if (( uninstall )); then
+    # Set install directories if Unum was not installed with this script.
+    if [[ ! -f "$install_dir/.installed" ]]; then
+        echo "warning: running --uninstall without previous installation"
+        if (( interactively )); then
+            confirm_install_dirs
+        fi
+    fi
+    continue_value="no"
+    if ! (( interactively )); then
+        continue_value="yes"
+    fi
+    if confirm "are you sure you want to remove the current unum install?" "$continue_value"; then
+        declare purge_value="no"
+        if (( purge )); then
+            purge_value="yes"
+        fi
+        if confirm "delete configuration files?" "$purge_value"; then
+            rm -rfv "$install_etc_dir" || :
+        fi
+        rm -rfv "$install_var_dir" || :
+        rm -rfv "$install_dir"|| :
+        rm -fv /etc/profile.d/unum.sh || :
+        rm -fv /etc/systemd/system/unum.service || :
+    else
+        echo "did not uninstall unum, exiting without making any changes"
+    fi
+
+    exit 0
+fi
+
 
 # Determine full install configuration first
 
 if [[ "$install_dir" != "/opt/unum" ]]; then
     echo "detected nonstandard install directory '$install_dir'"
-    if ! [[ -z "$PS1" ]]; then
+    if ! (( interactively )); then
         echo "shell is running in non-interactive, carrying on with defaults"
     else
         interactive_set_dirs
@@ -104,33 +164,20 @@ fi
 
 [[ -f "$install_dir/.installed" ]] && source "$install_dir/.installed"
 
-if (( uninstall )); then
-    if confirm "are you sure you want to remove the current unum install?" "no"; then
-        if confirm "delete configuration files?" "yes"; then
-            rm -rfv "$install_etc_dir" || :
-        fi
-        rm -rfv "$install_var_dir" || :
-        rm -rfv "$install_dir"|| :
-        rm -fv /etc/profile.d/unum.sh || :
-        rm -fv /etc/systemd/system/unum.service || :
-    else
-        echo "did not remove unum"
-    fi
+# Allow the user to change the directories before continuing
+confirm_install_dirs
 
-    exit 0
+# Confirm installation of unum "all-in-one" and minim-config
+declare aio_value="no"
+if (( install_aio )); then
+    aio_value="yes"
+fi
+if confirm "install unum 'all-in-one' and minim-config management utility" "$aio_value"; then
+    install_aio=1
 fi
 
-while true; do
-    echo "storing config files in $install_etc_dir"
-    echo "log and temp runtime storage in $install_var_dir"
-
-    if confirm "are these correct?" "yes"; then
-        break
-    fi
-
-    interactive_set_dirs
-done
-
+# Confirm installation of systemd service for unum
+# If $install_aio is enabled, a service for unum-aio will also be installed.
 declare systemd_value="no"
 if (( install_systemd_service )); then
     systemd_value="yes"
@@ -139,22 +186,25 @@ if [[ -d "/etc/systemd" ]] && confirm "detected systemd, install systemd service
     install_systemd_service=1
 fi
 
-declare extras_value="no"
-if (( install_extras )); then
-    extras_value="yes"
-fi
-if confirm "install optional bash helper scripts?" "$extras_value"; then
-    install_extras=1
-else
-    install_extras=0
-fi
-
+# Confirm installation of login shell profile script
 declare profile_value="no"
 if (( install_profile )); then
     profile_value="yes"
 fi
 if confirm "install profile.d script?" "$profile_value"; then
     install_profile=1
+
+    # Confirm installation of "extras" on login shell PATH.
+    # These are the scripts bundled with unum in /opt/unum/extras/sbin.
+    declare extras_value="no"
+    if (( install_extras )); then
+        extras_value="yes"
+    fi
+    if confirm "add optional bash helper scripts to login shells' PATH?" "$extras_value"; then
+        install_extras=1
+    else
+        install_extras=0
+    fi
 else
     install_profile=0
 fi
@@ -164,41 +214,66 @@ fi
 mkdir -p "$install_etc_dir"
 mkdir -p "$install_var_dir"
 
-echo "install_etc_dir=\"$install_etc_dir\"" >  "$install_dir/.installed"
-echo "install_var_dir=\"$install_var_dir\"" >> "$install_dir/.installed"
-
 declare unum_sh_path="$dist_dir/etc/profile.d/unum.sh"
 if [[ ! -f "$unum_sh_path.orig" ]]; then
     mv "$unum_sh_path" "$unum_sh_path.orig"
 fi
 sed -e 's:/opt/unum:'"$install_dir"':g' "$unum_sh_path.orig" > "$unum_sh_path"
 
-if (( install_extras )); then
-    echo "adding extras to login shells' PATH"
-    echo 'export PATH="$PATH:'"$working_dir"'/sbin"' >> "$unum_sh_path"
-fi
-
+# Add script in /etc/profile.d that will be sourced in login shells.
+# This script enables regular users to use unum directly.
 if (( install_profile )); then
+    # Add the extras/sbin folder to the profile.d script.
+    if (( install_extras )); then
+        echo "adding extras to login shells' PATH"
+        echo 'export PATH="$PATH:'"$working_dir"'/sbin"' >> "$unum_sh_path"
+    fi
     echo "installing profile.d script /etc/profile.d/unum.sh"
     ln -sf "$unum_sh_path" "/etc/profile.d/unum.sh"
 fi
 
+# Install default unum configuration file.
 echo "unum config file is $install_etc_dir/config.json"
 cp -f "$dist_dir/etc/opt/unum/config.json" "$install_etc_dir/config.json"
 
-if (( install_systemd_service )); then
-    cp -f "$dist_dir/etc/systemd/system/unum.service" "/etc/systemd/system/unum.service"
-    if which systemctl 2> /dev/null; then
-        # this fails when ran inside a docker container
-        systemctl daemon-reload 2> /dev/null || :
-    fi
-    echo "installed systemd service: /etc/systemd/system/unum.service"
+# Add minim-config utility to /usr/bin to avoid any PATH issues.
+if (( install_aio )); then
+    ln -sf /opt/unum/extras/sbin/minim-config /usr/bin/minim-config
+    echo "installed minim-config: /usr/bin/minim-config"
 fi
 
-if (( interactively )); then
-    echo "installation complete!"
+# Install systemd service for unum, and unum-aio if enabled.
+if (( install_systemd_service )); then
+    cp -f "$dist_dir/etc/systemd/system/unum.service" "/etc/systemd/system/unum.service"
+    (( install_aio )) && cp -f "$dist_dir/etc/systemd/system/unum-aio.service" "/etc/systemd/system/unum-aio.service"
+    if which systemctl > /dev/null 2>&1; then
+        # this fails when ran inside a docker container
+        systemctl daemon-reload > /dev/null 2>&1 || :
+    fi
+    echo "installed systemd service: /etc/systemd/system/unum.service"
+    (( install_aio )) && echo "installed systemd service: /etc/systemd/system/unum-aio.service"
+fi
+
+# Add a file with the configured install settings for use in uninstallation.
+echo "install_etc_dir=\"$install_etc_dir\"" >  "$install_dir/.installed"
+echo "install_var_dir=\"$install_var_dir\"" >> "$install_dir/.installed"
+
+
+# Post-install
+
+if (( install_aio )); then
+    echo
+    echo "Unum agent installed but additional configuration is required!"
+    echo
+    echo 'Use the `minim-config` utility to complete this configuration.'
+    echo 'In your terminal, run:'
+    echo '    minim-config'
+    echo
+
+elif (( interactively )); then
+    echo "Installation complete!"
     if (( install_profile )); then
-        echo "restart your terminal or run this command to refresh your current shell's"
+        echo "Restart your terminal or run this command to refresh your current shell's"
         echo "environment:"
         echo "    source /etc/profile.d/unum.sh"
     fi

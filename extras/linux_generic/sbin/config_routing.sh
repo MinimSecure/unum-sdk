@@ -22,27 +22,24 @@ source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 ifname_wan="$ifname_wan"
 ifname_lan="$ifname_lan"
 
-echo "LAN interface: $ifname_lan"
-echo "WAN interface: $ifname_wan"
-
 echo "Enabling ipv4 forwarding"
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
-echo "Clearing all existing iptables..."
+echo "Clearing all existing iptables rules..."
 iptables -F
 
 echo "Adding iptables rules..."
 # Enable NAT for the WAN interface
-iptables -t nat -A POSTROUTING -o $ifname_wan -j MASQUERADE
+iptables -t nat -A POSTROUTING -o "$ifname_wan" -j MASQUERADE
 
 # Accept forwarded packets on the WAN interface
-iptables -A FORWARD -i $ifname_lan -o $ifname_wan -j ACCEPT
-iptables -A FORWARD -i $ifname_wan -o $ifname_lan -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A FORWARD -i "$ifname_lan" -o "$ifname_wan" -j ACCEPT
+iptables -A FORWARD -i "$ifname_wan" -o "$ifname_lan" -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Accept all inbound packets on the LAN interface
-iptables -A INPUT -i $ifname_lan -j ACCEPT
+iptables -A INPUT -i "$ifname_lan" -j ACCEPT
 # Only allow established or related inbound packets on the WAN interface
-iptables -A INPUT -i $ifname_wan -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -i "$ifname_wan" -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Accept all output packets from anywhere
 iptables -A OUTPUT -j ACCEPT

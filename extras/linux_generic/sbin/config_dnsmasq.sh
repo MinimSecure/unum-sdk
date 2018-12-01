@@ -13,22 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Configures the network interfaces
+# Dnsmasq management script
 
 set -eo pipefail
 
 source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 
-wanifname="$ifname_wan"
-lanifname="$ifname_lan"
+dnsmasq_conf="$UNUM_ETC_DIR/dnsmasq.conf"
 
-wanip=$(awk '/^DHCPACK/ { print $3 }' <(dhclient -v 2>&1 || :))
-if [[ "$wanip" != "" ]]; then
-    echo "WAN IP address: $wanip"
-    ifconfig "$wanifname" "$wanip"
-else
-    echo "Warning: dhclient failed to assign a WAN IP address, continuing anyway"
+if [[ ! -f "$dnsmasq_conf" ]]; then
+    loifname=lo
+    wanifname="$ifname_wan"
+    lanifname="$ifname_lan"
+
+    cp "$UNUM_INSTALL_ROOT/extras/etc/dnsmasq.conf.base" "$dnsmasq_conf"
+
+    echo "dhcp-range=192.168.$subnet_simple.100,192.168.$subnet_simple.150,12h" >> "$dnsmasq_conf"
+    echo "interface=lo,$ifname_lan" >> "$dnsmasq_conf"
 fi
-
-echo "LAN IP address: 192.168.$subnet_simple.1"
-ifconfig "$lanifname" 192.168.$subnet_simple.1 netmask 255.255.255.0

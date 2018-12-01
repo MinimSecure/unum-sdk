@@ -1,0 +1,13 @@
+[Unit]
+Description=Unum all-in-one
+Documentation=https://github.com/MinimSecure/unum-sdk
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/unum
+ExecStart=/opt/unum/extras/sbin/minim-config --no-interactive
+
+[Install]
+WantedBy=multi-user.target
