@@ -4,11 +4,12 @@ Documentation=https://github.com/MinimSecure/unum-sdk
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=root
 WorkingDirectory=/opt/unum
 Environment=PATH=${PATH}:/opt/unum/bin LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/unum/lib
-ExecStart=/opt/unum/bin/unum --daemonize --cfg-file /etc/opt/unum/config.json
+ExecStart=/opt/unum/bin/unum --cfg-file /etc/opt/unum/config.json
+PIDFile=/var/run/unum-agent.pid
 
 [Install]
 WantedBy=multi-user.target
