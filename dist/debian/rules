@@ -14,4 +14,4 @@ export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
 	dh $@
 
 override_dh_auto_install:
-    dh_auto_install -- make AGENT_VERSION=unum-sdk_2018.1.0-nightly
+    dh_auto_install -- make AGENT_VERSION=$(VERSION)

@@ -23,20 +23,20 @@ new image and then start a container and configure it for use.
 
 On Linux, the script must be run as root or have access to the docker daemon.
 From the unum root directory, assuming your host WAN interface is "ens33":
-    sudo extras/linux_generic/docker_build.sh ens33
+    sudo extras/docker/docker_build.sh ens33
 
 Full usage: 
-    extras/linux_generic/docker_build.sh [-X|-B <builder>] <WAN ifname>
+    extras/docker/docker_build.sh [-X|-B <builder>] <WAN ifname>
 
 The WAN interface name (`<WAN ifname>` above) should be the host machine's
 internet-connected interface. A bridge is created between the host and Unum
 container and this is used as the WAN interface on the container.
 
 Skip building an image at all by passing `-X`.
-    sudo extras/linux_generic/docker_build.sh -X ens33
+    sudo extras/docker/docker_build.sh -X ens33
 
 Skip building a builder image, but recreate and configure the Unum container:
-    sudo extras/linux_generic/docker_build.sh \
+    sudo extras/docker/docker_build.sh \
         -B unum-builder-ubuntu:16.04 ens33
 
 

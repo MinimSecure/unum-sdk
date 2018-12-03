@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Makefile for building Unum for linux.
+# Makefile for building Unum for Linux.
 
 # Build-time path where original, unmodified copies of the files distributed
 # with the Unum agent binary will be placed.
@@ -21,6 +21,9 @@ TARGET_RFS_DIST := $(TARGET_RFS)/dist
 # Runtime configuration and variable file paths.
 TARGET_RFS_ETC := /etc/opt/unum
 TARGET_RFS_VAR := /var/opt/unum
+
+INSTALL_EXTRAS ?= yes
+INSTALL_EXTRAS := $(subst no,,$(INSTALL_EXTRAS))
 
 ####################################################################
 # Common platform build options                                    #
@@ -45,9 +48,14 @@ TARGET_CFLAGS += \
 
 TARGET_LIST := iwinfo unum
 
-# Static files bundled with the binary (default config files, CA bundle, etc)
+# Static files bundled with the binary (default config files, etc)
 # are handled in the `files.install` and `extras.install` targets below.
-TARGET_INSTALL_LIST := $(TARGET_LIST) files extras
+TARGET_INSTALL_LIST := $(TARGET_LIST) files
+
+# Include "extras", a collection of utilities for common platforms.
+ifneq ($(INSTALL_EXTRAS),)
+	TARGET_INSTALL_LIST += extras
+endif
 
 ####################################################################
 # Additional flags and vars for building the specific components   #
@@ -86,6 +94,8 @@ files.install:
 	cp -r -f "$(TARGET_FILES)/etc/"* "$(TARGET_RFS_DIST)/etc"
 
 extras.install:
-	mkdir -p "$(TARGET_RFS)/extras/sbin"
+	mkdir -p "$(TARGET_RFS)/extras/sbin" "$(TARGET_RFS)/extras/etc/systemd"
 	cp -r -f $(TOP)/extras/$(MODEL)/etc $(TOP)/extras/$(MODEL)/sbin "$(TARGET_RFS)/extras"
+	cp -f $(TOP)/extras/systemd/unum.service "$(TARGET_RFS)/extras/etc/systemd/unum.service"
+	cp -f $(TOP)/extras/systemd/unum-aio.service "$(TARGET_RFS)/extras/etc/systemd/unum-aio.service"
 	cp -f "$(TOP)/extras/$(MODEL)/install.sh" "$(TARGET_RFS)/extras/install.sh"

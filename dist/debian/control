@@ -13,4 +13,4 @@ Section: net
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libcurl3|libcurl4, libnl-3-200, libnl-genl-3-200, libjansson4, gawk, hostapd, dnsmasq, iptables
 Description: unum agent
- Manages and monitors devices using the Minim cloud.
+ Manages and monitors wired and wireless networks using the Minim cloud.

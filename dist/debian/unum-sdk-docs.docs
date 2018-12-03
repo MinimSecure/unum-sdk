@@ -1,3 +1,5 @@
 README.md
 README-linux_generic.md
-extras/linux_generic/README-docker.md
+extras/docker/README-docker.md
+extras/linux_generic/README-linux_extras.md
+dist/README-dist.md
