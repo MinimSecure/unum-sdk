@@ -4,8 +4,20 @@
 driver=nl80211
 ctrl_interface=/var/run/hostapd
 country_code=US
+ieee80211d=1
+
+# To use 2.4GHz, specify `hw_mode=g`
 hw_mode=g
 channel=11
+ieee80211n=1
+
+# To use 5GHz, specify `hw_mode=a`
+#hw_mode=a
+#channel=36
+#ieee80211n=1
+#ieee80211ac=1
+
+wmm_enabled=1
 macaddr_acl=0
 auth_algs=1
 wpa=2

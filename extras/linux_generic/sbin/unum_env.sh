@@ -51,14 +51,13 @@ fi
 # Sends the SIGTERM signal, then SIGKILL after two seconds.
 # This function waits until all processes are killed before returning.
 killwait() {
-    local pids=$(ps -A | grep $1 | awk 'ORS=" " { print $1 }')
+    local pids=$(ps axco pid,command | grep $1 | awk 'ORS=" " { print $1 }')
     [[ -z "${pids## }" ]] && return 0
     kill $pids 2> /dev/null
     (sleep 3; kill -9 $pids 2> /dev/null || :) &
     wait $pids 2> /dev/null || :
     return 0
 }
-export -f killwait
 
 declare -i interactively=1
 declare prompt_val

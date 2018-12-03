@@ -26,4 +26,4 @@ docker_network.sh
 README-*
 !README-linux_generic
 Vagrantfile
-extras/linux_generic/Dockerfile*
+extras/docker/Dockerfile*

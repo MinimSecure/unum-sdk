@@ -73,7 +73,7 @@ fi
 
 echo "---> project root: $project_root"
 
-declare -r dockerfile=$(readlink -e "$project_root/extras/linux_generic/Dockerfile")
+declare -r dockerfile=$(readlink -e "$project_root/extras/docker/Dockerfile")
 declare -r dockerfile_build="$dockerfile.build"
 
 declare -r image_suffix=$(grep -e '^FROM ' "$dockerfile" | grep -v ' as ' | head -n1 | sed -e 's:^FROM ::' -e 's: as .*$::')
@@ -86,7 +86,7 @@ docker kill "$container_name" > /dev/null 2>&1 || :
 docker rm "$container_name" > /dev/null 2>&1 || :
 
 pushd "$project_root" > /dev/null 2>&1
-ln -sf "$project_root/extras/linux_generic/dockerignore" "$project_root/.dockerignore"
+ln -sf "$project_root/extras/docker/dockerignore" "$project_root/.dockerignore"
 trap "rm -f $project_root/.dockerignore; popd > /dev/null 2>&1" EXIT
 
 if (( ! skip_build )); then

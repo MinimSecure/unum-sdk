@@ -1,2 +1,2 @@
 ?package(unum-sdk):needs="text" section="Applications/System/Monitoring"\
-  title="unum" command="/usr/bin/unum"
+  title="unum" command="/opt/unum/bin/unum"

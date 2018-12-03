@@ -3,7 +3,7 @@
 The "linux_generic" target is suited for building the Unum agent for any
 supported linux platforms including x86_64, i386, and armhf.
 
-> Check [README-docker.md](extras/linux_generic/README-docker.md) for
+> Check [README-docker.md](extras/docker/README-docker.md) for
   instructions on running Unum in a Docker container with basic Linux
   router facilities.
 
@@ -83,6 +83,16 @@ Use `MODEL=<model_name>` to alter the build model. Defaults to `linux_generic`.
 make MODEL=linux_generic
 ```
 
+#### Bundled extras
+
+By default, ["extra" utilities](extras/linux_generic/README-linux_extras.md) are
+installed. Disable this by explicitly passing the `INSTALL_EXTRAS` option with a
+blank value (or "no"):
+
+```bash
+make INSTALL_EXTRAS=no
+```
+
 
 ## Installing
 
@@ -92,7 +102,7 @@ libnl-3-200 and libnl-genl-3-200 to run correctly.
 For Debian 9 or Ubuntu 18, for example:
 
 ```bash
-sudo apt install -y gawk libcurl3 libnl-3-200 libnl-genl-3-200 libjansson4
+sudo apt install -y gawk libcurl3 libjansson4
 ```
 
 Building the SDK results in a tarball containing the `unum` binary and required
@@ -115,7 +125,7 @@ complete the installation. Both options are explained below.
 ### Guided install
 
 Installation is simplified by using the interactive installer script that
-allows the user to customize the installation, like installing an init script.
+allows the user to customize and automate the installation.
 
 Run the script as root:
 
@@ -123,7 +133,10 @@ Run the script as root:
 sudo /opt/unum/extras/install.sh
 ```
 
-Options supported:
+The user will be prompted for basic installation paths and whether to install
+optional components.
+
+Brief overview of supported options:
 
 - Modify configuration and log file storage paths
 - Optionally install a profile.d script that adds the `unum` command 
@@ -134,12 +147,17 @@ Options supported:
   handle automatically configuring and starting hostapd, dnsmasq, unum, and
   necessary iptables rules for running a Linux router.
   > This is used in the unum docker container, check 
-    [README-docker.md](extras/linux_generic/README-docker.md#technical-overview)
-    for a bit more information on these scripts.  
+    [README-docker.md](extras/docker/README-docker.md#technical-overview)
+    for a bit more information on these scripts. 
+- Optionally install Unum "all-in-one" and `minim-config` utility. 
 - Remove an existing installation:
   ```bash
   sudo /opt/unum/extras/install.sh --uninstall
   ```
+
+> For more information on the `install.sh` script, check 
+  [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#installsh).
+
 
 ### Manual install
 
@@ -293,9 +311,12 @@ Directory structure overview:
 .                           Project root
 |- README-linux_generic     This file
 |- Makefile                 Main universal unum Makefile
-|- extras/linux_generic/
-|   - Dockerfile
-|   - sbin/                 Utilities for managing a Linux router
+|- dist/                    Files related to distributable build generation
+|- dist/debian              Debian-specific files, used with debhelper to 
+|                           create distributable .deb packages.
+|- extras/docker/           Dockerfiles and related for building and running 
+|                           Unum in a Docker container.
+|- extras/linux_generic/    Utilities for managing a Linux router
 |- rules/
 |   - linux_generic.mk      Makefile for linux_generic
 |- files/linux_generic/     Build and installation default files and scripts

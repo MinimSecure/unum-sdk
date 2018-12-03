@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
 # Makefile for compiling all components required for unum 
 # integration into specific platform.
 # The platform is specified by setting the MODEL variable.
