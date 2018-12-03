@@ -94,8 +94,8 @@ files.install:
 	cp -r -f "$(TARGET_FILES)/etc/"* "$(TARGET_RFS_DIST)/etc"
 
 extras.install:
-	mkdir -p "$(TARGET_RFS)/extras/sbin" "$(TARGET_RFS)/extras/etc/systemd/system"
+	mkdir -p "$(TARGET_RFS)/extras/sbin" "$(TARGET_RFS)/extras/etc/systemd"
 	cp -r -f $(TOP)/extras/$(MODEL)/etc $(TOP)/extras/$(MODEL)/sbin "$(TARGET_RFS)/extras"
-	cp -f $(TOP)/extras/systemd/unum.service "$(TARGET_RFS)/extras/etc/systemd/system"
-	cp -f $(TOP)/extras/systemd/unum-aio.service "$(TARGET_RFS)/extras/etc/systemd/system"
+	cp -f $(TOP)/extras/systemd/unum.service "$(TARGET_RFS)/extras/etc/systemd/unum.service"
+	cp -f $(TOP)/extras/systemd/unum-aio.service "$(TARGET_RFS)/extras/etc/systemd/unum-aio.service"
 	cp -f "$(TOP)/extras/$(MODEL)/install.sh" "$(TARGET_RFS)/extras/install.sh"

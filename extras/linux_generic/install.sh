@@ -285,8 +285,8 @@ fi
 
 # Install systemd service for unum, and unum-aio if enabled.
 if (( install_systemd_service )); then
-    cp -f "$extras_dir/systemd/unum.service" "/etc/systemd/system/unum.service"
-    (( install_aio )) && cp -f "$extras_dir/systemd/unum-aio.service" "/etc/systemd/system/unum-aio.service"
+    cp -f "$extras_dir/etc/systemd/unum.service" "/etc/systemd/system/unum.service"
+    (( install_aio )) && cp -f "$extras_dir/etc/systemd/unum-aio.service" "/etc/systemd/system/unum-aio.service"
     if which systemctl > /dev/null 2>&1; then
         # this fails when ran inside a docker container
         systemctl daemon-reload > /dev/null 2>&1 || :
