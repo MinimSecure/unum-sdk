@@ -162,7 +162,7 @@ static void config(THRD_PARAM_t *p)
             rsp = http_get(url, NULL);
 
             // If failed to download, set the request event to try again later
-            if(!rsp || rsp->len <= 0) {
+            if(!rsp || rsp->len <= 0 || (rsp->code / 100) != 2) {
                 log("%s: failed to download config, will retry\n", __func__);
                 config_download_req();
                 break;
