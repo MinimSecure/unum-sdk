@@ -38,6 +38,9 @@ typedef struct {
   int mem_info_update_num;      // mem info number (used to track which is sent)
   int cpu_info_update_num;      // CPU info number (used to track which is sent)
   int first_ipt_diff_count;     // Counter included w/ initial diff chunks
+  int ipt_seq_num;              // Monotonic counter included w/ all diffs
+  int ipt_diff_complete;        // Flag indicating we are reporting that
+                                // sending the diff chunk set is complete
   int ipt_diff_plus_offset;     // Offset for diff "add" to report
   int ipt_diff_minus_offset;    // Offset for diff "remove" to report
 } TELEMETRY_DATA_t;
@@ -78,7 +81,8 @@ static char *router_telemetry_json()
     static long last_sysinfo_telemetry = 0;
     static long last_ipt_telemetry = 0;
     static int include_ipt_fist_diff_count = TRUE;
-    static int ipt_unreported_diffs = FALSE;
+    static int ipt_reporting_diffs = FALSE;
+    static int ipt_check_diffs = FALSE;
 
     // Init the new data set by copying over the last sent data
     memcpy(&new_data, &last_sent, sizeof(new_data));
@@ -144,7 +148,7 @@ static char *router_telemetry_json()
     }
 
     // Check if it is time to update iptables telemetry
-    if(!ipt_unreported_diffs && unum_config.ipt_period > 0 &&
+    if(!ipt_check_diffs && unum_config.ipt_period > 0 &&
        ((last_ipt_telemetry == 0) ||
         ((util_time(1) - last_ipt_telemetry) >= unum_config.ipt_period)))
     {
@@ -162,18 +166,23 @@ static char *router_telemetry_json()
         last_sent.ipt_diff_minus_offset = 0;
         new_data.ipt_diff_plus_offset = 0;
         new_data.ipt_diff_minus_offset = 0;
-        ipt_unreported_diffs = TRUE;
+        ipt_reporting_diffs = FALSE;
+        ipt_check_diffs = TRUE;
 
         // Update the last iptables report time
         last_ipt_telemetry = util_time(1);
     }
     // Do we have ipt diffs to send? If yes prepare the offsets for the
     // JSON generation callback function to know what entries to report.
-    if(ipt_unreported_diffs)
+    if(ipt_check_diffs)
     {
         static JSON_OBJ_TPL_t tpl_tbl_ipt_obj = {
           {"ipt_initial_diff",
             {.type = JSON_VAL_PINT,   {.pi = NULL}}},
+          {"ipt_diff_complete",
+            {.type = JSON_VAL_PINT,   {.pi = NULL}}},
+          {"ipt_seq_num",
+            {.type = JSON_VAL_PINT,   {.pi = &new_data.ipt_seq_num}}},
           {"ipt_filter_diff", 
             {.type = JSON_VAL_FARRAY, {.fa = ipt_diffs_array_f}}},
           {"ipt_nat_diff",    
@@ -190,18 +199,47 @@ static char *router_telemetry_json()
             tpl_tbl_ipt_obj[0].val.pi = NULL;
         }
 
+        // Update the telemetry global sequence number
+        new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
+
         // This handles (prepares) the rule arrays data for sending
         if(ipt_diffs_prep_to_send(last_sent.ipt_diff_plus_offset,
                                   last_sent.ipt_diff_minus_offset,
                                   &new_data.ipt_diff_plus_offset,
                                   &new_data.ipt_diff_minus_offset))
         {
+            ipt_check_diffs = TRUE;
+            tpl_tbl_ipt_obj[1].val.pi = NULL;
+            // We have diffs to send, set the flag so we know that after done
+            // sending we need to report that diff sending is complete.
+            ipt_reporting_diffs = TRUE;
+            new_data.ipt_diff_complete = FALSE;
+            // Add ipt info object to telemetry
             ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
-            ipt_unreported_diffs = TRUE;
-        } else {
-            ipt_info_tpl_ptr = NULL;
-            ipt_unreported_diffs = FALSE;
         }
+        else if(ipt_reporting_diffs && !last_sent.ipt_diff_complete)
+        {
+            // We were reporting diffs. The last ipt diff has to report diff
+            // complete flag (it will contain empty diff arrays though).
+            // We have not reported it yet, so adding it now.
+            ipt_check_diffs = TRUE;
+            new_data.ipt_diff_complete = TRUE;
+            tpl_tbl_ipt_obj[1].val.pi = &new_data.ipt_diff_complete;
+            // Add ipt info object to telemetry
+            ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
+        }
+        else if(ipt_reporting_diffs && last_sent.ipt_diff_complete)
+        {
+            // Diff complete has been reported successfully.
+            // No longer need send ipt info object.
+            ipt_check_diffs = FALSE;
+            ipt_reporting_diffs = FALSE;
+            new_data.ipt_diff_complete = FALSE;
+            tpl_tbl_ipt_obj[1].val.pi = NULL;
+        } else {
+            ipt_check_diffs = FALSE;
+        }
+
     }
 
     JSON_OBJ_TPL_t tpl = {
