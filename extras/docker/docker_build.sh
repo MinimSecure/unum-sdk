@@ -142,7 +142,7 @@ echo "---> running: docker exec -it \"$container_name\" /bin/bash -l"
 echo
 echo
 echo "  1. Sign up for a Minim Labs developer account on the Minim website"
-echo "     at https://my.minim.co/developers/sign_up"
+echo "     at https://my.minim.co/labs"
 echo
 echo "  2. Configure and start all services, including Unum:"
 echo "         startup.sh"

@@ -98,8 +98,6 @@ docker network create        \
     "$netname_lan"
 
 # WAN interface
-# Create a macvlan type network to give the unum container its own
-# unique MAC address on the host network.
 echo "---> creating wan docker network $netname_wan"
 docker network create          \
     --driver=bridge            \

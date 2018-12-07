@@ -7,6 +7,9 @@ supported linux platforms including x86_64, i386, and armhf.
   instructions on running Unum in a Docker container with basic Linux
   router facilities.
 
+Download [a pre-built binary for your platform][3] from the GitHub releases 
+page.
+
 
 ## Prerequisites
 
@@ -337,5 +340,6 @@ Directory structure overview:
 |- out/linux_generic/       Final distributable output directory.
 ```
 
-[1]: https://my.minim.co/developers/sign_up
+[1]: https://my.minim.co/labs
 [2]: https://my.minim.co
+[3]: https://github.com/MinimSecure/unum-sdk/releases
