@@ -28,6 +28,10 @@ set -eo pipefail
 container_name="$1"
 ifname_wan="$2"
 phyname=${3:-phy0}
+declare -i is_darwin
+if [[ $(uname -s) == "Darwin" ]]; then
+    is_darwin=1
+fi
 
 if [[ "$ifname_wan" == "" || "$container_name" == "" ]]; then
     echo "error: must specify both container name and host WAN ifname"
@@ -51,12 +55,19 @@ if [[ $(uname -s) == "Linux" ]]; then
 fi
 
 echo "---> determining subnet and gateway for host wan interface: $ifname_wan"
-# ip and subnet in the form of 192.168.11.123/24
-ipsubnet_host_wan=$(ip -o -f inet addr show | awk '/'"$ifname_wan"'/ { print $4 }')
+if (( is_darwin )); then
+    # ip and subnet in the form of 192.168.11.123/24
+    ipsubnet_host_wan=$(ifconfig "$ifname_wan" | awk '/inet / { print $2"/24" }')
+    # default gateway in the form of 192.168.11.1
+    gateway_wan=$(netstat -nr | awk '/^default.*'"$ifname_wan"'/ { print $2 }')
+else
+    # ip and subnet in the form of 192.168.11.123/24
+    ipsubnet_host_wan=$(ip -o -f inet addr show | awk '/'"$ifname_wan"'/ { print $4 }')
+    # default gateway in the form of 192.168.11.1
+    gateway_wan=$(ip route list dev "$ifname_wan" | awk '/^default/ { print $3 }')
+fi
 # subnet in the form of 192.168.11.0/24 only handles mask bit 24
 subnet_wan=$(sed -E 's:\.[0-9]+/24:.0/24:' <<< "$ipsubnet_host_wan")
-# default gateway in the form of 192.168.11.1
-gateway_wan=$(ip route list dev "$ifname_wan" | awk '/^default/ { print $3 }')
 echo "---> host wan subnet: $subnet_wan - default gateway: $gateway_wan"
 
 
@@ -87,28 +98,28 @@ docker network create        \
     "$netname_lan"
 
 # WAN interface
-# Create a macvlan type network to give the unum container its own
-# unique MAC address on the host network.
 echo "---> creating wan docker network $netname_wan"
 docker network create          \
-    --driver=macvlan           \
+    --driver=bridge            \
     --subnet="$subnet_wan"     \
     --gateway="$gateway_wan"   \
-    --opt parent="$ifname_wan" \
     "$netname_wan" || \
         (echo "---> unable to create wan network"; exit 1)
 
 docker network connect "$netname_wan" "$container_name"
 docker network connect "$netname_lan" "$container_name"
 
-# WLAN interface
-# Must assign the phy device to the container's net namespace.
-echo "---> assigning $phyname to container net namespace"
-pid=$(docker inspect -f '{{.State.Pid}}' "$container_name")
-if [[ "$pid" == "" ]]; then
-    echo "Unable to find running '$container_name' container!"
-    exit 1
+# Set up the WLAN interface if not on darwin and iw is installed
+if (( ! is_darwin )) && [[ ! -z $(which iw) ]]; then
+    # WLAN interface
+    # Must assign the phy device to the container's net namespace.
+    echo "---> assigning $phyname to container net namespace"
+    pid=$(docker inspect -f '{{.State.Pid}}' "$container_name")
+    if [[ "$pid" == "" ]]; then
+        echo "Unable to find running '$container_name' container!"
+        exit 1
+    fi
+    mkdir -p /var/run/netns
+    ln -sf /proc/$pid/ns/net /var/run/netns/$pid
+    iw phy $phyname set netns $pid
 fi
-mkdir -p /var/run/netns
-ln -sf /proc/$pid/ns/net /var/run/netns/$pid
-iw phy $phyname set netns $pid
