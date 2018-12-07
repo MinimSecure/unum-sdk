@@ -57,7 +57,7 @@ fi
 echo "---> determining subnet and gateway for host wan interface: $ifname_wan"
 if (( is_darwin )); then
     # ip and subnet in the form of 192.168.11.123/24
-    ipsubnet_host_wan=$(ifconfig "$ifname_wan" | awk '/inet / { print $2 }')
+    ipsubnet_host_wan=$(ifconfig "$ifname_wan" | awk '/inet / { print $2"/24" }')
     # default gateway in the form of 192.168.11.1
     gateway_wan=$(netstat -nr | awk '/^default.*'"$ifname_wan"'/ { print $2 }')
 else
