@@ -67,20 +67,18 @@ int util_platform_init(int level)
     }
     for(;;)
     {
-        DEV_IP_CFG_t val;
-
         // Wait for the LAN and WAN to come up
         if(STARTUP_NETWORK_WAIT_TIME > util_time(1) - start_t) {
             static int lan_up = FALSE;
             static int wan_up = FALSE;
 
-            if(util_get_ipcfg(GET_MAIN_LAN_NET_DEV(), &val) == 0) {
+            if(util_net_dev_is_up(GET_MAIN_LAN_NET_DEV())) {
                 log("%s: LAN is up\n", __func__);
                 lan_up = TRUE;
             }
 
 #ifndef AP_MODE
-            if(util_get_ipcfg(GET_MAIN_WAN_NET_DEV(), &val) == 0)
+            if(util_net_dev_is_up(GET_MAIN_WAN_NET_DEV()))
             {
                 log("%s: WAN is up\n", __func__);
                 wan_up = TRUE;

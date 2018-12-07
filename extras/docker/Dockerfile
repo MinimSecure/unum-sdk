@@ -1,4 +1,4 @@
-ARG builder=unum-builder-ubuntu:16.04
+ARG builder=minimsecure/unum-builder:ubuntu-16.04
 
 FROM ${builder} as build
 

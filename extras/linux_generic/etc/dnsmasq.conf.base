@@ -1,4 +1,4 @@
-# This file contains a base configuration for hostapd.
+# This file contains a base configuration for dnsmasq.
 # Copy this file to /etc/dnsmasq.conf and edit as necessary.
 # See http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
 local=/lan/

@@ -79,6 +79,11 @@ config_routing.sh
 rfkill unblock wifi || :
 killwait wpa_supplicant || :
 
+# Set MAC address on the LAN interface
+ifconfig "$ifname_lan" down
+ip link set "$ifname_lan" address "$hwaddr_lan"
+ifconfig "$ifname_lan" up
+
 start_hostapd.sh || \
     echo "Warning: failed to start hostapd, continuing without wireless anyway"
 start_dnsmasq.sh
