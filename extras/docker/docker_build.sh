@@ -19,7 +19,7 @@
 set -eo pipefail
 
 usage() {
-    echo "Usage: $0 [-X|-B <builder>] [-u] <WAN ifname>"
+    echo "Usage: $0 [-X|-B <builder>] <WAN ifname>"
 }
 
 declare -i skip_build
@@ -29,7 +29,7 @@ declare -i is_darwin
 if [[ $(uname -s) == "Darwin" ]]; then
     is_darwin=1
 fi
-while getopts 'hXB:u' opt; do
+while getopts 'hXB:' opt; do
     case "$opt" in
         X ) skip_build=1
             ;;
