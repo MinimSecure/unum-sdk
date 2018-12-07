@@ -27,7 +27,7 @@ Supported options:
   `/etc/profile.d` that adds the unum command and extras, if enabled, to users'
   PATH.
 - `--init` or `--no-init`: Install (or do not) init scripts for the current
-  system, automatically detected."
+  system, automatically detected.
 - `--extras` or `--no-extras`: Install (or do not) extra scripts that manage 
   various aspects of a Linux router.
 - `--aio` or `--no-aio`: Install (or do not) the unum 'all-in-one' service and
@@ -46,8 +46,8 @@ Supported alternate modes:
   sudo /opt/unum/extras/install.sh --uninstall
   ```
 - `--purge`: Uninstall and remove configuration files, too.By default, 
-  configuration files will be left intact. Use `--purge` to remove these as 
-  well:
+  configuration files will be left intact. 
+  Use `--purge` to remove these as well:
   ```bash
   sudo /opt/unum/extras/install.sh --purge
   ```

@@ -76,9 +76,9 @@ echo "---> project root: $project_root"
 declare -r dockerfile=$(readlink -e "$project_root/extras/docker/Dockerfile")
 declare -r dockerfile_build="$dockerfile.build"
 
-declare -r image_suffix=$(grep -e '^FROM ' "$dockerfile" | grep -v ' as ' | head -n1 | sed -e 's:^FROM ::' -e 's: as .*$::')
-declare -r image_name="unum-$image_suffix"
-builder_image_name=${builder_image_name:-"unum-builder-$image_suffix"}
+declare -r image_suffix=$(grep -e '^FROM ' "$dockerfile" | grep -v ' as ' | head -n1 | sed -e 's:^FROM ::' -e 's: as .*$::' -e 's/:/-/')
+declare -r image_name="minimsecure/unum:$image_suffix"
+builder_image_name=${builder_image_name:-"minimsecure/unum-builder:$image_suffix"}
 
 declare -r container_name="unum-demo"
 
