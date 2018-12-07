@@ -19,13 +19,17 @@
 set -eo pipefail
 
 usage() {
-    echo "Usage: $0 [-X|-B <builder>] <WAN ifname>"
+    echo "Usage: $0 [-X|-B <builder>] [-u] <WAN ifname>"
 }
 
 declare -i skip_build
 declare -i builder_image_provided
 declare builder_image_name
-while getopts 'hXB:' opt; do
+declare -i is_darwin
+if [[ $(uname -s) == "Darwin" ]]; then
+    is_darwin=1
+fi
+while getopts 'hXB:u' opt; do
     case "$opt" in
         X ) skip_build=1
             ;;
@@ -117,15 +121,20 @@ popd
 
 # Start a detached bash shell running the newly built image
 echo "---> starting container: $container_name"
+declare volume_opt
+if (( ! is_darwin )); then
+    volume_opt="--volume /dev/bus/usb:/dev/bus/usb"
+fi
 docker run                   \
-    --privileged             \
-    --volume /dev/bus/usb:/dev/bus/usb \
+    --privileged $volume_opt \
     --name "$container_name" \
     -itd "$image_name" /bin/bash -l
 
 # Setup and connect the docker networks
-$(dirname "$BASH_SOURCE")/docker_network.sh "$container_name" "$ifname_wan" "$wlan_phyname" ||
+if ! $(dirname "$BASH_SOURCE")/docker_network.sh "$container_name" "$ifname_wan" "$wlan_phyname"; then
     echo "---> failed to bring up docker networks, aborting"
+    exit 1
+fi
 
 # Replace the current process with another bash session to explore the container.
 echo "---> starting bash session"
