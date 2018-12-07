@@ -603,15 +603,9 @@ static int speedtest_latency()
         log("%s: no samples to calculate latency\n", __func__);
         return -1;
     }
-    int latency = (int)(sum / samples);
-    if(latency < 1) {
-        // Consider <1ms invalid.
-        log("%s: unable to determine latency\n", __func__);
-        return -2;
-    }
 
-    latency_ms = latency;
-    log("%s: average latency: %ims\n", __func__, latency);
+    latency_ms = (int)(sum / samples);
+    log("%s: average latency: %ims\n", __func__, latency_ms);
     return 0;
 }
 
