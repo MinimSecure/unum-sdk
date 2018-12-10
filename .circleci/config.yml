@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: debian:stretch
+    working_directory: /usr/local/src/unum
+    steps:
+      - run:
+          name: Install build dependencies
+          command: apt install build-essential git libcurl4-openssl-dev libjansson-dev libnl-3-dev libnl-genl-3-dev
+      - checkout
+      - run:
+          name: Build unum
+          command: ./dist/make_dotdeb.sh
+      - run: cp -f ../unum-sdk_*.deb out/linux_generic
+      - store_artifacts:
+          path: out/linux_generic
+          destination: build
