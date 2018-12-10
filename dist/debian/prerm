@@ -22,7 +22,9 @@ case "$1" in
         service unum stop || true
         /opt/unum/extras/install.sh \
             --uninstall --no-interactive
-        rm -f /usr/bin/minim-config
+        rm -fv /usr/bin/minim-config || true
+        cp -fv /etc/default/hostapd.pre-unum /etc/default/hostapd || true
+        cp -fv /etc/default/dnsmasq.pre-unum /etc/default/dsnmasq || true
         systemctl daemon-reload
     ;;
 
