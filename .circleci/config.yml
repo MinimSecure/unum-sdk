@@ -11,8 +11,19 @@ jobs:
       - checkout
       - run:
           name: Build unum
-          command: ./dist/make_dotdeb.sh
+          command: ./dist/make_dotdeb.sh "$CIRCLE_TAG"
       - run: cp -f ../unum-sdk_*.deb out/linux_generic
       - store_artifacts:
           path: out/linux_generic
           destination: build
+workflows:
+  version: 2
+  tagged:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /^v.*/
+  untagged:
+    jobs:
+      - build
