@@ -2,6 +2,7 @@ build/*
 out/*
 debian
 !dist/debian
+dist/debian/changelog
 dist/debian/**/*debhelper*
 dist/debian/unum-sdk
 dist/debian/*.substvars
