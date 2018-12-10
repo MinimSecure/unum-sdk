@@ -1,8 +1,6 @@
 version: 2
 jobs:
   build:
-    machine:
-      docker_layer_caching: true
     docker:
       - image: debian:stretch
     working_directory: /usr/local/src/unum
@@ -20,15 +18,12 @@ jobs:
           destination: build
 workflows:
   version: 2
-  tagged:
+  untagged-build:
+    jobs:
+      - build
+  tagged-build:
     jobs:
       - build:
           filters:
             tags:
               only: /^v.*/
-  untagged:
-    jobs:
-      - build:
-          filters:
-            tags:
-              ignore: /.*/
