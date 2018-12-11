@@ -6,10 +6,11 @@ This repository contains the open source distribution of
 > Running the Unum agent requires a Minim Labs developer account. 
 > [Sign up for an account][3] on the Minim website.
 
-The Unum agent is a closs-platform program and can be built and installed on
+Unum is a closs-platform program and can be built and installed on
 OpenWrt-compatible devices, as well as Linux x86_64, i386, and armhf 
 architectures.
 
+[![CircleCI](https://circleci.com/gh/MinimSecure/unum-sdk/tree/master.svg?style=svg)][9]
 
 ## Getting started
 
@@ -47,3 +48,4 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [6]: README-linux_generic.md
 [7]: https://github.com/MinimSecure/minim-openwrt-feed
 [8]: https://github.com/MinimSecure/unum-sdk/releases
+[9]: https://circleci.com/gh/MinimSecure/unum-sdk/tree/master
