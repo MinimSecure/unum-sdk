@@ -74,22 +74,36 @@ stop_service__systemd() {
     killall -9 $@ >> "$log_file" 2>&1
 }
 
-declare start_service_func=start_service__systemd
-declare stop_service_func=stop_service__systemd
-declare enable_service_func=enable_service__systemd
-declare disable_service_func=disable_service__systemd
+set_mac_address__iproute2() {
+    local ifname_lan="$1"
+    local hwaddr_lan="$2"
+    ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
+    ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
+    ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
+}
+set_mac_address__ifconfig() {
+    local ifname_lan="$1"
+    local hwaddr_lan="$2"
+    ifconfig "$ifname_lan" down hw addr "$hwaddr_lan" up >> "$log_file" 2>&1
+}
+
+declare -r service_type=systemd
+declare -r iputils_type=iproute2
 
 start_service() {
-    "$start_service_func" $@
+    "start_service__$service_type" $@
 }
 stop_service() {
-    "$stop_service_func" $@
+    "stop_service__$service_type" $@
 }
 disable_service() {
-    "$disable_service_func" $@
+    "disable_service__$service_type" $@
 }
 enable_service() {
-    "$enable_service_func" $@
+    "enable_service__$service_type" $@
+}
+set_mac_address() {
+    "set_mac_address__$iputils_type" $@
 }
 
 
@@ -155,9 +169,7 @@ fi
 . "$install_etc_dir/extras.conf.sh"
 
 # Set MAC address on the LAN interface
-ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
-ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
-ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
+set_mac_address "$ifname_lan" "$hwaddr_lan"
 
 # Enable the all-in-one service on boot
 enable_service unum-aio

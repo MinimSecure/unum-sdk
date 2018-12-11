@@ -22,9 +22,9 @@ the Unum SDK GitHub.
 
 Available platforms:
 
- - [OpenWrt][7]: build an installable package for routers running OpenWrt
- - [Linux][6]: build Unum for running directly on standard Linux distributions
- - [Docker][5]: run a Linux router with Unum in a Docker container
+ - **[OpenWrt:][7]** build an installable package for routers running OpenWrt
+ - **[Linux:][6]** build Unum for Linux and Linux-like distributions
+ - **[Docker:][5]** run a Linux router with Unum in a Docker container
 
 
 ### Docker Quick-start
