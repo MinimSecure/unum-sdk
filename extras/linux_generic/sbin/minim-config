@@ -44,6 +44,34 @@ seems_to_be_running() {
     return 0
 }
 
+enable_service__systemd() {
+    for s in $@; do
+        systemctl enable "$s" >> "$log_file" 2>&1
+    done
+}
+disable_service__systemd() {
+    for s in $@; do
+        systemctl disable "$s" >> "$log_file" 2>&1
+    done
+}
+start_service__systemd() {
+    for s in $@; do
+        service "$s" start >> "$log_file" 2>&1
+    done
+}
+stop_service__systemd() {
+    for s in $@; do
+        service "$s" stop >> "$log_file" 2>&1
+    done
+    # Make doubly-sure that none of these are running
+    killall -9 $@ >> "$log_file" 2>&1
+}
+
+declare -f start_service=start_service__systemd
+declare -f stop_service=stop_service__systemd
+declare -f enable_service=enable_service__systemd
+declare -f disable_service=disable_service__systemd
+
 # Parse command-line options
 declare -i interactively=1
 for arg in $@; do
@@ -82,13 +110,7 @@ echo "Logging to $log_file"
 echo "Stopping services..."
 echo "Stopping services..." > "$log_file"
 
-service hostapd stop        >> "$log_file" 2>&1
-service dnsmasq stop        >> "$log_file" 2>&1
-service wpa_supplicant stop >> "$log_file" 2>&1
-service unum stop           >> "$log_file" 2>&1
-
-# Make doubly-sure that none of these are running
-killall -9 hostapd dnsmasq wpa_supplicant unum >> "$log_file" 2>&1
+stop_service hostapd dnsmasq wpa_supplicant unum
 
 # Ensure wifi is enabled if rfkill is installed
 if which rfkill > /dev/null 2>&1; then
@@ -115,20 +137,14 @@ ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
 ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
 ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
 
-# Hack to fix /var/opt/unum in existing default dnsmasq and hostapd
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq >> "$log_file" 2>&1
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd >> "$log_file" 2>&1
-
-# Eable the all-in-one service on boot
-systemctl enable unum-aio   >> "$log_file" 2>&1
+# Enable the all-in-one service on boot
+enable_service unum-aio
 
 # Disable everything that unum-aio will start
-systemctl disable unum      >> "$log_file" 2>&1
-systemctl disable hostapd   >> "$log_file" 2>&1
-systemctl disable dnsmasq   >> "$log_file" 2>&1
+disable_service unum hostapd dnsmasq
 
 # Disable wpa_supplicant because we are running an access point.
-systemctl disable wpa_supplicant    >> "$log_file" 2>&1
+disable_service wpa_supplicant
 
 sleep 2
 
@@ -138,18 +154,18 @@ sleep 2
 # Start hostapd first because it must configure the wireless interface before
 # dnsmasq can bind to it.
 echo "Starting hostapd..."
-service hostapd start
+start_service hostapd
 
 # Sleep seems to be necessary in between these starts
 sleep 5
 
 echo "Starting dnsmasq..."
-service dnsmasq start
+start_service dnsmasq
 
 sleep 5
 
 echo "Starting unum..."
-service unum start
+start_service unum
 
 # Print some diagnostic output to the log file
 if ! seems_to_be_running hostapd; then
