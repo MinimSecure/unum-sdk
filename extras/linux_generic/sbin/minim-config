@@ -43,14 +43,52 @@ usage() {
         echo "  --help|-h          Print this usage text"
     fi
 }
+
+# Init system type (eg. systemd)
+declare -r service_type=systemd
+# IP related commands (eg. iproute2 or ifconfig)
+declare -r iputils_type=iproute2
+
+# Start the given service(s)
+# Delegates to a service_type implementation.
+# Usage: start_service <service> [service2 [service3 ...]]
+start_service() {
+    "start_service__$service_type" $@
+}
+# Stop the given service(s)
+# Delegates to a service_type implementation.
+# Usage: stop_service <service> [service2 [service3 ...]]
+stop_service() {
+    "stop_service__$service_type" $@
+}
+# Disable start on boot for the given service(s)
+# Delegates to a service_type implementation.
+# Usage: disable_service <service> [service2 [service3 ...]]
+disable_service() {
+    "disable_service__$service_type" $@
+}
+# Disable start on boot for the given service(s)
+# Delegates to a service_type implementation.
+# Usage: enable_service <service> [service2 [service3 ...]]
+enable_service() {
+    "enable_service__$service_type" $@
+}
+# Return true or false if the service given appears to be running.
+# Delegates to a service_type implementation.
+# Usage: seems_to_be_running <service>
 seems_to_be_running() {
-    local chk=$(service "$1" status | grep "active (running)")
-    if [[ -z "$chk" ]]; then
-        return 1
-    fi
-    return 0
+    "seems_to_be_running__$service_type" $@
+    return $?
 }
 
+# Set the MAC address on the given interface.
+# Delegates to a iputils_type implementation.
+# Usage: set_mac_address <ifname> <hwaddr>
+set_mac_address() {
+    "set_mac_address__$iputils_type" $@
+}
+
+# Actual implementations for service_type "systemd"
 enable_service__systemd() {
     for s in $@; do
         systemctl enable "$s" >> "$log_file" 2>&1
@@ -73,7 +111,15 @@ stop_service__systemd() {
     # Make doubly-sure that none of these are running
     killall -9 $@ >> "$log_file" 2>&1
 }
+seems_to_be_running__systemd() {
+    local chk=$(service "$1" status | grep "active (running)")
+    if [[ -z "$chk" ]]; then
+        return 1
+    fi
+    return 0
+}
 
+# Actual implementations for iputils_type "iproute2"
 set_mac_address__iproute2() {
     local ifname_lan="$1"
     local hwaddr_lan="$2"
@@ -81,31 +127,15 @@ set_mac_address__iproute2() {
     ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
     ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
 }
+
+# Actual implementations for iputils_type "ifconfig"
 set_mac_address__ifconfig() {
     local ifname_lan="$1"
     local hwaddr_lan="$2"
     ifconfig "$ifname_lan" down hw addr "$hwaddr_lan" up >> "$log_file" 2>&1
 }
 
-declare -r service_type=systemd
-declare -r iputils_type=iproute2
-
-start_service() {
-    "start_service__$service_type" $@
-}
-stop_service() {
-    "stop_service__$service_type" $@
-}
-disable_service() {
-    "disable_service__$service_type" $@
-}
-enable_service() {
-    "enable_service__$service_type" $@
-}
-set_mac_address() {
-    "set_mac_address__$iputils_type" $@
-}
-
+###
 
 # Parse command-line options
 declare -i interactively=1
