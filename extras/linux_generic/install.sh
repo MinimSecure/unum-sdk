@@ -184,6 +184,8 @@ if (( uninstall )); then
         rm -fv /etc/profile.d/unum.sh || :
         rm -fv /etc/systemd/system/unum.service || :
         rm -fv /usr/bin/minim-config || :
+        cp -f /etc/default/hostapd.pre-unum /etc/default/hostapd || :
+        cp -f /etc/default/dnsmasq.pre-unum /etc/default/dnsmasq || :
     else
         echo "did not uninstall unum, exiting without making any changes"
     fi
@@ -213,7 +215,7 @@ declare aio_value="no"
 if (( install_aio )); then
     aio_value="yes"
 fi
-if confirm "install unum 'all-in-one' and minim-config management utility" "$aio_value"; then
+if confirm "install unum 'all-in-one' and minim-config management utility?" "$aio_value"; then
     install_aio=1
 fi
 
@@ -278,9 +280,25 @@ echo "unum config file is $install_etc_dir/config.json"
 cp -f "$dist_dir/etc/opt/unum/config.json" "$install_etc_dir/config.json"
 
 # Add minim-config utility to /usr/bin to avoid any PATH issues.
+declare mod_check
 if (( install_aio )); then
     ln -sf "$extras_dir/sbin/minim-config" "/usr/bin/minim-config"
     echo "installed minim-config: /usr/bin/minim-config"
+
+    mod_check=`awk '/^DNSMASQ_OPTS=.*unum.*$/ { print "1" }' /etc/default/dnsmasq`
+    if [[ -z "$mod_check" ]]; then
+        cp -f /etc/default/dnsmasq /etc/default/dnsmasq.pre-unum
+        echo 'DNSMASQ_OPTS="--conf-file=/etc/opt/unum/dnsmasq.conf"' >> /etc/default/dnsmasq
+        echo "updated /etc/default/dnsmasq to use generated config"
+    fi
+
+    mod_check=`awk '/^DAEMON_CONF.*unum.*$/ { print "1" }' /etc/default/hostapd`
+    if [[ -z "$mod_check" ]]; then
+        cp -f /etc/default/hostapd /etc/default/hostapd.pre-unum
+        sed -i -E 's:^[#]?DAEMON_CONF.*:DAEMON_CONF="/etc/opt/unum/hostapd-phy0.conf":' /etc/default/hostapd
+        echo 'DAEMON_OPTS="-dd -t -f /var/opt/unum/hostapd.log"' >> /etc/default/hostapd
+        echo "updated /etc/default/hostapd to use generated config"
+    fi
 fi
 
 # Install systemd service for unum, and unum-aio if enabled.
