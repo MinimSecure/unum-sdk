@@ -18,7 +18,14 @@
 # Run this script to configure the Unum installation and start all the services
 # needed for the operation of a Linux router and wireless access point.
 
-declare -r log_file="/var/opt/unum/minim-config.log"
+install_dir=${UNUM_INSTALL_ROOT:-/opt/unum}
+
+source "$install_dir/.installed"
+
+install_etc_dir="${install_etc_dir:-/etc/opt/unum}"
+install_var_dir="${install_var_dir:-/var/opt/unum}"
+
+declare -r log_file="$install_var_dir/minim-config.log"
 
 usage() {
     echo "Usage: minim-config [--help|-h] [--no-interactive]"
@@ -112,9 +119,10 @@ done
     echo "This command requires root privileges, automatically re-running with sudo" && \
     exec sudo "$0" $@
 
-if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
+if (( ! interactively )) && [[ ! -f "$install_etc_dir/extras.conf.sh" ]]; then
     echo 'unum is unconfigured, please re-run without `--no-interactive`:'
     echo '    minim-config'
+    exit 1
 fi
 
 echo "Logging to $log_file"
@@ -138,13 +146,13 @@ declare interactive_flag=
 if (( ! interactively )); then
     interactive_flag="--no-interactive"
 fi
-/opt/unum/extras/sbin/config_interfaces.sh "$interactive_flag"
-/opt/unum/extras/sbin/config_hostapd.sh "$interactive_flag"
-/opt/unum/extras/sbin/config_dnsmasq.sh
-/opt/unum/extras/sbin/config_routing.sh
+"$install_dir/extras/sbin/config_interfaces.sh" "$interactive_flag"
+"$install_dir/extras/sbin/config_hostapd.sh" "$interactive_flag"
+"$install_dir/extras/sbin/config_dnsmasq.sh"
+"$install_dir/extras/sbin/config_routing.sh"
 
 # Source the extras.conf.sh file to get updated configuration values.
-. /etc/opt/unum/extras.conf.sh
+. "$install_etc_dir/extras.conf.sh"
 
 # Set MAC address on the LAN interface
 ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
