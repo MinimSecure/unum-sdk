@@ -4,7 +4,7 @@ debian
 !dist/debian
 dist/debian/changelog
 dist/debian/**/*debhelper*
-dist/debian/unum-sdk
+dist/debian/unum-aio
 dist/debian/*.substvars
 dist/debian/*.ex
 dist/debian/files

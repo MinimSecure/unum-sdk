@@ -1,12 +1,12 @@
-unum-sdk ($AGENT_VERSION) UNRELEASED; urgency=medium
+unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
 
   * Improvements to iptables telemetry capturing
-  * Improvements to debian .deb uninstall
+  * Replace originals in unum-aio .deb uninstall
 
  -- Tyler Sommer <tyler@minim.co>  Mon, 11 Dec 2018 12:45:03 -0700
 
 
-unum-sdk (2018.1.0) unstable; urgency=medium
+unum-aio (2018.1.0) unstable; urgency=medium
 
   * Initial release
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for unum-sdk
+# postinst script for unum-aio
 #
 # see: dh_installdeb(1)
 
@@ -24,17 +24,6 @@ case "$1" in
         service dnsmasq stop
         /opt/unum/extras/install.sh \
             --no-interactive --init --aio --extras
-        mod_check=`awk '/^DNSMASQ_OPTS=.*unum.*$/ { print "1" }' /etc/default/dnsmasq`
-        if [ -z "$mod_check" ]; then
-            cp -f /etc/default/dnsmasq /etc/default/dnsmasq.pre-unum
-            echo 'DNSMASQ_OPTS="--conf-file=/etc/opt/unum/dnsmasq.conf"' >> /etc/default/dnsmasq
-        fi
-        mod_check=`awk '/^DAEMON_CONF.*unum.*$/ { print "1" }' /etc/default/hostapd`
-        if [ -z "$mod_check" ]; then
-            cp -f /etc/default/hostapd /etc/default/hostapd.pre-unum
-            sed -i -E 's:^[#]?DAEMON_CONF.*:DAEMON_CONF="/etc/opt/unum/hostapd-phy0.conf":' /etc/default/hostapd
-            echo 'DAEMON_OPTS="-dd -t -f /var/opt/unum/hostapd.log"' >> /etc/default/hostapd
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
