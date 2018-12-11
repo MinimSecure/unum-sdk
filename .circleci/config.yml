@@ -12,7 +12,9 @@ jobs:
       - run:
           name: Build unum
           command: ./dist/make_dotdeb.sh "$CIRCLE_TAG"
-      - run: cp -f ../unum-sdk_*.deb out/linux_generic
+      - run:
+          name: Copy .deb to out directory
+          command: cp -f ../unum-*.deb out/linux_generic
       - store_artifacts:
           path: out/linux_generic
           destination: build
