@@ -184,9 +184,9 @@ if (( uninstall )); then
         rm -fv /etc/profile.d/unum.sh || :
         rm -fv /etc/systemd/system/unum.service || :
         rm -fv /usr/bin/minim-config || :
-        cp -fv /etc/default/hostapd.pre-unum /etc/default/hostapd || :
-        cp -fv /etc/default/dnsmasq.pre-unum /etc/default/dnsmasq || :
-        cp -fv /etc/dhcpcd.conf.pre-unum /etc/dhcpcd.conf || :
+        mv -fv /etc/default/hostapd.pre-unum /etc/default/hostapd || :
+        mv -fv /etc/default/dnsmasq.pre-unum /etc/default/dnsmasq || :
+        mv -fv /etc/dhcpcd.conf.pre-unum /etc/dhcpcd.conf || :
     else
         echo "did not uninstall unum, exiting without making any changes"
     fi
