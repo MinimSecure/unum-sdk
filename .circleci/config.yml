@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run:
           name: Start armhf container
-          command: docker run -v 'project:.' -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm --name builder -dti arm32v7/debian:stretch-slim
+          command: docker run -v "$PWD:/root" -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm --name builder -dti arm32v7/debian:stretch-slim
       - run:
           name: Build unum
           command: |
