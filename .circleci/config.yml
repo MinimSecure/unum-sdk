@@ -20,20 +20,32 @@ jobs:
           destination: build
   build-docker:
     machine: true
+    environment:
+      TAG: "ubuntu-16.04"
     steps:
       - checkout
       - run:
           name: Build unum-builder image
           command: |
-            TAG="ubuntu-16.04"
             ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
             docker image build --file extras/docker/Dockerfile.build --tag "minimsecure/unum-builder:$TAG" .
+            mkdir -p out
+            docker image save -o out/unum-builder_$TAG.dockerimg "minimsecure/unum-builder:$TAG"
       - run:
           name: Build unum image
           command: |
-            TAG="ubuntu-16.04"
             ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
             docker image build --file extras/docker/Dockerfile --tag "minimsecure/unum:$TAG" .
+            mkdir -p out
+            docker image save -o out/unum_$TAG.dockerimg "minimsecure/unum:$TAG"
+      - store_artifacts:
+          path: out
+          destination: build
+  publish-docker:
+    machine: true
+    environment:
+      TAG: "ubuntu-16.04"
+    steps:
       - run:
           name: Push docker images
           command: |
@@ -54,3 +66,12 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - build-docker:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish-docker:
+          requires:
+            - build-docker
