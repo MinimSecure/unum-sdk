@@ -18,11 +18,19 @@ jobs:
       - store_artifacts:
           path: out/linux_generic
           destination: build
+  build-docker:
+    machine: true
+    working_directory: /usr/local/src/unum
+    steps:
+      - checkout
+      - run: Build docker images
+        command: extras/docker/docker_build.sh
 workflows:
   version: 2
   untagged-build:
     jobs:
       - build
+      - build-docker
   tagged-build:
     jobs:
       - build:
