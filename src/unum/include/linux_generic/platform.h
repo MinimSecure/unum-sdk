@@ -21,7 +21,7 @@
 // Override the default config file path if ETC_PATH_PREFIX is defined
 #ifdef ETC_PATH_PREFIX
 #  undef UNUM_CONFIG_PATH
-#  define UNUM_CONFIG_PATH ETC_PATH_PREFIX "/unum.conf"
+#  define UNUM_CONFIG_PATH ETC_PATH_PREFIX "/config.json"
 #endif
 
 #endif // _PALTFORM_H
