@@ -22,9 +22,10 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run: ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
       - run:
-          name: Build docker images
-          command: extras/docker/docker_build.sh
+          name: Build unum-builder image
+          command: docker image build --file extras/docker/Dockerfile.build --tag "minimsecure/unum-builder:ubuntu-16.04" .
 workflows:
   version: 2
   untagged-build:
