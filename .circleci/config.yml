@@ -59,8 +59,8 @@ jobs:
       - run:
           name: Load docker images
           command: |
-            docker image load out/unum_$DOCKER_TAG.dockerimg
-            docker image load out/unum-builder_$DOCKER_TAG.dockerimg
+            docker image load -i out/unum_$DOCKER_TAG.dockerimg
+            docker image load -i out/unum-builder_$DOCKER_TAG.dockerimg
       - run:
           name: Push docker images
           command: |
