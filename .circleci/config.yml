@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
@@ -18,12 +18,68 @@ jobs:
       - store_artifacts:
           path: out/linux_generic
           destination: build
+  build-docker:
+    machine: true
+    environment:
+      DOCKER_TAG: "ubuntu-16.04"
+    steps:
+      - checkout
+      - run:
+          name: Build unum-builder image
+          command: |
+            ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
+            docker image build --file extras/docker/Dockerfile.build --tag "minimsecure/unum-builder:$DOCKER_TAG" .
+            mkdir -p out
+            docker image save -o out/unum-builder_$DOCKER_TAG.dockerimg "minimsecure/unum-builder:$DOCKER_TAG"
+      - run:
+          name: Build unum image
+          command: |
+            ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
+            docker image build --file extras/docker/Dockerfile --tag "minimsecure/unum:$DOCKER_TAG" .
+            mkdir -p out
+            docker image save -o out/unum_$DOCKER_TAG.dockerimg "minimsecure/unum:$DOCKER_TAG"
+      - store_artifacts:
+          path: out
+          destination: build
+      - store_artifacts:
+          path: build/linux_generic/rfs
+          destination: buildrfs
+          when: on_fail
+      - persist_to_workspace:
+          root: .
+          paths:
+            - out/*.dockerimg
+  publish-docker:
+    machine: true
+    environment:
+      DOCKER_TAG: "ubuntu-16.04"
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Load docker images
+          command: |
+            docker image load out/unum_$DOCKER_TAG.dockerimg
+            docker image load out/unum-builder_$DOCKER_TAG.dockerimg
+      - run:
+          name: Push docker images
+          command: |
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
+            docker push "minimsecure/unum-builder:$DOCKER_TAG"
+            docker push "minimsecure/unum:$DOCKER_TAG"
 workflows:
   version: 2
-  untagged-build:
+  snapshot:
     jobs:
       - build
-  tagged-build:
+      - build-docker
+      - publish-docker:
+          requires:
+            - build-docker
+          filters:
+            branches:
+              only: master
+  release:
     jobs:
       - build:
           filters:
@@ -31,3 +87,12 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - build-docker:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish-docker:
+          requires:
+            - build-docker
