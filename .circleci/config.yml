@@ -72,6 +72,7 @@ workflows:
               only: /^v.*/
             branches:
               only: master
+              ignore: /.*/
       - publish-docker:
           requires:
             - build-docker
