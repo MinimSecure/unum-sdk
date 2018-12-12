@@ -1,9 +1,8 @@
 version: 2.1
 jobs:
-  build:
+  build-amd64:
     docker:
       - image: debian:stretch
-    working_directory: /usr/local/src/unum
     steps:
       - run:
           name: Install build dependencies
@@ -15,6 +14,25 @@ jobs:
       - run:
           name: Copy .deb to out directory
           command: cp -f ../unum-*.deb out/linux_generic
+      - store_artifacts:
+          path: out/linux_generic
+          destination: build
+  build-armhf:
+    machine: true
+    steps:
+      - run:
+          name: Install qemu-arm-static
+          command: sudo apt-get update && apt-get install -y qemu-user-static
+      - checkout
+      - run:
+          name: Start armhf container
+          command: docker run -v 'project:.' -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm --name builder -dti arm32v7/debian:stretch-slim
+      - run:
+          name: Build unum
+          command: |
+            docker exec -t builder /bin/bash -c 'apt-get update && apt-get install -y build-essential git libcurl4-openssl-dev libjansson-dev libnl-3-dev libnl-genl-3-dev debhelper
+            ./dist/make_dotdeb.sh "$CIRCLE_TAG"
+            cp -f ../unum-*.deb out/linux_generic'
       - store_artifacts:
           path: out/linux_generic
           destination: build
@@ -71,7 +89,8 @@ workflows:
   version: 2
   snapshot:
     jobs:
-      - build
+      - build-amd64
+      - build-armhf
       - build-docker
       - publish-docker:
           requires:
@@ -81,7 +100,13 @@ workflows:
               only: master
   release:
     jobs:
-      - build:
+      - build-amd64:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - build-armhf:
           filters:
             tags:
               only: /^v.*/

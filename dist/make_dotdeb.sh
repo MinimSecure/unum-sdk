@@ -4,6 +4,24 @@ set -eo pipefail
 WORKING_DIR=$(dirname $(readlink -e "$BASH_SOURCE"))
 BUILD_ROOT=$(readlink -e "$WORKING_DIR/..")
 
+declare -i OPT_NO_CLEAN=
+declare -i OPT_ENTER_WORKSPACE=
+
+for arg in $@; do
+    case "$arg" in
+        --no-clean|-C)
+            OPT_NO_CLEAN=1
+            shift
+            ;;
+        --enter-workspace|-X)
+            OPT_ENTER_WORKSPACE=1
+            shift
+            ;;
+        *)  break
+            ;;
+    esac
+done
+
 VERSION_BASE="2018.1.1"
 VERSION_STABILITY="unstable"
 VERSION=${1:-"${VERSION_BASE}-snapshot"}
@@ -20,5 +38,11 @@ fi
 ln -sf "$WORKING_DIR/debian" "$BUILD_ROOT/debian"
 trap "rm -f \"$BUILD_ROOT\"/debian; trap - EXIT" EXIT
 
-dh clean
-dh binary-arch
+if (( OPT_ENTER_WORKSPACE )); then
+    bash -l
+else
+    if ! (( OPT_NO_CLEAN )); then
+        dh clean
+    fi
+    dh binary-arch
+fi
