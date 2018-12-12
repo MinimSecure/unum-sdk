@@ -22,7 +22,7 @@ jobs:
     steps:
       - run:
           name: Install qemu-arm-static
-          command: sudo apt-get update && apt-get install -y qemu-user-static
+          command: sudo apt-get update && sudo apt-get install -y qemu-user-static
       - checkout
       - run:
           name: Start armhf container
