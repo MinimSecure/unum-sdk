@@ -20,7 +20,6 @@ jobs:
           destination: build
   build-docker:
     machine: true
-    working_directory: /usr/local/src/unum
     steps:
       - checkout
       - run:
