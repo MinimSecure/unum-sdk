@@ -18,7 +18,14 @@
 # Run this script to configure the Unum installation and start all the services
 # needed for the operation of a Linux router and wireless access point.
 
-declare -r log_file="/var/opt/unum/minim-config.log"
+install_dir=${UNUM_INSTALL_ROOT:-/opt/unum}
+
+source "$install_dir/.installed"
+
+install_etc_dir="${install_etc_dir:-/etc/opt/unum}"
+install_var_dir="${install_var_dir:-/var/opt/unum}"
+
+declare -r log_file="$install_var_dir/minim-config.log"
 
 usage() {
     echo "Usage: minim-config [--help|-h] [--no-interactive]"
@@ -36,13 +43,99 @@ usage() {
         echo "  --help|-h          Print this usage text"
     fi
 }
+
+# Init system type (eg. systemd)
+declare -r service_type=systemd
+# IP related commands (eg. iproute2 or ifconfig)
+declare -r iputils_type=iproute2
+
+# Start the given service(s)
+# Delegates to a service_type implementation.
+# Usage: start_service <service> [service2 [service3 ...]]
+start_service() {
+    "start_service__$service_type" $@
+}
+# Stop the given service(s)
+# Delegates to a service_type implementation.
+# Usage: stop_service <service> [service2 [service3 ...]]
+stop_service() {
+    "stop_service__$service_type" $@
+}
+# Disable start on boot for the given service(s)
+# Delegates to a service_type implementation.
+# Usage: disable_service <service> [service2 [service3 ...]]
+disable_service() {
+    "disable_service__$service_type" $@
+}
+# Disable start on boot for the given service(s)
+# Delegates to a service_type implementation.
+# Usage: enable_service <service> [service2 [service3 ...]]
+enable_service() {
+    "enable_service__$service_type" $@
+}
+# Return true or false if the service given appears to be running.
+# Delegates to a service_type implementation.
+# Usage: seems_to_be_running <service>
 seems_to_be_running() {
+    "seems_to_be_running__$service_type" $@
+    return $?
+}
+
+# Set the MAC address on the given interface.
+# Delegates to a iputils_type implementation.
+# Usage: set_mac_address <ifname> <hwaddr>
+set_mac_address() {
+    "set_mac_address__$iputils_type" $@
+}
+
+# Actual implementations for service_type "systemd"
+enable_service__systemd() {
+    for s in $@; do
+        systemctl enable "$s" >> "$log_file" 2>&1
+    done
+}
+disable_service__systemd() {
+    for s in $@; do
+        systemctl disable "$s" >> "$log_file" 2>&1
+    done
+}
+start_service__systemd() {
+    for s in $@; do
+        service "$s" start >> "$log_file" 2>&1
+    done
+}
+stop_service__systemd() {
+    for s in $@; do
+        service "$s" stop >> "$log_file" 2>&1
+    done
+    # Make doubly-sure that none of these are running
+    killall -9 $@ >> "$log_file" 2>&1
+}
+seems_to_be_running__systemd() {
     local chk=$(service "$1" status | grep "active (running)")
     if [[ -z "$chk" ]]; then
         return 1
     fi
     return 0
 }
+
+# Actual implementations for iputils_type "iproute2"
+set_mac_address__iproute2() {
+    local ifname_lan="$1"
+    local hwaddr_lan="$2"
+    ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
+    ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
+    ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
+}
+
+# Actual implementations for iputils_type "ifconfig"
+set_mac_address__ifconfig() {
+    local ifname_lan="$1"
+    local hwaddr_lan="$2"
+    ifconfig "$ifname_lan" down hw addr "$hwaddr_lan" up >> "$log_file" 2>&1
+}
+
+###
 
 # Parse command-line options
 declare -i interactively=1
@@ -70,9 +163,10 @@ done
     echo "This command requires root privileges, automatically re-running with sudo" && \
     exec sudo "$0" $@
 
-if (( ! interactively )) && [[ ! -f "$UNUM_ETC_DIR/extras.conf.sh" ]]; then
+if (( ! interactively )) && [[ ! -f "$install_etc_dir/extras.conf.sh" ]]; then
     echo 'unum is unconfigured, please re-run without `--no-interactive`:'
     echo '    minim-config'
+    exit 1
 fi
 
 echo "Logging to $log_file"
@@ -82,13 +176,7 @@ echo "Logging to $log_file"
 echo "Stopping services..."
 echo "Stopping services..." > "$log_file"
 
-service hostapd stop        >> "$log_file" 2>&1
-service dnsmasq stop        >> "$log_file" 2>&1
-service wpa_supplicant stop >> "$log_file" 2>&1
-service unum stop           >> "$log_file" 2>&1
-
-# Make doubly-sure that none of these are running
-killall -9 hostapd dnsmasq wpa_supplicant unum >> "$log_file" 2>&1
+stop_service hostapd dnsmasq wpa_supplicant unum
 
 # Ensure wifi is enabled if rfkill is installed
 if which rfkill > /dev/null 2>&1; then
@@ -102,33 +190,25 @@ declare interactive_flag=
 if (( ! interactively )); then
     interactive_flag="--no-interactive"
 fi
-/opt/unum/extras/sbin/config_interfaces.sh "$interactive_flag"
-/opt/unum/extras/sbin/config_hostapd.sh "$interactive_flag"
-/opt/unum/extras/sbin/config_dnsmasq.sh
-/opt/unum/extras/sbin/config_routing.sh
+"$install_dir/extras/sbin/config_interfaces.sh" "$interactive_flag"
+"$install_dir/extras/sbin/config_hostapd.sh" "$interactive_flag"
+"$install_dir/extras/sbin/config_dnsmasq.sh"
+"$install_dir/extras/sbin/config_routing.sh"
 
 # Source the extras.conf.sh file to get updated configuration values.
-. /etc/opt/unum/extras.conf.sh
+. "$install_etc_dir/extras.conf.sh"
 
 # Set MAC address on the LAN interface
-ifconfig "$ifname_lan" down                     >> "$log_file" 2>&1
-ip link set "$ifname_lan" address "$hwaddr_lan" >> "$log_file" 2>&1
-ifconfig "$ifname_lan" up                       >> "$log_file" 2>&1
+set_mac_address "$ifname_lan" "$hwaddr_lan"
 
-# Hack to fix /var/opt/unum in existing default dnsmasq and hostapd
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/dnsmasq >> "$log_file" 2>&1
-sed -i -e 's:/var/opt/unum:/etc/opt/unum:g' /etc/default/hostapd >> "$log_file" 2>&1
-
-# Eable the all-in-one service on boot
-systemctl enable unum-aio   >> "$log_file" 2>&1
+# Enable the all-in-one service on boot
+enable_service unum-aio
 
 # Disable everything that unum-aio will start
-systemctl disable unum      >> "$log_file" 2>&1
-systemctl disable hostapd   >> "$log_file" 2>&1
-systemctl disable dnsmasq   >> "$log_file" 2>&1
+disable_service unum hostapd dnsmasq
 
 # Disable wpa_supplicant because we are running an access point.
-systemctl disable wpa_supplicant    >> "$log_file" 2>&1
+disable_service wpa_supplicant
 
 sleep 2
 
@@ -138,18 +218,18 @@ sleep 2
 # Start hostapd first because it must configure the wireless interface before
 # dnsmasq can bind to it.
 echo "Starting hostapd..."
-service hostapd start
+start_service hostapd
 
 # Sleep seems to be necessary in between these starts
 sleep 5
 
 echo "Starting dnsmasq..."
-service dnsmasq start
+start_service dnsmasq
 
 sleep 5
 
 echo "Starting unum..."
-service unum start
+start_service unum
 
 # Print some diagnostic output to the log file
 if ! seems_to_be_running hostapd; then
