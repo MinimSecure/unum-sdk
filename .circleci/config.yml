@@ -23,8 +23,9 @@ jobs:
     working_directory: /usr/local/src/unum
     steps:
       - checkout
-      - run: Build docker images
-        command: extras/docker/docker_build.sh
+      - run:
+          name: Build docker images
+          command: extras/docker/docker_build.sh
 workflows:
   version: 2
   untagged-build:
