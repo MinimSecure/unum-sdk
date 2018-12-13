@@ -1,20 +1,37 @@
 version: 2.1
 jobs:
-  build:
+  build-amd64:
     docker:
-      - image: debian:stretch
-    working_directory: /usr/local/src/unum
+      - image: minimsecure/circleci-debian-amd64:stretch-slim
     steps:
-      - run:
-          name: Install build dependencies
-          command: apt-get update && apt-get install -y build-essential git libcurl4-openssl-dev libjansson-dev libnl-3-dev libnl-genl-3-dev debhelper
       - checkout
       - run:
-          name: Build unum
+          name: Build unum and .deb
           command: ./dist/make_dotdeb.sh "$CIRCLE_TAG"
+      - store_artifacts:
+          path: out/linux_generic
+          destination: build
+  build-armhf:
+    machine: true
+    steps:
       - run:
-          name: Copy .deb to out directory
-          command: cp -f ../unum-*.deb out/linux_generic
+          name: Install qemu-arm-static
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static
+      - checkout
+      - run:
+          name: Start armhf build container
+          command: |
+            docker run -v "$PWD:/root/unum-sdk" \
+              -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static \
+              --rm --name builder -dti minimsecure/circleci-debian-armhf:stretch-slim
+      - run:
+          name: Build unum and .deb
+          command: |
+            docker exec -t builder /bin/bash -c \
+              'cd /root/unum-sdk
+              ./dist/make_dotdeb.sh "$CIRCLE_TAG"'
       - store_artifacts:
           path: out/linux_generic
           destination: build
@@ -71,7 +88,8 @@ workflows:
   version: 2
   snapshot:
     jobs:
-      - build
+      - build-amd64
+      - build-armhf
       - build-docker
       - publish-docker:
           requires:
@@ -81,7 +99,13 @@ workflows:
               only: master
   release:
     jobs:
-      - build:
+      - build-amd64:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - build-armhf:
           filters:
             tags:
               only: /^v.*/
