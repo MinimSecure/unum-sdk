@@ -65,8 +65,6 @@ Other things to be aware of
 ## Happy Contributing!
 
 
----
-
 Unum SDK is an open source project by [Minim][5]. [Send us mail][6] or [check
 out our blog!][7]
 
