@@ -45,6 +45,12 @@ TARGET_BUILD := $(TOP)/build/$(MODEL)
 TARGET_RFS := $(TARGET_BUILD)/rfs
 TARGET_OBJ := $(TARGET_BUILD)/obj
 
+# Add common and platform specific features to the release feature list
+RELEASE_FEATURES := $(shell cat "$(TARGET_FILES)/../features-common.txt")
+ifneq ("$(wildcard $(TARGET_FILES)/features.txt)","")
+  RELEASE_FEATURES := $(RELEASE_FEATURES) $(shell cat "$(TARGET_FILES)/features.txt")
+endif
+
 # Explicitly set default goal
 all: install
 
@@ -61,6 +67,14 @@ ALL_COMPILED  := $(patsubst %,$(TARGET_OBJ)/.%.compiled,$(TARGET_LIST))
 ALL_INSTALLED := $(patsubst %,$(TARGET_OBJ)/.%.installed,$(TARGET_LIST))
 ALL_CLEAN_RULES := $(patsubst %,%.clean,$(TARGET_LIST)) 
 ALL_INSTALL_RULES := $(patsubst %,%.install,$(TARGET_INSTALL_LIST)) 
+
+# Create comma separated quoted release features list prepeared
+# for inserting into release_properties.json
+quote := "
+space := $(null) #
+comma := ,
+RELEASE_FEATURES := $(strip $(RELEASE_FEATURES))
+RELEASE_FEATURES := $(subst $(space),$(comma),$(patsubst %,$(quote)%$(quote),$(RELEASE_FEATURES)))
 
 .PHONY: install build clean install_prepare make_includes
 .PHONY: $(TARGET_LIST) $(ALL_CLEAN_RULES) $(ALL_INSTALL_RULES)
@@ -114,6 +128,8 @@ $(ALL_INSTALL_RULES): install_prepare
 install: $(ALL_INSTALL_RULES)
 	-rm -Rf $(TARGET_OUT)/*.*
 	tar -C $(TARGET_RFS) -czvf $(TARGET_OUT)/$(MODEL)-$(AGENT_VERSION).tgz .
+	@echo "Generating $(TARGET_OUT)/release_properties.json"
+	envsubst < $(TARGET_FILES)/../release_properties.json > $(TARGET_OUT)/release_properties.json
 	echo "Unum agent package:"
 	@ls -l $(TARGET_OUT)/$(MODEL)-$(AGENT_VERSION).tgz
 
