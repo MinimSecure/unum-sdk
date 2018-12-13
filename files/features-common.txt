@@ -1,0 +1,6 @@
+http-basic-auth-passwords
+telnet-passwords
+rescan_devices
+port_scanning
+speed_test
+ping-flood-release
