@@ -7,38 +7,61 @@ This document describes in general terms how to contribute to the Unum SDK.
 Get started
 -----------
 
-Thanks for your interest in contributing to Unum SDK! We hope to make 
+Thanks for your interest in contributing to Unum SDK! We hope to make
 contributing as simple as possible-- don't worry too much about protocol
 around [opening an issue][1] or [Pull Request (aka PR)][2].
 
 There is only one absolute requirement: **Treat everyone with respect!**
 
 
-### Reporting a vulnerability?
+### Report a vulnerability
 
-Contact us directly by [mail at labs@minim.co][6] to report security issues. 
+Contact us [directly by mail at labs@minim.co][6] to report security-related
+or otherwise sensitive matters.
+
 Encode your message with the [Minim Labs public PGP key][8], if desired.
 
 
-### Opening an Issue
+### Open an Issue
 
-Don't sweat it, just [open an issue on our GitHub][1]. 
+Don't sweat it, just [open an issue on our GitHub][1].
 
-If none of the templates fit, feel free to improvise!
+We have a few issues templates to help streamline issue reporting, but if none
+of the templates fit your situation, feel free to improvise!
 
 
-### Opening a Pull Request
+### Open a Pull Request
 
 In general, follow these steps when opening a pull request:
 
 1. [Fork the Unum SDK repository][3] on GitHub
 2. Clone your fork to your local machine
+   ```bash
+   git clone git@github.com:YOURUSERNAME/unum-sdk
+   cd unum-sdk
+   ```
 3. Check out a new branch -- name it anything!
+   ```bash
+   git checkout -b patch-1
+   ```
 4. Make your changes, commit, and push to your fork on GitHub
+   ```bash
+   git add -u
+   git commit -m "Try to write a coherent commit message"
+   git push origin patch-1
+   ```
 5. [Open a Pull Request][2] on the main Unum SDK GitHub repository
 
-Every pull request must pass CI before being merged, and merges are performed
-by rebase-and-squashing.
+
+When opening a pull request, please consider:
+
+- Every pull request must pass CI before being merged, and merges are 
+  performed by rebase-and-squashing.
+- Expect to be requested to make at least a couple of changes on your pull
+  requests-- please take no offense at these requests! Code reviews can be
+  high-tension and high-emotion, but we'll do our best to be diplomatic about
+  our requests. Do not be afraid to disagree or ask for further explanation
+  or justification, however!
 
 
 Helpful things to include
@@ -58,8 +81,11 @@ Other things to be aware of
   licensed code. Any contributions are expected to be original works unless
   otherwise explicitly noted and attributed.
 - Unum SDK is based on an internal Minim project and should remain structurally
-  and technically compatible-- we don't recommend drastic changes without 
+  and technically compatible-- we don't recommend drastic changes without
   chatting with us first!
+- If you have a negative experience, please call it out so that it can be
+  addressed. We aim to never intentionally belittle, insult, or mock, but to
+  err is human-- let us know so we can adjust our behavior.
 
 
 ## Happy Contributing!
