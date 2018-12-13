@@ -33,7 +33,7 @@ clean:
 	rm -rf $(SOURCE_PATH)
 
 $(SOURCE_PATH):
-	git clone $(REPO_URL) $(SOURCE_PATH)
+	git clone --depth=1 $(REPO_URL) $(SOURCE_PATH)
 
 .configured: $(SOURCE_PATH)
 	touch $@

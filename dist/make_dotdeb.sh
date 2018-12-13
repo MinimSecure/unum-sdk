@@ -45,4 +45,5 @@ else
         dh clean
     fi
     dh binary-arch
+    cp -fv ../unum-aio*.deb out/linux_generic
 fi

@@ -2,18 +2,12 @@ version: 2.1
 jobs:
   build-amd64:
     docker:
-      - image: debian:stretch
+      - image: minimsecure/circleci-debian-amd64:stretch-slim
     steps:
-      - run:
-          name: Install build dependencies
-          command: apt-get update && apt-get install -y build-essential git libcurl4-openssl-dev libjansson-dev libnl-3-dev libnl-genl-3-dev debhelper
       - checkout
       - run:
-          name: Build unum
+          name: Build unum and .deb
           command: ./dist/make_dotdeb.sh "$CIRCLE_TAG"
-      - run:
-          name: Copy .deb to out directory
-          command: cp -f ../unum-*.deb out/linux_generic
       - store_artifacts:
           path: out/linux_generic
           destination: build
@@ -22,18 +16,22 @@ jobs:
     steps:
       - run:
           name: Install qemu-arm-static
-          command: sudo apt-get update && sudo apt-get install -y qemu-user-static
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static
       - checkout
       - run:
-          name: Start armhf container
-          command: docker run -v "$PWD:/root/unum-sdk" -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm --name builder -dti arm32v7/debian:stretch-slim
-      - run:
-          name: Build unum
+          name: Start armhf build container
           command: |
-            docker exec -t builder /bin/bash -c 'apt-get update && apt-get install -y build-essential git libcurl4-openssl-dev libjansson-dev libnl-3-dev libnl-genl-3-dev debhelper'
-            docker exec -t builder /bin/bash -c 'cd /root/unum-sdk
-            ./dist/make_dotdeb.sh "$CIRCLE_TAG"
-            cp -f ../unum-*.deb out/linux_generic'
+            docker run -v "$PWD:/root/unum-sdk" \
+              -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static \
+              --rm --name builder -dti minimsecure/circleci-debian-armhf:stretch-slim
+      - run:
+          name: Build unum and .deb
+          command: |
+            docker exec -t builder /bin/bash -c \
+              'cd /root/unum-sdk
+              ./dist/make_dotdeb.sh "$CIRCLE_TAG"'
       - store_artifacts:
           path: out/linux_generic
           destination: build
