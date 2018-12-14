@@ -10,7 +10,8 @@ Unum is a closs-platform program and can be built and installed on
 OpenWrt-compatible devices, as well as Linux x86_64, i386, and armhf 
 architectures.
 
-[![CircleCI](https://circleci.com/gh/MinimSecure/unum-sdk/tree/master.svg?style=svg)][9]
+[![CircleCI Build Status](https://img.shields.io/circleci/project/github/MinimSecure/unum-sdk.svg?style=flat-square)][9]
+[![Latest Release](https://img.shields.io/github/release/MinimSecure/unum-sdk.svg?style=flat-square)][8]
 
 
 ## Getting started
@@ -53,3 +54,4 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [10]: CONTRIBUTING.md
 [11]: https://github.com/MinimSecure/unum-sdk/wiki
 [12]: https://github.com/MinimSecure/unum-sdk/wiki/Developer-Guide
+[13]: LICENSE
