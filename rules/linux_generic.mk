@@ -22,8 +22,7 @@ TARGET_RFS_DIST := $(TARGET_RFS)/dist
 TARGET_RFS_ETC := /etc/opt/unum
 TARGET_RFS_VAR := /var/opt/unum
 
-INSTALL_EXTRAS ?= yes
-INSTALL_EXTRAS := $(subst no,,$(INSTALL_EXTRAS))
+INSTALL_EXTRAS ?= 1
 
 ####################################################################
 # Common platform build options                                    #
@@ -53,7 +52,7 @@ TARGET_LIST := iwinfo unum
 TARGET_INSTALL_LIST := $(TARGET_LIST) files
 
 # Include "extras", a collection of utilities for common platforms.
-ifneq ($(filter-out no n,$(INSTALL_EXTRAS)),)
+ifneq ($(filter-out no n 0,$(INSTALL_EXTRAS)),)
 	TARGET_INSTALL_LIST += extras
 endif
 

@@ -49,7 +49,10 @@ prompt_require "Specify WAN network interface" "$ifname_wan"
 ifname_wan="$prompt_val"
 
 hwaddr_lan_orig="$hwaddr_lan"
-prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan" prompt_validator_macaddr
+if [[ -z "$hwaddr_lan_orig" ]]; then
+    hwaddr_lan_orig=$(ip addr show "$ifname_lan" | awk '/ether / { print $2 }')
+fi
+prompt_require "Enter MAC address for the LAN interface" "$hwaddr_lan_orig" prompt_validator_macaddr
 hwaddr_lan="$prompt_val"
 
 # Between 0 and 255, used as the third octet in LAN IP addresses
