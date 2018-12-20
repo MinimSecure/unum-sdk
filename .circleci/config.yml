@@ -81,7 +81,7 @@ jobs:
       - run:
           name: Push docker images
           command: |
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
             docker push "minimsecure/unum-builder:$DOCKER_TAG"
             docker push "minimsecure/unum:$DOCKER_TAG"
 workflows:
