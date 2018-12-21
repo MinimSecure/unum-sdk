@@ -659,13 +659,14 @@ void speedtest_perform()
     int limit = UTIL_ARRAY_SIZE(speedtests);
     for(i = 0; i < limit; ++i) {
         speedtests[i]();
+        // Let other threads have a turn.
+        sched_yield();
+        // Report intermediate results
         if(i != limit-1) {
             // Stream results except for the last iteration-- the results
             // will be uploaded after the test is over anyway.
             speedtest_upload_results_failfast();
         }
-        // Let other threads have a turn.
-        sched_yield();
     }
 
     // Deal with the various possible final states.
