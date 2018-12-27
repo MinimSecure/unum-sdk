@@ -89,11 +89,10 @@ make MODEL=linux_generic
 #### Bundled extras
 
 By default, ["extra" utilities](extras/linux_generic/README-linux_extras.md) are
-installed. Disable this by explicitly passing the `INSTALL_EXTRAS` option with a
-blank value (or "no"):
+installed. Disable this option with `INSTALL_EXTRAS=0`:
 
 ```bash
-make INSTALL_EXTRAS=no
+make INSTALL_EXTRAS=0
 ```
 
 
