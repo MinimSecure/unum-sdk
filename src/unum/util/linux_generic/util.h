@@ -36,9 +36,8 @@
 #include "../util_crashinfo.h"
 
 
-// This string is the device type ID, should be in sync with the server.
-// For Linux builds it comes from the make options since all the builds use
-// the same "linux_generic" MODEL ID.
+// This string is the hardware kind. It should be in sync with the server.
+// Usually it comes from the Makefile in the gcc invocation options
 //#define DEVICE_PRODUCT_NAME "hardware_type_here"
 
 // Graceful reboot command for the platform (if not defined
