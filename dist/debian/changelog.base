@@ -1,9 +1,10 @@
 unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
 
   * Improvements to iptables telemetry capturing
+  * Disable unimplemented crashinfo tracer
   * Replace originals in unum-aio .deb uninstall
 
- -- Tyler Sommer <tyler@minim.co>  Mon, 11 Dec 2018 12:45:03 -0700
+ -- Tyler Sommer <tyler@minim.co>  Tue, 1 Jan 2019 1:40:00 -0700
 
 
 unum-aio (2018.1.0) unstable; urgency=medium
