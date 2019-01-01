@@ -1,5 +1,6 @@
 version: 2.1
 jobs:
+  # Build a .deb package for amd64 platforms.
   build-amd64:
     docker:
       - image: minimsecure/circleci-debian-amd64:stretch-slim
@@ -11,6 +12,8 @@ jobs:
       - store_artifacts:
           path: out/linux_generic
           destination: build
+
+  # Build a .deb package for armhf platforms.
   build-armhf:
     machine: true
     steps:
@@ -35,6 +38,10 @@ jobs:
       - store_artifacts:
           path: out/linux_generic
           destination: build
+
+  # Build the "extras" Docker images: unum which is an Ubuntu 16.04 base with
+  # hostapd, dnsmasq, and the Unum agent installed, unum-builder which can be
+  # used to build the Unum agent.
   build-docker:
     machine: true
     environment:
@@ -55,48 +62,31 @@ jobs:
             docker image build --file extras/docker/Dockerfile --tag "minimsecure/unum:$DOCKER_TAG" .
             mkdir -p out
             docker image save -o out/unum_$DOCKER_TAG.dockerimg "minimsecure/unum:$DOCKER_TAG"
+      - run:
+          name: Publish image to dockerhub
+          command: |
+            if [[ -z "$DOCKER_USER" ]] || [[ -z "$DOCKER_PASS" ]]; then
+              echo "docker credentials unset, skipping upload"
+            else
+              echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+              docker push "minimsecure/unum-builder:$DOCKER_TAG"
+              docker push "minimsecure/unum:$DOCKER_TAG"
+            fi
       - store_artifacts:
           path: out
           destination: build
-      - store_artifacts:
-          path: build/linux_generic/rfs
-          destination: buildrfs
-          when: on_fail
-      - persist_to_workspace:
-          root: .
-          paths:
-            - out/*.dockerimg
-  publish-docker:
-    machine: true
-    environment:
-      DOCKER_TAG: "ubuntu-16.04"
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: Load docker images
-          command: |
-            docker image load -i out/unum_$DOCKER_TAG.dockerimg
-            docker image load -i out/unum-builder_$DOCKER_TAG.dockerimg
-      - run:
-          name: Push docker images
-          command: |
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker push "minimsecure/unum-builder:$DOCKER_TAG"
-            docker push "minimsecure/unum:$DOCKER_TAG"
+
 workflows:
   version: 2
+
+  # The "snapshot" workflow runs for all commits on any branch.
   snapshot:
     jobs:
       - build-amd64
       - build-armhf
       - build-docker
-      - publish-docker:
-          requires:
-            - build-docker
-          filters:
-            branches:
-              only: master
+
+  # The "release" workflow runs only for tagged commits.
   release:
     jobs:
       - build-amd64:
@@ -117,6 +107,3 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - publish-docker:
-          requires:
-            - build-docker
