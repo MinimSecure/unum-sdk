@@ -30,6 +30,7 @@ COPY --from=build /usr/local/src/unum/out/linux_generic/* .
 RUN mkdir -p /opt/unum && \
     tar -C /opt/unum -xf /root/linux_generic*
 
-RUN bash /opt/unum/extras/install.sh --no-interactive --extras --profile
+RUN bash /opt/unum/extras/install.sh --no-interactive --extras --aio --profile && \
+    echo 'service_type="manual"' >> /opt/unum/.installed
 
 RUN sed -i -e 's:wlan0:eth2:' -e 's:eth0:eth1:' /etc/opt/unum/config.json
