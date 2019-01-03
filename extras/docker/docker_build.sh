@@ -145,6 +145,6 @@ echo "  1. Sign up for a Minim Labs developer account on the Minim website"
 echo "     at https://my.minim.co/labs"
 echo
 echo "  2. Configure and start all services, including Unum:"
-echo "         startup.sh"
+echo "         minim-config"
 echo
 exec docker exec --interactive --tty "$container_name" /bin/bash -l
