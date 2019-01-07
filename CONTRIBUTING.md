@@ -19,7 +19,8 @@ There is only one absolute requirement: **Treat everyone with respect!**
 Contact us [directly by mail at labs@minim.co][6] to report security-related
 or otherwise sensitive matters.
 
-Encode your message with the [Minim Labs public PGP key][8], if desired.
+Encode your message with the [Minim Labs public key (0x5512FA98E0424563)][8],
+if desired.
 
 
 ### Open an Issue
@@ -101,4 +102,4 @@ out our blog!][7]
 [5]: https://www.minim.co
 [6]: mailto:labs@minim.co
 [7]: https://www.minim.co/blog
-[8]: https://github.com/MinimSecure/unum-sdk/blob/master/.minim-labs-pubkey.asc
+[8]: https://pgp.key-server.io/0x5512FA98E0424563
