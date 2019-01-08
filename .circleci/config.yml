@@ -40,8 +40,8 @@ jobs:
               BUILD_VERSION=${CIRCLE_TAG/v/}
             fi
             docker exec -t builder /bin/bash -c \
-              'cd /root/unum-sdk
-              ./dist/make_dotdeb.sh $BUILD_VERSION
+              "cd /root/unum-sdk
+              ./dist/make_dotdeb.sh $BUILD_VERSION"
       - store_artifacts:
           path: out/linux_generic
           destination: build
