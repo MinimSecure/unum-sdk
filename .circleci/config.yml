@@ -8,7 +8,11 @@ jobs:
       - checkout
       - run:
           name: Build unum and .deb
-          command: ./dist/make_dotdeb.sh "$CIRCLE_TAG"
+          command: |
+            if [[ ! -z "$CIRCLE_TAG" ]]; then
+              BUILD_VERSION=${CIRCLE_TAG/v/}
+            fi
+            ./dist/make_dotdeb.sh $BUILD_VERSION
       - store_artifacts:
           path: out/linux_generic
           destination: build
@@ -32,9 +36,12 @@ jobs:
       - run:
           name: Build unum and .deb
           command: |
+            if [[ ! -z "$CIRCLE_TAG" ]]; then
+              BUILD_VERSION=${CIRCLE_TAG/v/}
+            fi
             docker exec -t builder /bin/bash -c \
-              'cd /root/unum-sdk
-              ./dist/make_dotdeb.sh "$CIRCLE_TAG"'
+              "cd /root/unum-sdk
+              ./dist/make_dotdeb.sh $BUILD_VERSION"
       - store_artifacts:
           path: out/linux_generic
           destination: build
@@ -52,7 +59,13 @@ jobs:
           name: Build unum-builder image
           command: |
             ln -sf $(readlink -e extras/docker/dockerignore) .dockerignore
-            docker image build --file extras/docker/Dockerfile.build --tag "minimsecure/unum-builder:$DOCKER_TAG" .
+            if [[ ! -z "$CIRCLE_TAG" ]]; then
+              BUILD_VERSION=${CIRCLE_TAG/v/}
+            fi
+            if [[ ! -z "$BUILD_VERSION" ]]; then
+              BUILD_ARG_OPT="--build-arg unum_version=$BUILD_VERSION"
+            fi
+            docker image build --file extras/docker/Dockerfile.build $BUILD_ARG_OPT --tag "minimsecure/unum-builder:$DOCKER_TAG" .
             mkdir -p out
             docker image save -o out/unum-builder_$DOCKER_TAG.dockerimg "minimsecure/unum-builder:$DOCKER_TAG"
       - run:

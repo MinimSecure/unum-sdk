@@ -1,4 +1,5 @@
 FROM ubuntu:16.04
+ARG unum_version=2019.1.0-snapshot
 
 RUN apt-get update && \
     apt-get install -y \
@@ -14,4 +15,4 @@ RUN apt-get update && \
 WORKDIR /usr/local/src/unum
 COPY . .
 
-RUN make MODEL=linux_generic
+RUN make MODEL=linux_generic AGENT_VERSION=${unum_version}
