@@ -72,6 +72,9 @@ static CMD_RULE_t cmd_gen_rules[] = {
     { "fetch_urls", // fetch URLs requested by the server
       CMD_RULE_M_FULL | CMD_RULE_F_DATA,
       { .act_data = cmd_fetch_urls }},
+    { "force_fw_update", // Force FW update (even for development versions)
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = cmd_force_fw_update }},
     // CMD_RULE_M_ANY must be the last one
     { "shell_cmd", // generic commands, pass to shell
       CMD_RULE_M_ANY | CMD_RULE_F_DATA,
