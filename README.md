@@ -49,7 +49,7 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [5]: extras/docker/README-docker.md
 [6]: README-linux_generic.md
 [7]: https://github.com/MinimSecure/minim-openwrt-feed
-[8]: https://github.com/MinimSecure/unum-sdk/releases
+[8]: https://github.com/MinimSecure/unum-sdk/releases/latest
 [9]: https://circleci.com/gh/MinimSecure/unum-sdk/tree/master
 [10]: CONTRIBUTING.md
 [11]: https://github.com/MinimSecure/unum-sdk/wiki
