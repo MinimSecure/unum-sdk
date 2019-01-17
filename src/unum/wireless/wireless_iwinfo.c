@@ -196,7 +196,7 @@ int wt_iwinfo_get_noise(char *ifname, int *noise)
     return 0;
 }
 
-// Get transmit power offset (in dBm)
+// Get transmit power offset (in dBm, it is quite often not supported)
 // Returns: 0 if successful, negative if fails
 int wt_iwinfo_get_txpwr_offset(char *ifname, int *offset)
 {
@@ -208,7 +208,6 @@ int wt_iwinfo_get_txpwr_offset(char *ifname, int *offset)
     }
 
     if(iw->txpower_offset(ifname, offset) != 0) {
-        log_dbg("%s: failed to get tx power offset for %s\n", __func__, ifname);
         return -2;
     }
 
