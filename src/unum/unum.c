@@ -312,7 +312,7 @@ static void print_usage(int argc, char *argv[])
     printf(" -s, --set-url-pfx            - custom 'http(s)://<host>' URL\n");
     printf("                                prefix\n");
 #endif //DEBUG
-    printf(" -m, --mode                   - set opertion mode\n");
+    printf(" -m, --mode                   - set operation mode\n");
 #ifdef FW_UPDATER_OPMODE
     printf("                                u[pdater]: firmware updater\n");
 #endif // FW_UPDATER_OPMODE
