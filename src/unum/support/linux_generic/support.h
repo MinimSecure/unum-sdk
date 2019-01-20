@@ -17,6 +17,8 @@
 #ifndef _SUPPORT_H
 #define _SUPPORT_H
 
+// this module is not supported by linux_generic
+
 #define SUPPORT_LONG_PERIOD 0
 
 #define LOG_DST_SUPPORT 0
