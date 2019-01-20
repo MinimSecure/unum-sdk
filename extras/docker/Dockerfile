@@ -25,7 +25,7 @@ RUN apt-get update && \
         wireless-tools
 
 WORKDIR /root/
-COPY --from=build /usr/local/src/unum/out/linux_generic/* .
+COPY --from=build /usr/local/src/unum/out/linux_generic/linux_generic* .
 
 RUN mkdir -p /opt/unum && \
     tar -C /opt/unum -xf /root/linux_generic*
