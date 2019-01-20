@@ -17,6 +17,8 @@
 #ifndef _FW_UPDATE_H
 #define _FW_UPDATE_H
 
+// this module is not implemented for linux_generic
+
 #define FW_UPDATE_CHECK_PERIOD 0
 
 #define LOG_DST_UPDATE 0

@@ -72,9 +72,11 @@ static CMD_RULE_t cmd_gen_rules[] = {
     { "fetch_urls", // fetch URLs requested by the server
       CMD_RULE_M_FULL | CMD_RULE_F_DATA,
       { .act_data = cmd_fetch_urls }},
+#ifdef FW_UPDATER_OPMODE
     { "force_fw_update", // Force FW update (even for development versions)
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
       { .act_void = cmd_force_fw_update }},
+#endif // FW_UPDATER_OPMODE
 #ifdef DEBUG
     { "crash_me",        // Trigger a crash for debugging
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,

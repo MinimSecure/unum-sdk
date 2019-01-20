@@ -8,6 +8,9 @@ rules
 files
 !files/ca/*
 !files/linux_generic/*
+!files/features-common.txt
+!files/features.txt
+!files/release_properties.json
 extras
 !extras/linux_generic/*
 src
