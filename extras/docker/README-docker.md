@@ -44,7 +44,7 @@ Skip building a builder image, but recreate and configure the Unum container:
 
 ```bash
 sudo extras/docker/docker_build.sh \
-        -B unum-builder-ubuntu:16.04 ens33
+        -B minimsecure/unum-builder:ubuntu-16.04 ens33
 ```
 
 
