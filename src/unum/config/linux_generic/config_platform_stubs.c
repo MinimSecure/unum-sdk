@@ -27,51 +27,21 @@
 #undef LOG_DBG_DST
 #define LOG_DBG_DST LOG_DST_DROP
 
-#define PLATFORM_CONFIG_PATH "/etc/opt/unum/extras.conf.sh"
-#define PLATFORM_CONFIG_APPLY "/opt/unum/extras/sbin/apply_conf.sh"
-#define PLATFORM_CONFIG_APPLY_PIDFILE "/var/run/unum-apply.pid"
 
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,
 //          the returned pointer has to be released with the
 //          platform_cfg_free() call ASAP, if successful the returned config
-//          length is stored in p_len (unless p_len is NULL). The length
+//          length is stored in p_len (uness p_len is NULL). The length
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
-    FILE *conf = fopen(PLATFORM_CONFIG_PATH, "r");
-    if(conf == NULL) {
-        log("%s: failed to open extras.conf.sh", __func__);
-        return NULL;
-    }
-    char *cfg_ptr = NULL;
-    size_t cfg_size = 0;
-    FILE *out = open_memstream(&cfg_ptr, &cfg_size);
-    char buf[1024];
-    while(fgets(buf, 1024, conf) != NULL) {
-        fputs(buf, out);
-    }
-    fclose(conf);
-    conf = NULL;
-
-    if(out != NULL) {
-        fclose(out);
-        out = NULL;
-    }
-
-    if(p_len != NULL) {
-        // The data returned by open_memstream() includes the terminating 0,
-        // but the data length has to be incremented to account for it.
-        *p_len = cfg_size + 1;
-    }
-
-    return cfg_ptr;
+    return NULL;
 }
 
 // Calculate UID for the config passed in buf.
 static int calc_cfg_uid(char *buf, CONFIG_UID_t *p_uid)
 {
-    MD5((const unsigned char *)buf, strlen(buf), (unsigned char *)p_uid);
     return 0;
 }
 
@@ -124,12 +94,21 @@ void platform_cfg_free(char *buf)
 // Returns: 0 - if ok or error
 int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 {
-    FILE *out = fopen(PLATFORM_CONFIG_PATH ".tmp", "w");
-    if (out == NULL) {
-        return -3;
+    return 1;
+
+#ifdef DEBUG
+    // Do not reboot if running config test
+    if(get_test_num() == U_TEST_FILE_TO_CFG) {
+        printf("Reboot is required to apply the config.\n");
+        return 0;
     }
-    fwrite(cfg, 1, cfg_len, out);
-    return util_system(PLATFORM_CONFIG_APPLY " " PLATFORM_CONFIG_PATH ".tmp", 30, PLATFORM_CONFIG_APPLY_PIDFILE);
+#endif // DEBUG
+
+    log("%s: new config saved, rebooting the device\n", __func__);
+    util_reboot();
+    log("%s: reboot request has failed\n", __func__);
+
+    return -3;
 }
 
 // Platform specific init for the config subsystem

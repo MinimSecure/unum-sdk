@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// config subsystem platform include file
+// Platform specific include file.
+// The main purpose is to pull in all the platform specific headers.
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _PLATFORM_H
+#define _PLATFORM_H
 
-#include <openssl/md5.h>
+// Override the default config file path if ETC_PATH_PREFIX is defined
+#ifdef ETC_PATH_PREFIX
+#  undef UNUM_CONFIG_PATH
+#  define UNUM_CONFIG_PATH ETC_PATH_PREFIX "/config.json"
+#endif
 
-// Enable internal config download support, comment it out if
-// want the config download to be handled by a scripted command
-#define CONFIG_DOWNLOAD_IN_AGENT
+#include <uci.h>
 
-// Typedef for config UID on the platform (MD5 hash here).
-typedef char CONFIG_UID_t[16];
+#endif // _PLATFORM_H
 
-// Pull in the common include
-#include "../config_common.h"
-
-#endif // _CONFIG_H

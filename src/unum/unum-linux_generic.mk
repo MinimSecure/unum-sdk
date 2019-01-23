@@ -21,7 +21,7 @@ HARDWARE = linux_generic
 AP_HARDWARE_TYPES =
 
 # Generic libs
-LDFLAGS += -lrt
+LDFLAGS += -lrt -lcrypto
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally

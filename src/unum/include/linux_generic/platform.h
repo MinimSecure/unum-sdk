@@ -15,8 +15,8 @@
 // Platform specific include file.
 // The main purpose is to pull in all the platform specific headers.
 
-#ifndef _PALTFORM_H
-#define _PALTFORM_H
+#ifndef _PLATFORM_H
+#define _PLATFORM_H
 
 // Override the default config file path if ETC_PATH_PREFIX is defined
 #ifdef ETC_PATH_PREFIX
@@ -24,5 +24,5 @@
 #  define UNUM_CONFIG_PATH ETC_PATH_PREFIX "/config.json"
 #endif
 
-#endif // _PALTFORM_H
+#endif // _PLATFORM_H
 

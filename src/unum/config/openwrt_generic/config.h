@@ -17,7 +17,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include <openssl/md5.h>
+#include <mbedtls/md5.h>
 
 // Enable internal config download support, comment it out if
 // want the config download to be handled by a scripted command
