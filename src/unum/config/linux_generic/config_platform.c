@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// unum device configuration management code
+// Platform-specific device configuration management
+
+// The linux_generic platform uses two shell scripts to manage device config.
+// The "read" script is executed and its standard output is considered the
+// current config. The "apply" script is executed with the updated config
+// written to the script's standard input.
+// The default implementations do nothing and can be customized to suit
+// individual applications.
 
 #include "unum.h"
 
@@ -27,9 +34,14 @@
 #undef LOG_DBG_DST
 #define LOG_DBG_DST LOG_DST_DROP
 
-#define PLATFORM_CONFIG_PATH "/etc/opt/unum/extras.conf.sh"
-#define PLATFORM_CONFIG_APPLY "/opt/unum/extras/sbin/apply_conf.sh"
-#define PLATFORM_CONFIG_APPLY_PIDFILE "/var/run/unum-apply.pid"
+// Define the "read" and "apply" scripts, as described above.
+#ifndef PLATFORM_CONFIG_READ_SCRIPT
+#  define PLATFORM_CONFIG_READ_SCRIPT   "/opt/unum/sbin/read_conf.sh"
+#endif // ! PLATFORM_CONFIG_READ_SCRIPT
+
+#ifndef PLATFORM_CONFIG_APPLY_SCRIPT
+#  define PLATFORM_CONFIG_APPLY_SCRIPT  "/opt/unum/sbin/apply_conf.sh"
+#endif // ! PLATFORM_CONFIG_APPLY_SCRIPT
 
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,
@@ -39,25 +51,30 @@
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
-    FILE *conf = fopen(PLATFORM_CONFIG_PATH, "r");
+    static int buf_size = 1024;
+    FILE *conf = popen(PLATFORM_CONFIG_READ_SCRIPT, "r");
     if(conf == NULL) {
-        log("%s: failed to open extras.conf.sh", __func__);
+        log("%s: failed to open config read script %s", __func__, PLATFORM_CONFIG_READ_SCRIPT);
         return NULL;
     }
+
     char *cfg_ptr = NULL;
     size_t cfg_size = 0;
     FILE *out = open_memstream(&cfg_ptr, &cfg_size);
-    char buf[1024];
-    while(fgets(buf, 1024, conf) != NULL) {
+    char buf[buf_size];
+    while(fgets(buf, buf_size, conf) != NULL) {
         fputs(buf, out);
     }
-    fclose(conf);
+    pclose(conf);
     conf = NULL;
 
     if(out != NULL) {
         fclose(out);
         out = NULL;
     }
+
+    log_dbg("%s: config len: %lu\n", __func__, cfg_size);
+    log_dbg("%s: content:\n%.256s...\n", __func__, cfg_ptr);
 
     if(p_len != NULL) {
         // The data returned by open_memstream() includes the terminating 0,
@@ -121,15 +138,18 @@ void platform_cfg_free(char *buf)
 // Parameters:
 // - pointer to the config memory buffer
 // - config length
-// Returns: 0 - if ok or error
+// Returns: 0 - if ok or <0 on error
 int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 {
-    FILE *out = fopen(PLATFORM_CONFIG_PATH ".tmp", "w");
+    FILE *out = popen(PLATFORM_CONFIG_APPLY_SCRIPT, "w");
     if (out == NULL) {
-        return -3;
+        return -1;
     }
     fwrite(cfg, 1, cfg_len, out);
-    return util_system(PLATFORM_CONFIG_APPLY " " PLATFORM_CONFIG_PATH ".tmp", 30, PLATFORM_CONFIG_APPLY_PIDFILE);
+    pclose(out);
+    out = NULL;
+
+    return 0;
 }
 
 // Platform specific init for the config subsystem

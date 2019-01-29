@@ -128,7 +128,9 @@
 #define AGENT_PID_FILE_PREFIX "/var/run/unum"
 
 // Default agent config path, platforms can override in platform.h.
-#define UNUM_CONFIG_PATH "/tmp/unum.conf"
+#ifndef UNUM_CONFIG_PATH
+#  define UNUM_CONFIG_PATH "/tmp/unum.conf"
+#endif
 
 // Main configuration context (for global startup options and paramters)
 typedef struct {
