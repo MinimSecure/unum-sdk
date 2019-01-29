@@ -7,11 +7,11 @@ RUN apt-get update && \
         gawk \
         gettext \
         git \
-        libssl-dev \
         libcurl4-openssl-dev \
         libjansson-dev \
         libnl-3-dev \
         libnl-genl-3-dev \
+        libssl-dev \
         vim
 
 WORKDIR /usr/local/src/unum
