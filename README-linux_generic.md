@@ -26,7 +26,7 @@ Sign up for a developer account on the [Minim Labs website][1].
 ## Building
 
 As far as build dependencies, building Unum requires make, gcc, libc6-pic, some
-flavor of libcurl-dev, libjansson-dev, and a netlink library like libnl-3-200 
+flavor of libcurl-dev and libssl-dev, libjansson-dev, and a netlink library like libnl-3-200 
 or libnl-tiny. Bash scripts included in "extras" additionally depend on gawk.
 
 On a fresh Ubuntu or Debian install, for example:
@@ -35,7 +35,7 @@ On a fresh Ubuntu or Debian install, for example:
 sudo apt-get update
 sudo apt-get install build-essential \
     libcurl4-openssl-dev gawk libjansson-dev \
-    libnl-3-dev libnl-genl-3-dev
+    libnl-3-dev libnl-genl-3-dev libssl-dev
 ```
 
 Use the make command to begin the build process. The default target will build 
