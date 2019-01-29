@@ -22,7 +22,7 @@
 
 // Define prefix for log files location.
 #ifndef LOG_PATH_PREFIX
-#  define LOG_PATH_PREFIX "/var/opt/unum"
+#  define LOG_PATH_PREFIX "/var/log"
 #endif
 
 // Where to direct stdout and stderr in the daemon mode. Warning, do not

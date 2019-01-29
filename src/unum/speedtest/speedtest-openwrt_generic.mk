@@ -1,1 +1,1 @@
-speedtst-linux_generic.mk
+speedtest-linux_generic.mk
