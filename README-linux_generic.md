@@ -311,7 +311,7 @@ Directory structure overview:
 
 ```
 .                           Project root
-|- README-linux_generic     This file
+|- README-linux_generic.md  This file
 |- Makefile                 Main universal unum Makefile
 |- dist/                    Files related to distributable build generation
 |- dist/debian              Debian-specific files, used with debhelper to 
@@ -338,6 +338,50 @@ Directory structure overview:
 |                           generate the final tarball.
 |- out/linux_generic/       Final distributable output directory.
 ```
+
+### Configuration format
+
+The Unum agent transmits device configuration information and supports applying
+changes (requested by the user from the Minim dashboard) to the device as well.
+
+For "linux_generic", a basic configuration format is used to manage the device,
+as defined below. All fields are required unless otherwise noted.
+
+> Check the "extras" read_conf.sh and apply_conf.sh scripts for example 
+  implementations that make use of this format.
+
+| field name | type | description
+| ---------- | ---- | -----------
+| ifname_wan | string | WAN interface name
+| ifname_lan | string | Primary LAN interface name
+| ifname_wlan | string | Wireless interface name. Empty if wireless is not configured.
+| phyname_wlan | string | Wireless phy name. Empty if wireless is not configured.
+| ifname_wlan1 | string | Secondary wireless interface name. Optional.
+| phyname_wlan1 | string | Secondary wireless interface name. Optional unless ifname_wlan1 is specified.
+| ipaddr_lan | string | LAN IP address (formatted 192.168.1.1)
+| lanmask_lan | string | LAN subnet mask (formatted 255.255.255.0)
+| ssid | string | Wireless SSID
+| passphrase | string | Wireless passphrase
+| ssid_wlan1 | string | Wireless SSID for the secondary wireless interface. Optional unless ifname_wlan1 is specified.
+| passphrase_wlan1 | string | Wireless passphrase for the secondary wireless interface. Optional unless ifname_wlan1 is specified.
+
+### Configuration application process
+
+Unum for Linux periodically executes the `read_conf.sh` script which should 
+print the current device configuration to standard output. Unum tracks the 
+contents of this output, and when it changes it is securely transmitted to 
+Minim servers.
+
+When the user triggers some functionality in the Minim dashboard that should 
+change the device configuration, the server's copy of the configuration is 
+updated and sent back to the running Unum agent. Unum then executes the 
+`apply_conf.sh` script, writing the updated configuration to the script's 
+standard input. The script is expected to perform any necessary changes to 
+the device configuration, which should then be reflected the next time the
+`read_conf.sh` script is executed.
+
+By default, Unum will look in the `$UNUM_ISNTALL_ROOT/sbin` directory for both
+scripts.
 
 [1]: https://wwww.minim.co/labs
 [2]: https://my.minim.co

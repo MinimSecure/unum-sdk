@@ -14,13 +14,6 @@
 
 // Platform-specific device configuration management
 
-// The linux_generic platform uses two shell scripts to manage device config.
-// The "read" script is executed and its standard output is considered the
-// current config. The "apply" script is executed with the updated config
-// written to the script's standard input.
-// The default implementations do nothing and can be customized to suit
-// individual applications.
-
 #include "unum.h"
 
 
@@ -33,15 +26,6 @@
 /* Drop all the debug log messages from this file until needed */
 #undef LOG_DBG_DST
 #define LOG_DBG_DST LOG_DST_DROP
-
-// Define the "read" and "apply" scripts, as described above.
-#ifndef PLATFORM_CONFIG_READ_SCRIPT
-#  define PLATFORM_CONFIG_READ_SCRIPT   "/opt/unum/sbin/read_conf.sh"
-#endif // ! PLATFORM_CONFIG_READ_SCRIPT
-
-#ifndef PLATFORM_CONFIG_APPLY_SCRIPT
-#  define PLATFORM_CONFIG_APPLY_SCRIPT  "/opt/unum/sbin/apply_conf.sh"
-#endif // ! PLATFORM_CONFIG_APPLY_SCRIPT
 
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,

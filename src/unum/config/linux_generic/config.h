@@ -26,6 +26,22 @@
 // Typedef for config UID on the platform (MD5 hash here).
 typedef char CONFIG_UID_t[16];
 
+// The linux_generic platform uses two shell scripts to manage device config.
+// The "read" script is executed and its standard output is considered the
+// current config. The "apply" script is executed with the updated config
+// written to the script's standard input.
+// The default implementations do nothing and can be customized to suit
+// individual applications.
+
+// Define the "read" and "apply" scripts, as described above.
+#ifndef PLATFORM_CONFIG_READ_SCRIPT
+#  define PLATFORM_CONFIG_READ_SCRIPT   "/opt/unum/sbin/read_conf.sh"
+#endif // ! PLATFORM_CONFIG_READ_SCRIPT
+
+#ifndef PLATFORM_CONFIG_APPLY_SCRIPT
+#  define PLATFORM_CONFIG_APPLY_SCRIPT  "/opt/unum/sbin/apply_conf.sh"
+#endif // ! PLATFORM_CONFIG_APPLY_SCRIPT
+
 // Pull in the common include
 #include "../config_common.h"
 
