@@ -17,10 +17,10 @@ The Unum agent securely communicates with [Minim][2] cloud servers and requires
 a Minim Labs developer account.
 
 Additionally, the configured LAN network adapter's MAC address is used as the
-unique identifier for a given Unum. This MAC address must be associated with 
-an active developer account on Minim Labs for the agent to start properly.
+unique identifier for a given instance of the Unum agent. This MAC address must
+be associated with an active account on Minim Labs for the agent to function.
 
-Sign up for a developer account on the [Minim Labs website][1].
+Find out more and sign up for an account on the [Minim Labs website][1].
 
 
 ## Building
@@ -290,7 +290,7 @@ JSON configuration file or as a command line argument.
 
 * The agent starts, but provisioning fails with "forbidden" or "unauthorized"
   * Verify the MAC address being sent by Unum matches the MAC address shown
-    in the [Minim Labs portal][1]
+    in the [Minim Labs portal][3]
 
 * The agent is slowly running "conncheck" and does not come online in the portal
   * Check the network connection and restart the agent.
@@ -339,6 +339,7 @@ Directory structure overview:
 |- out/linux_generic/       Final distributable output directory.
 ```
 
-[1]: https://my.minim.co/labs
+[1]: https://wwww.minim.co/labs
 [2]: https://my.minim.co
 [3]: https://github.com/MinimSecure/unum-sdk/releases
+[4]: https://my.minim.co/labs

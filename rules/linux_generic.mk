@@ -80,10 +80,10 @@ TARGET_CPPFLAGS_unum := \
 	-D'ETC_PATH_PREFIX=\"$(TARGET_RFS_ETC)\"'
 
 # Modify the read and apply config scripts to use the "extras" implementation.
-#ifneq ($(INSTALL_EXTRAS),)
-#	TARGET_CPPFLAGS_unum += -D'PLATFORM_CONFIG_READ_SCRIPT=\"/opt/unum/extras/sbin/read_conf.sh\"' \
-#						-D'PLATFORM_CONFIG_APPLY_SCRIPT=\"/opt/unum/extras/sbin/apply_conf.sh\"'
-#endif
+ifneq ($(INSTALL_EXTRAS),)
+	TARGET_CPPFLAGS_unum += -D'PLATFORM_CONFIG_READ_SCRIPT=\"/opt/unum/extras/sbin/read_conf.sh\"' \
+						    -D'PLATFORM_CONFIG_APPLY_SCRIPT=\"/opt/unum/extras/sbin/apply_conf.sh\"'
+endif
 
 # Component dependencies
 unum: iwinfo
