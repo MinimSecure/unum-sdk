@@ -41,8 +41,8 @@ cidr_to_mask() {
         printf '%d' $(( 256 - (1 << (8 - iterv)) ))
         if (( itern < 3 )); then
             printf '.'
-		else
-			printf '\n'
+        else
+            printf '\n'
         fi
     done
     return 0
