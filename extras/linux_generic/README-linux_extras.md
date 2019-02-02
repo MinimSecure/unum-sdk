@@ -77,3 +77,23 @@ Run this command with `--no-interactive` to skip prompting for user input,
 instead using the existing configuration stored in the `extras.conf.sh` file,
 which is generated inside the Unum configuration directory (`/etc/opt/unum` by
 default).
+
+
+## Other tools
+
+- [`minim-config`](#minim-config) (re)starts everything, first time run will also run 
+  `config_interfaces.sh`.
+- `config_interfaces.sh` will prompt the user for details to fully configure
+  the system's network interfaces. This script generates files for
+  `/etc/network/interfaces.d/` as well as an `extras.conf.sh` file used
+  by the other scripts.
+- `config_routing.sh` configures iptables and enables IP forwarding
+- `config_dnsmasq.sh` generates a dnsmasq.conf file and starts dnsmasq
+- `start_dnsmasq.sh` starts dnsmasq using the generated config
+- `config_hostapd.sh` generates a hostapd.conf file, interactively prompting
+  for configuring the wireless adapter, if any
+- `start_hostapd.sh` starts hostapd using the generated config
+- `start_unum.sh` starts unum as a daemon
+- `stop_all.sh` stops all the services.
+- [`/opt/unum/extras/sbin/unum_env.sh`](#unum-envsh) is a library script that can be sourced
+  in bash sessions.

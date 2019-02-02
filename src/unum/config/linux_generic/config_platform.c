@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@
 #undef LOG_DBG_DST
 #define LOG_DBG_DST LOG_DST_DROP
 
+#define PLATFORM_READ_BUFFER_SIZE 1024
+
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,
 //          the returned pointer has to be released with the
@@ -35,7 +37,6 @@
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
-    static int buf_size = 1024;
     FILE *conf = popen(PLATFORM_CONFIG_READ_SCRIPT, "r");
     if(conf == NULL) {
         log("%s: failed to open config read script %s", __func__, PLATFORM_CONFIG_READ_SCRIPT);
@@ -45,8 +46,8 @@ char *platform_cfg_get(int *p_len)
     char *cfg_ptr = NULL;
     size_t cfg_size = 0;
     FILE *out = open_memstream(&cfg_ptr, &cfg_size);
-    char buf[buf_size];
-    while(fgets(buf, buf_size, conf) != NULL) {
+    char buf[PLATFORM_READ_BUFFER_SIZE];
+    while(fgets(buf, PLATFORM_READ_BUFFER_SIZE, conf) != NULL) {
         fputs(buf, out);
     }
     pclose(conf);
@@ -129,7 +130,18 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
     if (out == NULL) {
         return -1;
     }
-    fwrite(cfg, 1, cfg_len, out);
+    size_t len = (size_t) cfg_len;
+    FILE *conf = open_memstream(&cfg, &len);
+    if (conf == NULL) {
+        return -2;
+    }
+    char buf[PLATFORM_READ_BUFFER_SIZE];
+    while(fgets(buf, PLATFORM_READ_BUFFER_SIZE, conf) != NULL) {
+        fputs(buf, out);
+    }
+    pclose(conf);
+    conf = NULL;
+    
     pclose(out);
     out = NULL;
 

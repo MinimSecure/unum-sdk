@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ typedef char CONFIG_UID_t[16];
 // written to the script's standard input.
 // The default implementations do nothing and can be customized to suit
 // individual applications.
+// See also: https://github.com/MinimSecure/unum-sdk/blob/master/README-linux_generic.md#configuration-format
+
 
 // Define the "read" and "apply" scripts, as described above.
 #ifndef PLATFORM_CONFIG_READ_SCRIPT

@@ -1,5 +1,5 @@
 #!/bin/sh -e
-# Copyright 2018 Minim Inc
+# Copyright 2019 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,3 +14,7 @@
 # limitations under the License.
 
 # Default "apply" script implementation that does nothing.
+
+# Check README-linux_generic.md in this repository for detailed information
+# about apply_conf.sh and read_conf.sh:
+# https://github.com/MinimSecure/unum-sdk/blob/master/README-linux_generic.md#configuration-format

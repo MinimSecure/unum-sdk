@@ -148,14 +148,19 @@ Brief overview of supported options:
 - Optionally install extra shell scripts and base configuration files that
   handle automatically configuring and starting hostapd, dnsmasq, unum, and
   necessary iptables rules for running a Linux router.
-  > This is used in the unum docker container, check 
-    [README-docker.md](extras/docker/README-docker.md#technical-overview)
+  > This is used in the Unum for Docker container and the Unum "all-in-one"
+    package.
+    Check [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#other-tools)
     for a bit more information on these scripts. 
-- Optionally install Unum "all-in-one" and `minim-config` utility. 
+- Optionally install Unum "all-in-one" and `minim-config` utility.
+  > Check [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#minim-config)
+    for more information about this option.
 - Remove an existing installation:
   ```bash
   sudo /opt/unum/extras/install.sh --uninstall
   ```
+  > Note: uninstalling will not remove configuration files. Use `--purge` to
+    completely remove all traces of Unum.
 
 > For more information on the `install.sh` script, check 
   [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#installsh).
@@ -347,23 +352,67 @@ changes (requested by the user from the Minim dashboard) to the device as well.
 For "linux_generic", a basic configuration format is used to manage the device,
 as defined below. All fields are required unless otherwise noted.
 
-> Check the "extras" read_conf.sh and apply_conf.sh scripts for example 
+> Check the "extras" [read_conf.sh][6] and [apply_conf.sh][5] scripts for example 
   implementations that make use of this format.
 
-| field name | type | description
-| ---------- | ---- | -----------
-| ifname_wan | string | WAN interface name
-| ifname_lan | string | Primary LAN interface name
-| ifname_wlan | string | Wireless interface name. Empty if wireless is not configured.
-| phyname_wlan | string | Wireless phy name. Empty if wireless is not configured.
-| ifname_wlan1 | string | Secondary wireless interface name. Optional.
-| phyname_wlan1 | string | Secondary wireless interface name. Optional unless ifname_wlan1 is specified.
-| ipaddr_lan | string | LAN IP address (formatted 192.168.1.1)
-| lanmask_lan | string | LAN subnet mask (formatted 255.255.255.0)
-| ssid | string | Wireless SSID
-| passphrase | string | Wireless passphrase
-| ssid_wlan1 | string | Wireless SSID for the secondary wireless interface. Optional unless ifname_wlan1 is specified.
-| passphrase_wlan1 | string | Wireless passphrase for the secondary wireless interface. Optional unless ifname_wlan1 is specified.
+##### WAN and primary LAN interface related fields
+
+| field name | description
+| ---------- | -----------
+| ifname_wan | WAN interface name
+| ifname_lan | Primary LAN interface name
+| ipaddr_lan | LAN IP address (formatted 192.168.1.1)
+| subnet_lan | LAN subnet mask (formatted 255.255.255.0)
+
+##### Primary wireless adapter interface fields
+
+| field name | description
+| ---------- | -----------
+| ifname_wlan | Wireless interface name. Empty if wireless is not configured.
+| phyname_wlan | Wireless phy name. Empty if wireless is not configured.
+| country_wlan | Configured country for the wireless adapter.
+| hwmode_wlan | Hardware mode (either `11a` or `11g`)
+| channel_wlan | Channel (valid number for the hwmode or `auto`)
+| ssid_wlan | Wireless SSID
+| passphrase_wlan | Wireless passphrase
+| disabled_wlan | Optional. Non-empty if this interface is disabled.
+
+##### Secondary wireless adapter interface fields
+
+> Note that all `*_wlan1` fields are required when `ifname_wlan1` is specified.
+
+| field name | description
+| ---------- | -----------
+| ifname_wlan1 | Secondary wireless interface name.
+| phyname_wlan1 | Secondary wireless phy name.
+| country_wlan1 | Configured country for secondary wireless adapter.
+| hwmode_wlan1 | Secondary wireless adapter hardware mode (either `11a` or `11g`)
+| channel_wlan1 | Channel (number or `auto`) for the secondary wireless interface.
+| ssid_wlan1 | Wireless SSID for the secondary wireless interface.
+| passphrase_wlan1 | Wireless passphrase for the secondary wireless interface.
+| disabled_wlan1 | Optional. Non-empty if the secondary interface is disabled.
+
+#### Example configuration
+
+Each line should contain a single `key=value` pair. The key may contain letters,
+numbers, and underscores. The value may be enclosed within single or double quotes.
+
+> Check linux_generic "extras" linux_generic[read_conf.sh][6] and [apply_conf.sh][5] for a
+  concrete implementation that uses this format.
+
+```
+ifname_wan=eth0
+ifname_lan=wlan0
+ipaddr_lan=192.168.11.1
+subnet_lan=255.255.255.0
+ifname_wlan=wlan0
+phyname_wlan=phy0
+country_wlan=US
+hwmode_wlan=11g
+channel_wlan=11
+ssid_wlan=MinimSecure
+passphrase_wlan="some passphrase"
+```
 
 ### Configuration application process
 
@@ -387,3 +436,5 @@ scripts.
 [2]: https://my.minim.co
 [3]: https://github.com/MinimSecure/unum-sdk/releases
 [4]: https://my.minim.co/labs
+[5]: https://github.com/MinimSecure/unum-sdk/blob/master/extras/linux_generic/sbin/apply_conf.sh
+[6]: https://github.com/MinimSecure/unum-sdk/blob/master/extras/linux_generic/sbin/read_conf.sh

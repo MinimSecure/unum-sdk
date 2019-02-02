@@ -76,7 +76,7 @@ TARGET_VARS_unum := \
 	UNUM_DISABLE_TRACER=1
 TARGET_CPPFLAGS_unum := \
 	-D'PERSISTENT_FS_DIR_PATH=\"$(TARGET_RFS_VAR)\"' \
-	-D'LOG_PATH_PREFIX=\"$(TARGET_RFS_VAR)/log\"' \
+	-D'LOG_PATH_PREFIX=\"$(TARGET_RFS_VAR)\"' \
 	-D'ETC_PATH_PREFIX=\"$(TARGET_RFS_ETC)\"'
 
 # Modify the read and apply config scripts to use the "extras" implementation.
