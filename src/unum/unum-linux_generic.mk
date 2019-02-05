@@ -21,7 +21,7 @@ HARDWARE = linux_generic
 AP_HARDWARE_TYPES =
 
 # Generic libs
-LDFLAGS += -lrt
+LDFLAGS += -lrt -lcrypto
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally
@@ -48,12 +48,6 @@ LDFLAGS += -L$(TARGET_LIBS)/
 
 # Add hardware ID this build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
-
-# Define the path to where the agent will store variable files.
-ifneq ($(PERSISTENT_FS_DIR_PATH),)
-	CPPFLAGS += -DPERSISTENT_FS_DIR_PATH=\"$(PERSISTENT_FS_DIR_PATH)\"
-endif
-
 CPPFLAGS += -Wno-format
 CPPFLAGS += -Wno-int-to-pointer-cast
 

@@ -251,13 +251,17 @@ sleep 2
 
 # Start the services
 
-# Start hostapd first because it must configure the wireless interface before
-# dnsmasq can bind to it.
-echo "Starting hostapd..."
-start_service hostapd
+if [[ ! -z "$ifname_wlan" ]]; then
+    # Start hostapd first because it must configure the wireless interface before
+    # dnsmasq can bind to it.
+    echo "Starting hostapd..."
+    start_service hostapd
 
-# Sleep seems to be necessary in between these starts
-sleep 5
+    # Sleep seems to be necessary in between these starts
+    sleep 5
+else
+    echo "no wireless interface configured, not starting hostapd"
+fi
 
 echo "Starting dnsmasq..."
 start_service dnsmasq

@@ -31,18 +31,33 @@ ifname_lan="$prompt_val"
 
 declare ifname_wlan
 declare phyname_wlan
-if confirm "Configure wireless interface?" "yes"; then
-    prompt_require "Specify wireless network interface name" "wlan0"
+declare config_wlan_value="yes"
+if [[ -z "$ifname_wlan" ]] && [[ -z $(which iw) || -z $(iw phy) ]]; then
+    # Default to 'no' when
+    # - $ifname_wlan is blank
+    # and either:
+    # - iw is not installed
+    # - no devices appear in `iw phy` output
+    config_wlan_value="no"
+fi
+declare ifname_wlan_guess=$(iw dev | awk 'match($0, /Interface ([a-zA-Z0-9]+?)$/, matches) { print matches[1] }')
+if confirm "Configure wireless interface?" "$config_wlan_value"; then
+    prompt_require "Specify wireless network interface name" "${ifname_wlan:-"${ifname_wlan_guess:-"wlan0"}"}"
     ifname_wlan="$prompt_val"
-    prompt_require "Specify wireless phy device name" "phy0"
+    prompt_require "Specify wireless phy device name" "${phyname_wlan:-"phy0"}"
     phyname_wlan="$prompt_val"
+else
+    phyname_wlan=
+    ifname_wlan=
 fi
 
 declare ifname_bridge
 if [[ ! -z "$phyname_wlan" ]] && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
-    echo "detected multiple LAN interfaces, configuring bridge"
-    prompt_require "Specify bridge interface" "br-lan"
+    echo "---> Multiple LAN interfaces specified, configuring bridge"
+    prompt_require "Specify bridge interface" "${ifname_bridge:-"br-lan"}"
     ifname_bridge="$prompt_val"
+else
+    ifname_bridge=
 fi
 
 prompt_require "Specify WAN network interface" "$ifname_wan"

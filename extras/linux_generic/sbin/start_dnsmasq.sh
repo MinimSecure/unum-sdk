@@ -22,4 +22,4 @@ if [[ ! -f "$UNUM_ETC_DIR/dnsmasq.conf" ]]; then
 fi
 
 echo "Starting dnsmasq..."
-dnsmasq -C "$dnsmasq_conf"
+dnsmasq -C "$UNUM_ETC_DIR/dnsmasq.conf" --log-facility="$UNUM_VAR_DIR/dnsmasq.log"

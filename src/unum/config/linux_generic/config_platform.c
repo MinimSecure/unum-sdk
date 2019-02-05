@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// unum device configuration management code
+// Platform-specific device configuration management
 
 #include "unum.h"
 
@@ -27,30 +27,53 @@
 #undef LOG_DBG_DST
 #define LOG_DBG_DST LOG_DST_DROP
 
+#define PLATFORM_READ_BUFFER_SIZE 1024
 
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,
 //          the returned pointer has to be released with the
 //          platform_cfg_free() call ASAP, if successful the returned config
-//          length is stored in p_len (uness p_len is NULL). The length
+//          length is stored in p_len (unless p_len is NULL). The length
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
-    return NULL;
+    FILE *conf = popen(PLATFORM_CONFIG_READ_SCRIPT, "r");
+    if(conf == NULL) {
+        log("%s: failed to open config read script %s", __func__, PLATFORM_CONFIG_READ_SCRIPT);
+        return NULL;
+    }
+
+    char *cfg_ptr = NULL;
+    size_t cfg_size = 0;
+    FILE *out = open_memstream(&cfg_ptr, &cfg_size);
+    char buf[PLATFORM_READ_BUFFER_SIZE];
+    while(fgets(buf, PLATFORM_READ_BUFFER_SIZE, conf) != NULL) {
+        fputs(buf, out);
+    }
+    pclose(conf);
+    conf = NULL;
+
+    if(out != NULL) {
+        fclose(out);
+        out = NULL;
+    }
+
+    log_dbg("%s: config len: %lu\n", __func__, cfg_size);
+    log_dbg("%s: content:\n%.256s...\n", __func__, cfg_ptr);
+
+    if(p_len != NULL) {
+        // The data returned by open_memstream() includes the terminating 0,
+        // but the data length has to be incremented to account for it.
+        *p_len = cfg_size + 1;
+    }
+
+    return cfg_ptr;
 }
 
 // Calculate UID for the config passed in buf.
 static int calc_cfg_uid(char *buf, CONFIG_UID_t *p_uid)
 {
-#ifdef MD5_FROM_MBEDTLS
-    mbedtls_md5_context md5;
-
-    mbedtls_md5_init(&md5);
-    mbedtls_md5_starts(&md5);
-    mbedtls_md5_update(&md5, (unsigned char*)buf, strlen(buf));
-    mbedtls_md5_finish(&md5, (unsigned char*)p_uid);
-    mbedtls_md5_free(&md5);
-#endif
+    MD5((const unsigned char *)buf, strlen(buf), (unsigned char *)p_uid);
     return 0;
 }
 
@@ -100,24 +123,29 @@ void platform_cfg_free(char *buf)
 // Parameters:
 // - pointer to the config memory buffer
 // - config length
-// Returns: 0 - if ok or error
+// Returns: 0 - if ok or <0 on error
 int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 {
-    return 1;
-
-#ifdef DEBUG
-    // Do not reboot if running config test
-    if(get_test_num() == U_TEST_FILE_TO_CFG) {
-        printf("Reboot is required to apply the config.\n");
-        return 0;
+    FILE *out = popen(PLATFORM_CONFIG_APPLY_SCRIPT, "w");
+    if (out == NULL) {
+        return -1;
     }
-#endif // DEBUG
+    size_t len = (size_t) cfg_len;
+    FILE *conf = open_memstream(&cfg, &len);
+    if (conf == NULL) {
+        return -2;
+    }
+    char buf[PLATFORM_READ_BUFFER_SIZE];
+    while(fgets(buf, PLATFORM_READ_BUFFER_SIZE, conf) != NULL) {
+        fputs(buf, out);
+    }
+    pclose(conf);
+    conf = NULL;
+    
+    pclose(out);
+    out = NULL;
 
-    log("%s: new config saved, rebooting the device\n", __func__);
-    util_reboot();
-    log("%s: reboot request has failed\n", __func__);
-
-    return -3;
+    return 0;
 }
 
 // Platform specific init for the config subsystem

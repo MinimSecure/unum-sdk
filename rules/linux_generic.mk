@@ -22,7 +22,9 @@ TARGET_RFS_DIST := $(TARGET_RFS)/dist
 TARGET_RFS_ETC := /etc/opt/unum
 TARGET_RFS_VAR := /var/opt/unum
 
+# Include "extras", a collection of utilities for common platforms.
 INSTALL_EXTRAS ?= 1
+INSTALL_EXTRAS := $(filter-out no n 0,$(INSTALL_EXTRAS))
 
 ####################################################################
 # Common platform build options                                    #
@@ -48,11 +50,11 @@ TARGET_CFLAGS += \
 TARGET_LIST := iwinfo unum
 
 # Static files bundled with the binary (default config files, etc)
-# are handled in the `files.install` and `extras.install` targets below.
+# are handled in the `files.install` and `extras.install` targets.
 TARGET_INSTALL_LIST := $(TARGET_LIST) files
 
-# Include "extras", a collection of utilities for common platforms.
-ifneq ($(filter-out no n 0,$(INSTALL_EXTRAS)),)
+# Conditionally include the "extras" target.
+ifneq ($(INSTALL_EXTRAS),)
 	TARGET_INSTALL_LIST += extras
 endif
 
@@ -71,10 +73,17 @@ TARGET_VARS_iwinfo := \
 ### unum
 TARGET_VARS_unum := \
 	IWINFO=$(IWINFO_VERSION) \
-	UNUM_DISABLE_TRACER=1 \
-	PERSISTENT_FS_DIR_PATH="$(TARGET_RFS_VAR)" \
-	LOG_PATH_PREFIX="$(TARGET_RFS_VAR)/log" \
-	ETC_PATH_PREFIX="$(TARGET_RFS_ETC)"
+	UNUM_DISABLE_TRACER=1
+TARGET_CPPFLAGS_unum := \
+	-D'PERSISTENT_FS_DIR_PATH=\"$(TARGET_RFS_VAR)\"' \
+	-D'LOG_PATH_PREFIX=\"$(TARGET_RFS_VAR)\"' \
+	-D'ETC_PATH_PREFIX=\"$(TARGET_RFS_ETC)\"'
+
+# Modify the read and apply config scripts to use the "extras" implementation.
+ifneq ($(INSTALL_EXTRAS),)
+	TARGET_CPPFLAGS_unum += -D'PLATFORM_CONFIG_READ_SCRIPT=\"/opt/unum/extras/sbin/read_conf.sh\"' \
+						    -D'PLATFORM_CONFIG_APPLY_SCRIPT=\"/opt/unum/extras/sbin/apply_conf.sh\"'
+endif
 
 # Component dependencies
 unum: iwinfo
@@ -91,7 +100,9 @@ unum.install:
 
 files.install:
 	mkdir -p "$(TARGET_RFS_DIST)$(TARGET_RFS_ETC)" "$(TARGET_RFS_DIST)$(TARGET_RFS_VAR)"
-	cp -r -f "$(TARGET_FILES)/etc/"* "$(TARGET_RFS_DIST)/etc"
+	cp -r -f "$(TARGET_FILES)/etc/"* "$(TARGET_RFS_DIST)$(TARGET_RFS_ETC)"
+	mkdir -p "$(TARGET_RFS)/sbin"
+	cp -r -f "$(TARGET_FILES)/sbin/"* "$(TARGET_RFS)/sbin"
 
 extras.install:
 	mkdir -p "$(TARGET_RFS)/extras"

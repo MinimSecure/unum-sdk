@@ -22,7 +22,7 @@ for arg in $@; do
     esac
 done
 
-VERSION_BASE="2019.1.0"
+VERSION_BASE="2019.1.1"
 VERSION_STABILITY="unstable"
 VERSION=${1:-"${VERSION_BASE}-snapshot"}
 

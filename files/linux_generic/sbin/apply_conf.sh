@@ -1,4 +1,5 @@
-# Copyright 2018 Minim Inc
+#!/bin/sh -e
+# Copyright 2019 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Common Makefile for the speedtest component
+# Default "apply" script implementation that does nothing.
 
-# Add speedtest folder to the include search path
-CPPFLAGS += -I$(UNUM_PATH)/speedtest/
-
-# Add code file(s)
-OBJECTS += ./speedtest/speedtest.o
+# Check README-linux_generic.md in this repository for detailed information
+# about apply_conf.sh and read_conf.sh:
+# https://github.com/MinimSecure/unum-sdk/blob/master/README-linux_generic.md#configuration-format

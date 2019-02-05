@@ -37,6 +37,10 @@ cp "$UNUM_INSTALL_ROOT/extras/etc/hostapd.conf.base" "$hostapd_conf"
 
 echo "interface=$ifname_wlan" >> "$hostapd_conf"
 
+if [[ ! -z "$ifname_bridge" ]]; then
+    echo "bridge=$ifname_bridge" >> "$hostapd_conf"
+fi
+
 prompt_require "Specify wireless SSID" "${ssid:-MinimSecure}" prompt_validator_ssid
 ssid="$prompt_val"
 echo "ssid=$ssid" >> "$hostapd_conf"

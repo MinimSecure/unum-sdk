@@ -26,7 +26,7 @@ From the unum root directory, assuming your host WAN interface is "ens33":
 
 Full usage:
 
-```bash
+```
 extras/docker/docker_build.sh [-X|-B <builder>] <WAN ifname>
 ```
 
@@ -82,25 +82,8 @@ second stage of the process to install Unum.
 
 The router image is built from `Dockerfile` and includes: dnsmasq, hostapd,
 iptables, the Unum agent, and a host of other programs for running a Linux
-router. Additionally, several shell scripts are included to manage the
-configuration and startup of all the services.
-
-- `minim-config` (re)starts everything, first time run will also run 
-  `config_interfaces.sh`.
-- `config_interfaces.sh` will prompt the user for details to fully configure
-  the system's network interfaces. This script generates files for
-  `/etc/network/interfaces.d/` as well as an `extras.conf.sh` file used
-  by the other scripts.
-- `config_routing.sh` configures iptables and enables IP forwarding
-- `config_dnsmasq.sh` generates a dnsmasq.conf file and starts dnsmasq
-- `start_dnsmasq.sh` starts dnsmasq using the generated config
-- `config_hostapd.sh` generates a hostapd.conf file, interactively prompting
-  for configuring the wireless adapter, if any
-- `start_hostapd.sh` starts hostapd using the generated config
-- `start_unum.sh` starts unum as a daemon
-- `stop_all.sh` stops all the services.
-- `/opt/unum/extras/sbin/unum_env.sh` is a library script that can be sourced
-  in bash sessions.
+router. Additionally, [several shell scripts from the linux_generic "extras"][3]
+are included.
 
 Other notes:
 
@@ -116,3 +99,4 @@ more information on how this is done.
 
 [1]: https://my.minim.co/labs
 [2]: ../../.circleci/README-circleci.md
+[3]: ../linux_generic/README-linux_extras.md
