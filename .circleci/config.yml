@@ -89,6 +89,83 @@ jobs:
           path: out
           destination: build
 
+  # Build and publish a Debian 9-based armhf container with the necessary
+  # dependencies for building Unum.
+  # TODO: currently builds use armv7 instructions-- possible to limit to armv6?
+  build-armhf-builder:
+    machine: true
+    steps:
+      - run:
+          name: Install qemu-arm-static
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static
+      - checkout
+      - run:
+          name: Start armhf build container
+          command: |
+            docker run -v "$PWD:/root/unum-sdk" \
+              -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static \
+              --rm --name builder -dti arm32v7/debian:stretch-slim
+      - run:
+          name: Install build dependencies in armhf container
+          command: |
+            docker exec -t builder bash -c \
+             'apt-get update
+              apt-get install -y build-essential git \
+                                 libcurl4-openssl-dev libjansson-dev \
+                                 libnl-3-dev libnl-genl-3-dev \
+                                 libssl-dev debhelper'
+      - run:
+          name: Create new image from armhf container
+          command: |
+            docker commit \
+              --author "Minim Labs labs@minim.co" \
+              --message "Add build dependencies for unum-sdk" \
+              --pause builder \
+              minimsecure/circleci-debian-armhf:stretch-slim
+            mkdir -p out
+            docker image save \
+              -o out/armhf-stretch-slim.dockerimg \
+              minimsecure/circleci-debian-armhf:stretch-slim
+      - run:
+          name: Publish image to dockerhub
+          command: |
+            if [[ -z "$DOCKER_USER" ]] || [[ -z "$DOCKER_PASS" ]]; then
+              echo "docker credentials unset, skipping upload"
+            else
+              echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+              docker push "minimsecure/circleci-debian-armhf:stretch-slim"
+            fi
+      - store_artifacts:
+          path: out
+          destination: build
+
+  # Build and publish a Debian 9-based amd64 container with the necessary
+  # dependencies for building Unum.
+  build-amd64-builder:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Build unum-builder image
+          command: |
+            docker image build --tag "minimsecure/circleci-debian-amd64:stretch-slim" .circleci/debian-amd64
+            mkdir -p out
+            docker image save -o out/amd64-stretch-slim.dockerimg "minimsecure/circleci-debian-amd64:stretch-slim"
+      - run:
+          name: Publish image to dockerhub
+          command: |
+            if [[ -z "$DOCKER_USER" ]] || [[ -z "$DOCKER_PASS" ]]; then
+              echo "docker credentials unset, skipping upload"
+            else
+              echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+              docker push "minimsecure/circleci-debian-amd64:stretch-slim"
+            fi
+      - store_artifacts:
+          path: out
+          destination: build
+
 workflows:
   version: 2
 

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Makefile for compiling all components required for unum 
-# integration into specific platform.
-# The platform is specified by setting the MODEL variable.
+# Makefile for compiling all components required for Unum integration into a
+# specific platform, specified by setting the MODEL variable.
+#     make MODEL=linux_generic
 # The ./rules/$(MODEL).mk file determines the list of components to 
 # to build and the build flags/options.
 

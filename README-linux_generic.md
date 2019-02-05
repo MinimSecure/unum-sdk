@@ -17,16 +17,16 @@ The Unum agent securely communicates with [Minim][2] cloud servers and requires
 a Minim Labs developer account.
 
 Additionally, the configured LAN network adapter's MAC address is used as the
-unique identifier for a given Unum. This MAC address must be associated with 
-an active developer account on Minim Labs for the agent to start properly.
+unique identifier for a given instance of the Unum agent. This MAC address must
+be associated with an active account on Minim Labs for the agent to function.
 
-Sign up for a developer account on the [Minim Labs website][1].
+Find out more and sign up for an account on the [Minim Labs website][1].
 
 
 ## Building
 
 As far as build dependencies, building Unum requires make, gcc, libc6-pic, some
-flavor of libcurl-dev, libjansson-dev, and a netlink library like libnl-3-200 
+flavor of libcurl-dev and libssl-dev, libjansson-dev, and a netlink library like libnl-3-200 
 or libnl-tiny. Bash scripts included in "extras" additionally depend on gawk.
 
 On a fresh Ubuntu or Debian install, for example:
@@ -35,7 +35,7 @@ On a fresh Ubuntu or Debian install, for example:
 sudo apt-get update
 sudo apt-get install build-essential \
     libcurl4-openssl-dev gawk libjansson-dev \
-    libnl-3-dev libnl-genl-3-dev
+    libnl-3-dev libnl-genl-3-dev libssl-dev
 ```
 
 Use the make command to begin the build process. The default target will build 
@@ -148,14 +148,19 @@ Brief overview of supported options:
 - Optionally install extra shell scripts and base configuration files that
   handle automatically configuring and starting hostapd, dnsmasq, unum, and
   necessary iptables rules for running a Linux router.
-  > This is used in the unum docker container, check 
-    [README-docker.md](extras/docker/README-docker.md#technical-overview)
+  > This is used in the Unum for Docker container and the Unum "all-in-one"
+    package.
+    Check [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#other-tools)
     for a bit more information on these scripts. 
-- Optionally install Unum "all-in-one" and `minim-config` utility. 
+- Optionally install Unum "all-in-one" and `minim-config` utility.
+  > Check [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#minim-config)
+    for more information about this option.
 - Remove an existing installation:
   ```bash
   sudo /opt/unum/extras/install.sh --uninstall
   ```
+  > Note: uninstalling will not remove configuration files. Use `--purge` to
+    completely remove all traces of Unum.
 
 > For more information on the `install.sh` script, check 
   [README-linux_extras.md](extras/linux_generic/README-linux_extras.md#installsh).
@@ -290,7 +295,7 @@ JSON configuration file or as a command line argument.
 
 * The agent starts, but provisioning fails with "forbidden" or "unauthorized"
   * Verify the MAC address being sent by Unum matches the MAC address shown
-    in the [Minim Labs portal][1]
+    in the [Minim Labs portal][3]
 
 * The agent is slowly running "conncheck" and does not come online in the portal
   * Check the network connection and restart the agent.
@@ -311,7 +316,7 @@ Directory structure overview:
 
 ```
 .                           Project root
-|- README-linux_generic     This file
+|- README-linux_generic.md  This file
 |- Makefile                 Main universal unum Makefile
 |- dist/                    Files related to distributable build generation
 |- dist/debian              Debian-specific files, used with debhelper to 
@@ -339,6 +344,97 @@ Directory structure overview:
 |- out/linux_generic/       Final distributable output directory.
 ```
 
-[1]: https://my.minim.co/labs
+### Configuration format
+
+The Unum agent transmits device configuration information and supports applying
+changes (requested by the user from the Minim dashboard) to the device as well.
+
+For "linux_generic", a basic configuration format is used to manage the device,
+as defined below. All fields are required unless otherwise noted.
+
+> Check the "extras" [read_conf.sh][6] and [apply_conf.sh][5] scripts for example 
+  implementations that make use of this format.
+
+##### WAN and primary LAN interface related fields
+
+| field name | description
+| ---------- | -----------
+| ifname_wan | WAN interface name
+| ifname_lan | Primary LAN interface name
+| ipaddr_lan | LAN IP address (formatted 192.168.1.1)
+| subnet_lan | LAN subnet mask (formatted 255.255.255.0)
+
+##### Primary wireless adapter interface fields
+
+| field name | description
+| ---------- | -----------
+| ifname_wlan | Wireless interface name. Empty if wireless is not configured.
+| phyname_wlan | Wireless phy name. Empty if wireless is not configured.
+| country_wlan | Configured country for the wireless adapter.
+| hwmode_wlan | Hardware mode (either `11a` or `11g`)
+| channel_wlan | Channel (valid number for the hwmode or `auto`)
+| ssid_wlan | Wireless SSID
+| passphrase_wlan | Wireless passphrase
+| disabled_wlan | Optional. Non-empty if this interface is disabled.
+
+##### Secondary wireless adapter interface fields
+
+> Note that all `*_wlan1` fields are required when `ifname_wlan1` is specified.
+
+| field name | description
+| ---------- | -----------
+| ifname_wlan1 | Secondary wireless interface name.
+| phyname_wlan1 | Secondary wireless phy name.
+| country_wlan1 | Configured country for secondary wireless adapter.
+| hwmode_wlan1 | Secondary wireless adapter hardware mode (either `11a` or `11g`)
+| channel_wlan1 | Channel (number or `auto`) for the secondary wireless interface.
+| ssid_wlan1 | Wireless SSID for the secondary wireless interface.
+| passphrase_wlan1 | Wireless passphrase for the secondary wireless interface.
+| disabled_wlan1 | Optional. Non-empty if the secondary interface is disabled.
+
+#### Example configuration
+
+Each line should contain a single `key=value` pair. The key may contain letters,
+numbers, and underscores. The value may be enclosed within single or double quotes.
+
+> Check linux_generic "extras" linux_generic[read_conf.sh][6] and [apply_conf.sh][5] for a
+  concrete implementation that uses this format.
+
+```
+ifname_wan=eth0
+ifname_lan=wlan0
+ipaddr_lan=192.168.11.1
+subnet_lan=255.255.255.0
+ifname_wlan=wlan0
+phyname_wlan=phy0
+country_wlan=US
+hwmode_wlan=11g
+channel_wlan=11
+ssid_wlan=MinimSecure
+passphrase_wlan="some passphrase"
+```
+
+### Configuration application process
+
+Unum for Linux periodically executes the `read_conf.sh` script which should 
+print the current device configuration to standard output. Unum tracks the 
+contents of this output, and when it changes it is securely transmitted to 
+Minim servers.
+
+When the user triggers some functionality in the Minim dashboard that should 
+change the device configuration, the server's copy of the configuration is 
+updated and sent back to the running Unum agent. Unum then executes the 
+`apply_conf.sh` script, writing the updated configuration to the script's 
+standard input. The script is expected to perform any necessary changes to 
+the device configuration, which should then be reflected the next time the
+`read_conf.sh` script is executed.
+
+By default, Unum will look in the `$UNUM_ISNTALL_ROOT/sbin` directory for both
+scripts.
+
+[1]: https://wwww.minim.co/labs
 [2]: https://my.minim.co
 [3]: https://github.com/MinimSecure/unum-sdk/releases
+[4]: https://my.minim.co/labs
+[5]: https://github.com/MinimSecure/unum-sdk/blob/master/extras/linux_generic/sbin/apply_conf.sh
+[6]: https://github.com/MinimSecure/unum-sdk/blob/master/extras/linux_generic/sbin/read_conf.sh

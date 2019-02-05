@@ -98,11 +98,15 @@ docker network create        \
     "$netname_lan"
 
 # WAN interface
+extraopts_wan="--driver=bridge"
+if (( ! is_darwin )); then
+    extraopts_wan="--driver=macvlan -o 'parent=$ifname_wan'"
+fi
 echo "---> creating wan docker network $netname_wan"
 docker network create          \
-    --driver=bridge            \
     --subnet="$subnet_wan"     \
     --gateway="$gateway_wan"   \
+    $extraopts_wan    \
     "$netname_wan" || \
         (echo "---> unable to create wan network"; exit 1)
 
@@ -110,7 +114,7 @@ docker network connect "$netname_wan" "$container_name"
 docker network connect "$netname_lan" "$container_name"
 
 # Set up the WLAN interface if not on darwin and iw is installed
-if (( ! is_darwin )) && [[ ! -z $(which iw) ]]; then
+if (( ! is_darwin )) && [[ ! -z $(which iw) ]] && [[ ! -z $(iw phy) ]]; then
     # WLAN interface
     # Must assign the phy device to the container's net namespace.
     echo "---> assigning $phyname to container net namespace"

@@ -1,5 +1,12 @@
 unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
 
+  * Add cloud config sending/receiving/updating
+
+ -- Tyler Sommer <tyler@minim.co>  Wed, 22 Jan 2019 12:26:34 -0700
+
+
+unum-aio (2019.1.0) unstable; urgency=medium
+
   * Improvements to iptables telemetry capturing
   * Disable unimplemented crashinfo tracer
   * Replace originals in unum-aio .deb uninstall

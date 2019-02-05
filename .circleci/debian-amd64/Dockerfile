@@ -8,4 +8,5 @@ RUN apt-get update && \
         libjansson-dev \
         libnl-3-dev \
         libnl-genl-3-dev \
+        libssl-dev \
         debhelper
