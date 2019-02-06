@@ -199,9 +199,6 @@ static char *router_telemetry_json()
             tpl_tbl_ipt_obj[0].val.pi = NULL;
         }
 
-        // Update the telemetry global sequence number
-        new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
-
         // This handles (prepares) the rule arrays data for sending
         if(ipt_diffs_prep_to_send(last_sent.ipt_diff_plus_offset,
                                   last_sent.ipt_diff_minus_offset,
@@ -216,6 +213,8 @@ static char *router_telemetry_json()
             new_data.ipt_diff_complete = FALSE;
             // Add ipt info object to telemetry
             ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
+            // Update the IPT telemetry global sequence number
+            new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
         }
         else if(ipt_reporting_diffs && !last_sent.ipt_diff_complete)
         {
@@ -227,11 +226,13 @@ static char *router_telemetry_json()
             tpl_tbl_ipt_obj[1].val.pi = &new_data.ipt_diff_complete;
             // Add ipt info object to telemetry
             ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
+            // Update the IPT telemetry global sequence number
+            new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
         }
         else if(ipt_reporting_diffs && last_sent.ipt_diff_complete)
         {
             // Diff complete has been reported successfully.
-            // No longer need send ipt info object.
+            // No longer need to send ipt info object.
             ipt_check_diffs = FALSE;
             ipt_reporting_diffs = FALSE;
             new_data.ipt_diff_complete = FALSE;
