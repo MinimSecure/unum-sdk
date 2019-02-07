@@ -1,6 +1,9 @@
 unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
 
-  * Add cloud config sending/receiving/updating
+  * Add support for Minim cloud config sending/receiving/applying
+  * Add crash_me command for debug builds
+  * Fix useless yield in speedtest intermediate result sending
+  * Fix iptables sequence number incrementing
 
  -- Tyler Sommer <tyler@minim.co>  Wed, 22 Jan 2019 12:26:34 -0700
 
