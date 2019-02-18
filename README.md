@@ -6,7 +6,7 @@ This repository contains the open source distribution of
 > Running the Unum agent requires a Minim Labs developer account. 
 > [Sign up for an account][3] on the Minim website.
 
-Unum is a closs-platform program and can be built and installed on
+Unum is a cross-platform program and can be built and installed on
 OpenWrt-compatible devices, as well as Linux x86_64, i386, and armhf 
 architectures.
 
