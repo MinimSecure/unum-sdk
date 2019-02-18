@@ -7,7 +7,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/unum
-Environment=PATH=${PATH}:/opt/unum/bin LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/unum/lib
+Environment=PATH=/bin:/usr/bin:/usr/local/bin:/sbin/:/usr/sbin:/usr/local/sbin:/opt/unum/bin LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/unum/lib
 ExecStart=/opt/unum/bin/unum --cfg-file /etc/opt/unum/config.json
 PIDFile=/var/run/unum-agent.pid
 
