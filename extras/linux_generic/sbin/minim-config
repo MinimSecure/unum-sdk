@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2018 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,10 +49,24 @@ service_type="${service_type:-systemd}"
 # IP related commands (eg. iproute2 or ifconfig)
 iputils_type="${iputils_type:-iproute2}"
 
+# Prints all running pids and command names
+# Usage: pids
+pids() {
+    local f
+    for f in /proc/*; do
+        local pid=${f/\/proc\//}
+        if [[ "$pid" =~ ^[0-9]+$ ]]; then
+            local exe=$(readlink -e "/proc/$pid/exe")
+            echo "$pid  $exe"
+        fi
+    done
+    return 0
+}
+
 # Prints all pids with command names that match the given input
 # Usage: pids_by_name <name>
 pids_by_name() {
-    echo $(ps axco pid,command | grep $1 | awk 'ORS=" " { print $1 }')
+    echo $(pids | grep $1 | awk 'ORS=" " { print $1 }')
     return 0
 }
 
@@ -107,6 +121,12 @@ seems_to_be_running() {
 set_mac_address() {
     "set_mac_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
 }
+# Set the IP address on the given interface.
+# Delegates to a iputils_type implementation.
+# Usage: set_ip_address <ifname> <hwaddr>
+set_ip_address() {
+    "set_ip_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
+}
 
 # Actual implementations for service_type "systemd"
 enable_service__systemd() {
@@ -158,19 +178,31 @@ seems_to_be_running__manual() {
 
 # Actual implementations for iputils_type "iproute2"
 set_mac_address__iproute2() {
-    local ifname_lan="$1"
-    local hwaddr_lan="$2"
-    ifconfig "$ifname_lan" down                     >> "$MINIM_LOG_FILE" 2>&1
-    ip link set "$ifname_lan" address "$hwaddr_lan" >> "$MINIM_LOG_FILE" 2>&1
-    ifconfig "$ifname_lan" up                       >> "$MINIM_LOG_FILE" 2>&1
+    local ifname="$1"
+    local hwaddr="$2"
+    ip link set "$ifname" down                  >> "$MINIM_LOG_FILE" 2>&1
+    ip link set "$ifname" address "$hwaddr"     >> "$MINIM_LOG_FILE" 2>&1
+    ip link set "$ifname" up                    >> "$MINIM_LOG_FILE" 2>&1
 }
+set_ip_address__iproute2() {
+    local ifname="$1"
+    local ipaddr="$2"
+    ip addr replace "$ipaddr" dev "$ifname"
+}
+
 
 # Actual implementations for iputils_type "ifconfig"
 set_mac_address__ifconfig() {
-    local ifname_lan="$1"
-    local hwaddr_lan="$2"
-    ifconfig "$ifname_lan" down hw addr "$hwaddr_lan" up >> "$MINIM_LOG_FILE" 2>&1
+    local ifname="$1"
+    local hwaddr="$2"
+    ifconfig "$ifname" down hw addr "$hwaddr" up >> "$MINIM_LOG_FILE" 2>&1
 }
+set_ip_address__ifconfig() {
+    local ifname="$1"
+    local ipaddr="$2"
+    ifconfig "$ifname" "$ipaddr"
+}
+
 
 ###
 
@@ -234,9 +266,6 @@ fi
 # Source the extras.conf.sh file to get updated configuration values.
 . "$install_etc_dir/extras.conf.sh"
 
-# Set MAC address on the LAN interface
-set_mac_address "$ifname_lan" "$hwaddr_lan"
-
 # Enable the all-in-one service on boot
 enable_service unum-aio
 
@@ -251,7 +280,7 @@ sleep 2
 
 # Start the services
 
-if [[ ! -z "$ifname_wlan" ]]; then
+if (( ! disabled_wlan )); then
     # Start hostapd first because it must configure the wireless interface before
     # dnsmasq can bind to it.
     echo "Starting hostapd..."
@@ -262,6 +291,10 @@ if [[ ! -z "$ifname_wlan" ]]; then
 else
     echo "no wireless interface configured, not starting hostapd"
 fi
+
+# Set MAC address on the LAN bridge interface after hostapd is started, in case
+# hostapd is responsible for creating the bridge.
+set_mac_address "$ifname_bridge" "$hwaddr_lan"
 
 echo "Starting dnsmasq..."
 start_service dnsmasq

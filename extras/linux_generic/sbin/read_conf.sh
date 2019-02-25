@@ -89,7 +89,7 @@ printopt "ifname_wlan"
 printopt "phyname_wlan"
 printopt "ssid_wlan" "$ssid"
 printopt "passphrase_wlan" "$passphrase"
-if [[ -z "$ifname_wlan" ]]; then
+if (( disabled_wlan )); then
     # Mark the wireless adapter as disabled if it is not configured
     printopt "disabled_wlan" "1"
 else
