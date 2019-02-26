@@ -1,4 +1,4 @@
-ARG builder=minimsecure/unum-builder:stretch-slim
+ARG builder=minimsecure/unum-builder:debian-stretch-slim
 
 FROM ${builder} as build
 
