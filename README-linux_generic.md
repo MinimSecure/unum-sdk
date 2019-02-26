@@ -26,8 +26,8 @@ Find out more and sign up for an account on the [Minim Labs website][1].
 ## Building
 
 As far as build dependencies, building Unum requires make, gcc, libc6-pic, some
-flavor of libcurl-dev and libssl-dev, libjansson-dev, and a netlink library like libnl-3-200 
-or libnl-tiny. Bash scripts included in "extras" additionally depend on gawk.
+flavor of libcurl-dev and libssl-dev, libjansson-dev, and a netlink library 
+like libnl-3-200 or libnl-tiny.
 
 On a fresh Ubuntu or Debian install, for example:
 
@@ -88,8 +88,8 @@ make MODEL=linux_generic
 
 #### Bundled extras
 
-By default, ["extra" utilities](extras/linux_generic/README-linux_extras.md) are
-installed. Disable this option with `INSTALL_EXTRAS=0`:
+By default, ["extra" utilities](extras/linux_generic/README-linux_extras.md) 
+are installed. Disable this option with `INSTALL_EXTRAS=0`:
 
 ```bash
 make INSTALL_EXTRAS=0
@@ -99,7 +99,8 @@ make INSTALL_EXTRAS=0
 ## Installing
 
 The Unum agent requires libcurl (3 or later), libjansson4 (2.7 or later), and
-libnl-3-200 and libnl-genl-3-200 to run correctly.
+libnl-3-200 and libnl-genl-3-200 to run correctly. Bash scripts included in 
+"extras" additionally depends on gawk, iproute2, and ifupdown.
 
 For Debian 9 or Ubuntu 18, for example:
 

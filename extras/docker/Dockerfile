@@ -1,8 +1,8 @@
-ARG builder=minimsecure/unum-builder:ubuntu-16.04
+ARG builder=minimsecure/unum-builder:debian-stretch-slim
 
 FROM ${builder} as build
 
-FROM ubuntu:16.04
+FROM debian:stretch-slim
 
 RUN apt-get update && \
     apt-get install -y \
@@ -11,14 +11,15 @@ RUN apt-get update && \
         dnsutils \
         gawk \
         hostapd \
+        ifupdown \
         iptables \
         iputils-ping \
+        iproute2 \
         iw \
         libcurl3 \
         libnl-3-200 \
         libnl-genl-3-200 \
         libjansson4 \
-        net-tools \
         rfkill \
         usbutils \
         vim \

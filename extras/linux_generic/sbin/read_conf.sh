@@ -72,7 +72,7 @@ hwmode_for() {
     return 0
 }
 
-ipcidr_lan=$(ipcidr_for "$ifname_lan")
+ipcidr_lan=$(ipcidr_for "$ifname_bridge")
 ipaddr_lan=$(echo "$ipcidr_lan" | cut -d'/' -f1)
 subnet_lan=$(cidr_to_mask $(echo "$ipcidr_lan" | cut -d'/' -f2))
 
@@ -80,7 +80,8 @@ subnet_lan=$(cidr_to_mask $(echo "$ipcidr_lan" | cut -d'/' -f2))
 printopt "ifname_wan"
 
 # LAN interface fields
-printopt "ifname_lan"
+# Note that the bridge interface is actually used for the LAN interface name.
+printopt "ifname_lan" "$ifname_bridge"
 printopt "ipaddr_lan"
 printopt "subnet_lan"
 
@@ -89,7 +90,7 @@ printopt "ifname_wlan"
 printopt "phyname_wlan"
 printopt "ssid_wlan" "$ssid"
 printopt "passphrase_wlan" "$passphrase"
-if [[ -z "$ifname_wlan" ]]; then
+if (( disabled_wlan )); then
     # Mark the wireless adapter as disabled if it is not configured
     printopt "disabled_wlan" "1"
 else

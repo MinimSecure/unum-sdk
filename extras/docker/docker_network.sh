@@ -100,7 +100,7 @@ docker network create        \
 # WAN interface
 extraopts_wan="--driver=bridge"
 if (( ! is_darwin )); then
-    extraopts_wan="--driver=macvlan -o 'parent=$ifname_wan'"
+    extraopts_wan="--driver=macvlan -oparent=$ifname_wan"
 fi
 echo "---> creating wan docker network $netname_wan"
 docker network create          \

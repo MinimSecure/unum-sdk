@@ -22,12 +22,8 @@ source "$(dirname "$BASH_SOURCE")/unum_env.sh"
 dnsmasq_conf="$UNUM_ETC_DIR/dnsmasq.conf"
 
 if [[ ! -f "$dnsmasq_conf" ]]; then
-    loifname=lo
-    wanifname="$ifname_wan"
-    lanifname="$ifname_lan"
-
     cp "$UNUM_INSTALL_ROOT/extras/etc/dnsmasq.conf.base" "$dnsmasq_conf"
 
     echo "dhcp-range=192.168.$subnet_simple.100,192.168.$subnet_simple.150,12h" >> "$dnsmasq_conf"
-    echo "interface=lo,$ifname_lan" >> "$dnsmasq_conf"
+    echo "interface=lo,$ifname_bridge" >> "$dnsmasq_conf"
 fi
