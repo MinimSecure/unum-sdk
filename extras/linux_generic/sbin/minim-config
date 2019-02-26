@@ -121,9 +121,10 @@ seems_to_be_running() {
 set_mac_address() {
     "set_mac_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
 }
-# Set the IP address on the given interface.
+# Change the IP address on the given interface.
+# If ipaddr is not given, the existing address will be removed.
 # Delegates to a iputils_type implementation.
-# Usage: set_ip_address <ifname> <hwaddr>
+# Usage: set_ip_address <ifname> [ipaddr]
 set_ip_address() {
     "set_ip_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
 }
@@ -183,11 +184,24 @@ set_mac_address__iproute2() {
     ip link set "$ifname" down                  >> "$MINIM_LOG_FILE" 2>&1
     ip link set "$ifname" address "$hwaddr"     >> "$MINIM_LOG_FILE" 2>&1
     ip link set "$ifname" up                    >> "$MINIM_LOG_FILE" 2>&1
+    return 0
+}
+get_ipcidr__iproute2() {
+    local ifname="$1"
+    ip addr show "$ifname" | awk '/inet6/ { next }; /inet/ { print $2 }'
+    return 0
 }
 set_ip_address__iproute2() {
     local ifname="$1"
     local ipaddr="$2"
-    ip addr replace "$ipaddr" dev "$ifname"
+    local oldaddr=$(get_ipcidr__iproute2 "$1")
+    if [[ ! -z "$oldaddr" ]]; then
+        ip addr del "$oldaddr" dev "$ifname"
+    fi
+    if [[ ! -z "$ipaddr" ]]; then
+        ip addr add "$ipaddr" dev "$ifname"
+    fi
+    return 0
 }
 
 
@@ -295,6 +309,12 @@ fi
 # Set MAC address on the LAN bridge interface after hostapd is started, in case
 # hostapd is responsible for creating the bridge.
 set_mac_address "$ifname_bridge" "$hwaddr_lan"
+# Delete the LAN interface's IP address.
+set_ip_address "$ifname_lan"
+if (( ! disabled_wlan )) && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
+    # Delete the WLAN interface's IP address.
+    set_ip_address "$ifname_wlan"
+fi
 
 echo "Starting dnsmasq..."
 start_service dnsmasq

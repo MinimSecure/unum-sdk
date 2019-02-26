@@ -24,11 +24,6 @@ dnsmasq_conf="$UNUM_ETC_DIR/dnsmasq.conf"
 if [[ ! -f "$dnsmasq_conf" ]]; then
     cp "$UNUM_INSTALL_ROOT/extras/etc/dnsmasq.conf.base" "$dnsmasq_conf"
 
-    interfaces="lo,$ifname_bridge,$ifname_lan"
-    if (( ! disabled_wlan )) && [[ "$ifname_wlan" != "$ifname_lan" ]]; then
-        interfaces="$interfaces,$ifname_wlan"
-    fi
-
     echo "dhcp-range=192.168.$subnet_simple.100,192.168.$subnet_simple.150,12h" >> "$dnsmasq_conf"
-    echo "interface=$interfaces" >> "$dnsmasq_conf"
+    echo "interface=lo,$ifname_bridge" >> "$dnsmasq_conf"
 fi

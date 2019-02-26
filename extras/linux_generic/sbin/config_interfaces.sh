@@ -23,8 +23,8 @@ if [[ "$1" == "--no-interactive" ]]; then
     interactively=0
 fi
 
-declare ifname_wan=$(cat /etc/opt/unum/config.json | grep 'wan-if' | sed -E 's/^\s+?"wan-if":\s+?"([a-z0-9_\-]+)".*$/\1/i')
-declare ifname_lan=$(cat /etc/opt/unum/config.json | grep 'lan-if' | sed -E 's/^\s+?"lan-if":\s+?"([a-z0-9_\-]+)".*$/\1/i')
+declare ifname_wan="${ifname_wan:-$(cat /etc/opt/unum/config.json | grep 'wan-if' | sed -E 's/^\s+?"wan-if":\s+?"([a-z0-9_\-]+)".*$/\1/i')}"
+declare ifname_lan="${ifname_lan:-$(cat /etc/opt/unum/config.json | grep 'lan-if' | sed -E 's/^\s+?"lan-if":\s+?"([a-z0-9_\-]+)".*$/\1/i')}"
 
 prompt_require "Specify LAN network interface name" "$ifname_lan"
 ifname_lan="$prompt_val"
@@ -182,6 +182,7 @@ iface $ifname_bridge inet static
     mv /etc/network/interfaces.tmp /etc/network/interfaces
 
     ifup "$ifname_bridge"
+
 else
     # Otherwise platform is not directly supported.
     echo "warning: this system is unsupported, interfaces must be configured manually."
