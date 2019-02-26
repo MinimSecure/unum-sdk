@@ -301,7 +301,7 @@ if (( ! disabled_wlan )); then
     start_service hostapd
 
     # Sleep seems to be necessary in between these starts
-    sleep 5
+    sleep 3
 else
     echo "no wireless interface configured, not starting hostapd"
 fi
@@ -316,10 +316,12 @@ if (( ! disabled_wlan )) && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
     set_ip_address "$ifname_wlan"
 fi
 
+sleep 2
+
 echo "Starting dnsmasq..."
 start_service dnsmasq
 
-sleep 5
+sleep 3
 
 echo "Starting unum..."
 start_service unum
