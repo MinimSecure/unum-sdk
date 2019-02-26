@@ -24,6 +24,16 @@ extras_conf_sh_tmp="$extras_conf_sh.tmp"
 echo > "$extras_conf_sh_tmp"
 # Read from standard input, writing each line to the temp file.
 while read ln; do
+    # Handle ifname_lan specially; linux extras sends up $ifname_bridge
+    # as the LAN interface name, so apply received configuration accordingly.
+    if [[ "$ln" =~ ^ifname_lan= ]]; then
+        # Keep existing value in $ifname_lan
+        echo "ifname_lan=\"$ifname_lan\"" >> "$extras_conf_sh_tmp"
+        # Set $ifname_bridge instead of $ifname_lan with the value received
+        echo "${ln/ifname_lan/ifname_bridge}" >> "$extras_conf_sh_tmp"
+        continue
+    fi
+
     echo "$ln" >> "$extras_conf_sh_tmp"
     # Ensure that 'ssid' and 'passphrase' are still defined in the new config.
     if [[ "$ln" =~ ^ssid_wlan= ]]; then
