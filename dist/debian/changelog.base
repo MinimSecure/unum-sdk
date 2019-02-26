@@ -4,6 +4,8 @@ unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
   * Add crash_me command for debug builds
   * Fix useless yield in speedtest intermediate result sending
   * Fix iptables sequence number incrementing
+  * Remove dependency on net-tools, in favor of iproute2
+  * Fix broken network configuration when disabling WLAN
 
  -- Tyler Sommer <tyler@minim.co>  Wed, 22 Jan 2019 12:26:34 -0700
 
