@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2018 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,10 +49,24 @@ service_type="${service_type:-systemd}"
 # IP related commands (eg. iproute2 or ifconfig)
 iputils_type="${iputils_type:-iproute2}"
 
+# Prints all running pids and command names
+# Usage: pids
+pids() {
+    local f
+    for f in /proc/*; do
+        local pid=${f/\/proc\//}
+        if [[ "$pid" =~ ^[0-9]+$ ]]; then
+            local exe=$(readlink -e "/proc/$pid/exe")
+            echo "$pid  $exe"
+        fi
+    done
+    return 0
+}
+
 # Prints all pids with command names that match the given input
 # Usage: pids_by_name <name>
 pids_by_name() {
-    echo $(ps axco pid,command | grep $1 | awk 'ORS=" " { print $1 }')
+    echo $(pids | grep $1 | awk 'ORS=" " { print $1 }')
     return 0
 }
 
@@ -107,6 +121,13 @@ seems_to_be_running() {
 set_mac_address() {
     "set_mac_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
 }
+# Change the IP address on the given interface.
+# If ipaddr is not given, the existing address will be removed.
+# Delegates to a iputils_type implementation.
+# Usage: set_ip_address <ifname> [ipaddr]
+set_ip_address() {
+    "set_ip_address__$iputils_type" $@ >> "$MINIM_LOG_FILE" 2>&1
+}
 
 # Actual implementations for service_type "systemd"
 enable_service__systemd() {
@@ -158,19 +179,44 @@ seems_to_be_running__manual() {
 
 # Actual implementations for iputils_type "iproute2"
 set_mac_address__iproute2() {
-    local ifname_lan="$1"
-    local hwaddr_lan="$2"
-    ifconfig "$ifname_lan" down                     >> "$MINIM_LOG_FILE" 2>&1
-    ip link set "$ifname_lan" address "$hwaddr_lan" >> "$MINIM_LOG_FILE" 2>&1
-    ifconfig "$ifname_lan" up                       >> "$MINIM_LOG_FILE" 2>&1
+    local ifname="$1"
+    local hwaddr="$2"
+    ip link set "$ifname" down                  >> "$MINIM_LOG_FILE" 2>&1
+    ip link set "$ifname" address "$hwaddr"     >> "$MINIM_LOG_FILE" 2>&1
+    ip link set "$ifname" up                    >> "$MINIM_LOG_FILE" 2>&1
+    return 0
 }
+get_ipcidr__iproute2() {
+    local ifname="$1"
+    ip addr show "$ifname" | awk '/inet6/ { next }; /inet/ { print $2 }'
+    return 0
+}
+set_ip_address__iproute2() {
+    local ifname="$1"
+    local ipaddr="$2"
+    local oldaddr=$(get_ipcidr__iproute2 "$1")
+    if [[ ! -z "$oldaddr" ]]; then
+        ip addr del "$oldaddr" dev "$ifname"
+    fi
+    if [[ ! -z "$ipaddr" ]]; then
+        ip addr add "$ipaddr" dev "$ifname"
+    fi
+    return 0
+}
+
 
 # Actual implementations for iputils_type "ifconfig"
 set_mac_address__ifconfig() {
-    local ifname_lan="$1"
-    local hwaddr_lan="$2"
-    ifconfig "$ifname_lan" down hw addr "$hwaddr_lan" up >> "$MINIM_LOG_FILE" 2>&1
+    local ifname="$1"
+    local hwaddr="$2"
+    ifconfig "$ifname" down hw addr "$hwaddr" up >> "$MINIM_LOG_FILE" 2>&1
 }
+set_ip_address__ifconfig() {
+    local ifname="$1"
+    local ipaddr="$2"
+    ifconfig "$ifname" "$ipaddr"
+}
+
 
 ###
 
@@ -234,9 +280,6 @@ fi
 # Source the extras.conf.sh file to get updated configuration values.
 . "$install_etc_dir/extras.conf.sh"
 
-# Set MAC address on the LAN interface
-set_mac_address "$ifname_lan" "$hwaddr_lan"
-
 # Enable the all-in-one service on boot
 enable_service unum-aio
 
@@ -251,22 +294,34 @@ sleep 2
 
 # Start the services
 
-if [[ ! -z "$ifname_wlan" ]]; then
+if (( ! disabled_wlan )); then
     # Start hostapd first because it must configure the wireless interface before
     # dnsmasq can bind to it.
     echo "Starting hostapd..."
     start_service hostapd
 
     # Sleep seems to be necessary in between these starts
-    sleep 5
+    sleep 3
 else
     echo "no wireless interface configured, not starting hostapd"
 fi
 
+# Set MAC address on the LAN bridge interface after hostapd is started, in case
+# hostapd is responsible for creating the bridge.
+set_mac_address "$ifname_bridge" "$hwaddr_lan"
+# Delete the LAN interface's IP address.
+set_ip_address "$ifname_lan"
+if (( ! disabled_wlan )) && [[ "$ifname_lan" != "$ifname_wlan" ]]; then
+    # Delete the WLAN interface's IP address.
+    set_ip_address "$ifname_wlan"
+fi
+
+sleep 2
+
 echo "Starting dnsmasq..."
 start_service dnsmasq
 
-sleep 5
+sleep 3
 
 echo "Starting unum..."
 start_service unum

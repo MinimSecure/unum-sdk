@@ -52,7 +52,7 @@ jobs:
   build-docker:
     machine: true
     environment:
-      DOCKER_TAG: "ubuntu-16.04"
+      DOCKER_TAG: "debian-stretch-slim"
     steps:
       - checkout
       - run:

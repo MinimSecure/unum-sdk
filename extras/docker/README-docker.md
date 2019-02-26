@@ -68,6 +68,18 @@ On the first run, the script will interactively configure Unum and set the
 MAC address before starting hostapd, dnsmasq, and unum. Be sure to have the
 generated MAC address from the [Minim Labs developer portal][1] handy!
 
+## Adding a container to the LAN
+
+Once the gateway container with Unum is configured and running, you can start 
+another container and attach it to the LAN network with the option
+`--network unum-demo-net-b-lan` when invoking `docker run`:
+
+```bash
+sudo docker run --rm --privileged \
+    --network unum-demo-net-b-lan \
+    -it minimsecure/netbox /bin/bash
+```
+
 
 ## Technical Overview
 
