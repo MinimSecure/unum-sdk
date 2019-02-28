@@ -1,5 +1,0 @@
-package unum
-
-config agent
-    list lan_if eth0
-    option wan_if eth1
