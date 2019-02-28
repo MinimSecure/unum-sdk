@@ -61,27 +61,32 @@ prep_startup() {
   fi
   WANIF=$(uci get network.wan.ifname)
   LANIF=$(uci get network.lan.ifname)
-  LANIP=$(ifconfig "$LANIF" | awk '/inet addr/ { print substr($2, 6) }')
-  if [ -z "$LANIP" ]; then
-    LANMAC=$(ifconfig $LANIF | awk '/HWaddr/ { print $5 }')
-    LANIFS=$(ifconfig | awk '/'$LANIF'/ { next }; /'$WANIF'/ { next }; /'$LANMAC'/ { print $1 }')
-    LANIF=
-    for IFNAME in $LANIFS; do
+  LANMAC=$(ifconfig $LANIF | awk '/HWaddr/ { print $5 }')
+  # match ifconfig output by LAN ethernet address, but ignore the WAN due
+  # to some platforms using the same MAC address for both LAN and WAN ports.
+  AWK_MATCH_LANMAC='/'$WANIF'/ { next }; /'$LANMAC'/ { print $1 }'
+  LANIF=
+  TRIES=0
+  while [ $TRIES -lt 10 ]; do
+    TRIES=$(( TRIES + 1 ))
+    # iterate over all LAN interfaces and use the one with an IP address
+    # as the defacto LAN interface for Unum.
+    for IFNAME in $(ifconfig | awk "$AWK_MATCH_LANMAC"); do
       LANIP=$(ifconfig "$IFNAME" | awk '/inet addr/ { print substr($2, 6) }')
       if [ ! -z "$LANIP" ]; then
         LANIF="$IFNAME"
-        break
+        # break out of both the enclosing for and while loops
+        break 2
       fi
     done
-  fi
+    sleep 1
+  done
   if [ -z "$LANIF" ]; then
-    echo "warning: unable to determine LAN network interface name"
+    echo "fatal: unable to determine LAN network interface name" > /var/log/unum.log
+    return 1
   fi
-  uci set unum.@agent[0].wan_if=$WANIF
-  uci set unum.@agent[0].lan_if=$LANIF
-  uci commit unum
   cp -f /etc/unum/config.json /tmp/config.json.orig
-  # Generate agent JSON configuration
+  # Update agent JSON configuration
   if [ -e /etc/unum/config.json ]; then
     sed -i -E -e 's/"lan-if":[ ]?".*"/"lan-if": "'$LANIF'"/' \
               -e 's/"wan-if":[ ]?".*"/"wan-if": "'$WANIF'"/' \
