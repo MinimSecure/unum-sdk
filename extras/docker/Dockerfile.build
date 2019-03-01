@@ -1,5 +1,5 @@
 FROM debian:stretch-slim
-ARG unum_version=2019.2.0-snapshot
+ARG unum_version=2019.2.0
 
 RUN apt-get update && \
     apt-get install -y \

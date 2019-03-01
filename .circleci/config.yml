@@ -91,7 +91,7 @@ jobs:
 
   # Build and publish a Debian 9-based armhf container with the necessary
   # dependencies for building Unum.
-  # TODO: currently builds use armv7 instructions-- possible to limit to armv6?
+  # TODO: currently builds use armv7 instructions-- possible to limit to Pi 2's strange armv6?
   build-armhf-builder:
     machine: true
     steps:

@@ -23,7 +23,7 @@ for arg in $@; do
 done
 
 VERSION_BASE="2019.2.0"
-VERSION_STABILITY="unstable"
+VERSION_STABILITY="stable"
 VERSION=${1:-"${VERSION_BASE}-snapshot"}
 
 export AGENT_VERSION="$VERSION"
