@@ -63,7 +63,7 @@ endif
 ####################################################################
 
 ### iwinfo
-IWINFO_VERSION := iwinfo-f328e3b9
+IWINFO_VERSION := iwinfo-c3044fbbe525cca36e4f0fb9ce0f257710cc6834
 TARGET_CFLAGS_iwinfo := -Wall -D_GNU_SOURCE -I/usr/include/libnl3
 TARGET_LDFLAGS_iwinfo := -lnl-3 -lnl-genl-3
 TARGET_VARS_iwinfo := \

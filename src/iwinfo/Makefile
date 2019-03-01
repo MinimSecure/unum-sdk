@@ -19,6 +19,10 @@ VERSION ?= $(MODULE)-dev
 REPO_URL := https://github.com/MinimSecure/iwinfo-lite
 BUILD_PATH := $(TARGET_OBJ)/$(MODULE)
 SOURCE_PATH := $(BUILD_PATH)/$(VERSION)
+VERSION_REV := $(patsubst iwinfo-%,%,$(VERSION))
+ifeq ($(VERSION_REV),dev)
+	VERSION_REV := master
+endif
 
 all: install
 
@@ -34,6 +38,7 @@ clean:
 
 $(SOURCE_PATH):
 	git clone --depth=1 $(REPO_URL) $(SOURCE_PATH)
+	git -C $(SOURCE_PATH) checkout $(VERSION_REV)
 
 .configured: $(SOURCE_PATH)
 	touch $@
