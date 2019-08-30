@@ -39,7 +39,8 @@ typedef struct _PORT_SCAN_DEVICE {
 } PORT_SCAN_DEVICE_t;
 
 // The "port_scan" command processor.
-int cmd_port_scan(char *cmd, char *s, int s_len);
+// Note: declared weak so platforms not doing it do not have to stub
+int __attribute__((weak)) cmd_port_scan(char *cmd, char *s, int s_len);
 
 #ifdef DEBUG
 void test_port_scan(void);

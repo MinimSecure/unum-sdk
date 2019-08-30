@@ -17,10 +17,11 @@
 #include "unum.h"
 
 
-// Checks if the interface is administratively UP
+// Get interface flags
 // ifname - the interface name
-// Returns: TRUE - interface is up, FALSE - down or error
-int util_net_dev_is_up(char *ifname)
+// flags - pointer to in to fill in with the flags
+// Returns: 0 - success (*flags is set), negative - error
+static int util_net_dev_get_flags(char *ifname, int *flags)
 {
     int ret, sockfd;
     struct ifreq ifr;
@@ -34,16 +35,41 @@ int util_net_dev_is_up(char *ifname)
         strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
         ifr.ifr_name[IFNAMSIZ - 1] = 0;
         if(ioctl(sockfd, SIOCGIFFLAGS, &ifr) < 0) {
-            ret = FALSE;
+            ret = -1;
             break;
         }
-        ret = ((ifr.ifr_flags & IFF_UP) != 0);
+        *flags = ifr.ifr_flags;
+        ret = 0;
         break;
     }
 
     close(sockfd);
 
     return ret;
+}
+
+// Checks if the interface is administratively UP
+// ifname - the interface name
+// Returns: TRUE - interface is up, FALSE - down or error
+int util_net_dev_is_up(char *ifname)
+{
+    int flags = 0;
+    if(util_net_dev_get_flags(ifname, &flags) == 0) {
+        return ((flags & IFF_UP) != 0);
+    }
+    return FALSE;
+}
+
+// Checks if the interface reports link UP
+// ifname - the interface name
+// Returns: TRUE - interface link is up, FALSE - down or error
+int util_net_dev_link_is_up(char *ifname)
+{
+    int flags = 0;
+    if(util_net_dev_get_flags(ifname, &flags) == 0) {
+        return ((flags & IFF_RUNNING) != 0);
+    }
+    return FALSE;
 }
 
 // Calculates the checksum to be used with TCP & IP packets
@@ -117,6 +143,7 @@ char *util_device_mac()
 
 // Get the IPv4 address (as a string) of a network device.
 // The buf length should be at least INET_ADDRSTRLEN bytes.
+// If buf is NULL it is not used.
 // Returns 0 if successful, error code if fails.
 int util_get_ipv4(char *dev, char *buf)
 {
@@ -134,8 +161,10 @@ int util_get_ipv4(char *dev, char *buf)
             ret = (errno != 0 ? errno : -1);
             break;
         }
-        snprintf(buf, INET_ADDRSTRLEN, "%s",
-                 inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+        if(buf != NULL) {
+          snprintf(buf, INET_ADDRSTRLEN, "%s",
+                   inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+        }
         ret = 0;
         break;
     }
@@ -869,12 +898,16 @@ static int nl_recv(NL_SOCK_t *s, char *buf, unsigned int len,
     return msg_len;
 }
 
-// Get default gateway IPv4 address
-// Returns: 0 - if gw_ip is populated w/ the gateway IP address,
-//          negative error code otherwise
-int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip)
+// Helper for querying various attributes for default route
+// with the lowest metric
+// rta_type - type of the data to retrieve
+// buf - ptr to the data buffer
+// buf_len - length of the data bufer
+// Returns: 0 - if requested information is successfully retrieved
+//          negative - error
+//          positive - number of bytes needed for the data
+static int util_get_ipv4_rta(int rta_type, void *val, int val_len)
 {
-    IPV4_ADDR_t gw;
     NL_SOCK_t s = { .s = -1 };
     struct nlmsghdr *nlmsg;
     int len, msg_seq = 0;
@@ -929,6 +962,8 @@ int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip)
         }
 
         // parse the response
+        int metric_found = FALSE;
+        unsigned int metric = 0, cur_metric = 0;
         for(; NLMSG_OK(nlmsg, len); nlmsg = NLMSG_NEXT(nlmsg, len))
         {
             struct rtmsg *rtmsg;
@@ -946,23 +981,53 @@ int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip)
                 continue;
             }
 
+            // walk through the attributes looking for the route metric
+            // and see if it is the lowest one we've seen so far
             rtattr = (struct rtattr *)RTM_RTA(rtmsg);
             rt_len = RTM_PAYLOAD(nlmsg);
-            gw.i = 0;
-
-            // walk through the attributes looking for RTA_GATEWAY
+            int cur_wins = FALSE;
             for(; RTA_OK(rtattr, rt_len); rtattr = RTA_NEXT(rtattr, rt_len))
             {
-                if(rtattr->rta_type == RTA_GATEWAY) {
-                    memcpy(&gw.b, RTA_DATA(rtattr), sizeof(gw.b));
-                    break;
+                if(rtattr->rta_type != RTA_PRIORITY) {
+                    continue;
                 }
+                if(RTA_PAYLOAD(rtattr) != sizeof(cur_metric))
+                {
+                    log("%s: invalid route metric attribute size %d\n",
+                        __func__, RTA_PAYLOAD(rtattr));
+                    continue;
+                }
+                memcpy(&cur_metric, RTA_DATA(rtattr), sizeof(cur_metric));
+                if(!metric_found || (metric_found && cur_metric < metric))
+                {
+                    // this route has lowest metric so far
+                    cur_wins = TRUE;
+                    metric = cur_metric;
+                }
+                metric_found = TRUE;
+                break;
+            }
+            // if not the lowest metric route, skip it, but in some cases metric
+            // is not present at all (accepting in this case)
+            if(metric_found && !cur_wins) {
+                continue;
             }
 
-            if(gw.i != 0) {
-                gw_ip->i = gw.i;
-                ret = 0;
-                break;
+            rtattr = (struct rtattr *)RTM_RTA(rtmsg);
+            rt_len = RTM_PAYLOAD(nlmsg);
+
+            // walk through the attributes looking for the requested rta_type
+            for(; RTA_OK(rtattr, rt_len); rtattr = RTA_NEXT(rtattr, rt_len))
+            {
+                if(rtattr->rta_type == rta_type) {
+                    if(val_len < RTA_PAYLOAD(rtattr)) {
+                        ret = RTA_PAYLOAD(rtattr);
+                        break;
+                    }
+                    memcpy(val, RTA_DATA(rtattr), RTA_PAYLOAD(rtattr));
+                    ret = 0;
+                    break;
+                }
             }
         }
 
@@ -979,6 +1044,40 @@ int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip)
     }
 
     return ret;
+}
+
+// Get default gateway IPv4 address
+// Returns: 0 - if gw_ip is populated w/ the gateway IP address,
+//          negative error code otherwise
+int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip)
+{
+    IPV4_ADDR_t gw;
+
+    int err = util_get_ipv4_rta(RTA_GATEWAY, &gw, sizeof(gw));
+    if(err != 0 || gw.i == 0) {
+        return err;
+    }
+    gw_ip->i = gw.i;
+    return 0;
+}
+
+// Get default route outbound interface name
+// ifnam - ptr to the buffer that receives the interface name
+//         the buffer has to be at least IFNAMSIZ long
+// Returns: 0 - if gw_ip is populated w/ the gateway IP address,
+//          negative error code otherwise
+int util_get_ipv4_gw_oif(char *ifnam)
+{
+    int ifidx;
+
+    int err = util_get_ipv4_rta(RTA_OIF, &ifidx, sizeof(ifidx));
+    if(err != 0 || ifidx == 0) {
+        return err;
+    }
+    if(if_indextoname(ifidx, ifnam) == NULL) {
+        return errno;
+    }
+    return 0;
 }
 
 // Structure to exchange data between util_find_if_by_ip() and
@@ -1066,11 +1165,11 @@ int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
         }
     }
 
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
     // We only support 1 WAN interface.
     // Note: This might need to be updated to deal with
     //       PPPoE and VPN-based WAN connections properly
-    if(0 != (UTIL_IF_ENUM_RTR_WAN & flags)) {
+    if(IS_OPM(UNUM_OPM_GW) && 0 != (UTIL_IF_ENUM_RTR_WAN & flags)) {
         if(unum_config.wan_ifcount <= 0) {
             failed += util_platform_enum_ifs(UTIL_IF_ENUM_RTR_WAN, f, data);
         } else {
@@ -1078,7 +1177,7 @@ int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
             failed += (ret == 0 ? 0 : 1);
         }
     }
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
     return failed;
 }

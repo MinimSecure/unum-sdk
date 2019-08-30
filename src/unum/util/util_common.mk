@@ -17,7 +17,6 @@
 # Add code file(s)
 OBJECTS += ./util/util.o ./util/jobs.o ./util/util_event.o ./util/util_net.o
 OBJECTS += ./util/util_json.o ./util/util_timer.o ./util/util_crashinfo.o
-OBJECTS += ./util/util_stubs.o
 OBJECTS += ./util/$(MODEL)/util_platform.o ./util/util_stubs.o
 
 # Add subsystem initializer function

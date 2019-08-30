@@ -77,15 +77,20 @@ int util_platform_init(int level)
                 lan_up = TRUE;
             }
 
-#ifndef AP_MODE
-            if(util_net_dev_is_up(GET_MAIN_WAN_NET_DEV()))
-            {
-                log("%s: WAN is up\n", __func__);
+#ifndef FEATURE_LAN_ONLY
+            if(IS_OPM(UNUM_OPM_AP)) {
+                // In AP mode set the flag to prevent further checking
                 wan_up = TRUE;
+            } else {
+                // In non-AP mode do real check if WAN is up
+                if (util_net_dev_is_up(GET_MAIN_WAN_NET_DEV())) {
+                    log("%s: WAN is up\n", __func__);
+                    wan_up = TRUE;
+                }
             }
-#else  // !AP_MODE
+#else  // !FEATURE_LAN_ONLY
             wan_up = TRUE;
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
             log("lan_up=%d... wan_up=%d\n", lan_up, wan_up);
             if(!lan_up || !wan_up) {
@@ -122,7 +127,7 @@ int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
         failed += (ret == 0 ? 0 : 1);
     }
 
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
     // We only support 1 WAN interface.
     // Note: This might need to be updated to deal with
     //       PPPoE and VPN-based WAN connections properly
@@ -130,7 +135,7 @@ int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
         ret = f(GET_MAIN_WAN_NET_DEV(), data);
         failed += (ret == 0 ? 0 : 1);
     }
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
     return failed;
 }

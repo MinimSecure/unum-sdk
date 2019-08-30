@@ -220,7 +220,7 @@ static int probe_ports(unsigned long scan_delay, unsigned long wait_time,
         unsigned char protocol;
         unsigned short tcp_length;
         struct tcphdr tcp;
-    } __attribute__((packed)) *psh; // pseudoheader for TCP checksum
+    } *psh; // pseudoheader for TCP checksum
     char pkt[(sizeof(struct pseudo_header) + 15) & (~0xf)]; // data buf
 
     // Set pointers to the pseudo and TCP header within the buffer
@@ -667,12 +667,26 @@ int cmd_port_scan(char *cmd, char *s, int s_len)
 #ifdef DEBUG
 void test_port_scan(void)
 {
-    char *jstr =
-        "[{\"mac\":\"00:0c:29:3b:b1:70\",\"ipv4\":\"192.168.0.100\","
-          "\"ports\":[\"80\", \"20-22\",\"443\"],"
-          "\"scan_delay\":200, \"wait_time\":1000},"
-         "{\"mac\":\"00:0c:29:f4:ae:07\",\"ipv4\":\"192.168.0.101\","
-          "\"ports\":[\"1-65535\"],\"retries\":0}]";
+    char mac1[20], mac2[20];
+    char ip1[20], ip2[20];
+    char jstr[512];
+
+    printf("Please enter MAC for scan destination one:\n");
+    scanf("%18s", mac1);
+    printf("Please enter IP for scan destination one:\n");
+    scanf("%16s", ip1);
+    printf("Please enter MAC for scan destination two:\n");
+    scanf("%18s", mac2);
+    printf("Please enter IP for scan destination two:\n");
+    scanf("%16s", ip2);
+    
+    sprintf(jstr, 
+            "[{\"mac\":\"%s\",\"ipv4\":\"%s\","
+            "\"ports\":[\"80\", \"20-22\",\"443\"],"
+            "\"scan_delay\":200, \"wait_time\":1000},"
+            "{\"mac\":\"%s\",\"ipv4\":\"%s\","
+            "\"ports\":[\"1-65535\"],\"retries\":0}]",
+            mac1, ip1, mac2, ip2);
 
     printf("Testing 'port_scan' command, JSON payload:\n%s\n", jstr);
     printf("Starting TPCAP...");

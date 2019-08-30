@@ -21,6 +21,9 @@
 //#undef LOG_DBG_DST
 //#define LOG_DST LOG_DST_STDOUT
 //#define LOG_DBG_DST LOG_DST_STDOUT
+/* In case normal logging doesn't work during the test */
+//#undef log
+//#define log printf
 
 #define SPEEDTEST_PROTO_VER "v2.1"
 
@@ -59,6 +62,10 @@ typedef struct speedtest_settings
     // Either TRUE if the agent is activated, otherwise FALSE.
     char online;
 } speedtest_settings;
+
+// Interface to run the test from (if NULL no binding)
+static char *ifname = NULL;
+static char ifname_buf[IFNAMSIZ];
 
 // Endpoint URLs for communicating with the remote Minim API.
 static char endpoint_settings_url[256];
@@ -246,11 +253,11 @@ static int speedtest_fetch_settings(speedtest_settings *cfg)
         endpoint_settings_url,
         "Accept: application/json");
     if(rsp == NULL || (rsp->code / 100) != 2) {
+        log("%s: request error, code %d%s\n",
+            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
         if(rsp) {
             free_rsp(rsp);
         }
-        log("%s: request error, code %d%s\n",
-            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
         return -1;
     }
 
@@ -296,9 +303,9 @@ static void speedtest_print_settings()
     log("%s: per_test_time_limit(%isec)\n",
         __func__, settings.transfer_time_limit_sec);
     if(settings.endpoint_domain == NULL ||
-        settings.endpoint_protocol == NULL)
+       settings.endpoint_protocol == NULL)
     {
-        log("%s: cannot print endpoint settings, invalid pointer");
+        log("%s: cannot print endpoint settings, invalid pointer\n", __func__);
         return;
     }
     log("%s: endpoint(%s%s:%i)\n",
@@ -370,7 +377,8 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
 
     log("%s: %s complete after %lums and %lubytes\n",
         __func__, descriptor,
-        (end_time_in_ms - start_time_in_ms), total_bytes_transferred);
+        (unsigned long)(end_time_in_ms - start_time_in_ms),
+        (unsigned long)total_bytes_transferred);
 
     if(worker_error < 0) {
         log("%s: %s finished with errors, discarding result\n",
@@ -392,7 +400,7 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
 // Parameters, in order: the URL to fetch, the timeout in seconds, and finally,
 // the size_t out parameter which is populated with the number of bytes
 // transferred during the test.
-typedef int (*transfer_func)(char*, long, size_t*);
+typedef int (*transfer_func)(char*, char*, long, size_t*);
 
 // Performs one set of transfers generically by delegating most
 // of the work to the transfer_func function pointer, which should be
@@ -433,7 +441,7 @@ static void speedtest_transfer_worker(const char *descriptor,
 
         // Invoke the received transfer_func.
         size_t bytes_transferred;
-        if((*transfer_fn)(url,
+        if((*transfer_fn)(ifname, url,
             settings.transfer_time_limit_sec, &bytes_transferred) < 0)
         {
             log("%s(#%i): %s of chunk failed\n",
@@ -491,6 +499,8 @@ static int speedtest_results_to_json(char *out, int len)
             {.type = JSON_VAL_PINT, {.pi = upload   >= 0 ? &upload   : NULL}}},
         { "latency_ms",
             {.type = JSON_VAL_PINT, {.pi = latency  >= 0 ? &latency  : NULL}}},
+        { "interface",
+            {.type = JSON_VAL_STR,  {.s = ifname}}},
         { NULL }
     };
 
@@ -503,7 +513,10 @@ static int speedtest_results_to_json(char *out, int len)
     if(json == NULL) {
         return -1;
     }
-    strncpy(out, json, len);
+    if(len > 0) {
+        strncpy(out, json, len);
+        out[len - 1] = 0;
+    }
     util_free_json_str(json);
     return 0;
 }
@@ -513,7 +526,7 @@ static int speedtest_results_to_json(char *out, int len)
 static int speedtest_do_upload_results(const char *jstr, char short_timeout)
 {
     http_rsp *rsp =
-        (short_timeout == TRUE ? http_post_short_timeout : http_post)(
+        (short_timeout ? http_post_short_timeout : http_post)(
             endpoint_telemetry_url,
             "Content-Type: application/json\0"
             "Accept: application/json\0",
@@ -521,7 +534,7 @@ static int speedtest_do_upload_results(const char *jstr, char short_timeout)
     int ret = 0;
     if(rsp == NULL || (rsp->code / 100) != 2) {
         log("%s: request error, code %d%s\n",
-            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
+            __func__, (rsp ? rsp->code : 0), (rsp ? "" : "(none)"));
         ret = -1;
     }
     if(rsp) {
@@ -534,8 +547,8 @@ static int speedtest_do_upload_results(const char *jstr, char short_timeout)
 // Upload the current test results, but timeout quickly and do not retry.
 static int speedtest_upload_results_failfast()
 {
-    char jstr[200];
-    speedtest_results_to_json(jstr, 200);
+    char jstr[256];
+    speedtest_results_to_json(jstr, sizeof(jstr));
     return speedtest_do_upload_results(jstr, TRUE);
 }
 
@@ -550,8 +563,8 @@ static int speedtest_upload_results()
     }
     log("%s: uploading results to the Minim API\n", __func__);
 
-    char jstr[200];
-    speedtest_results_to_json(jstr, 200);
+    char jstr[256];
+    speedtest_results_to_json(jstr, sizeof(jstr));
     // Short timeout on the first try.
     if(speedtest_do_upload_results(jstr, TRUE) < 0) {
         // Upload failed.
@@ -654,6 +667,20 @@ void speedtest_perform()
         log("%s: streaming results to Minim API as tests finish\n", __func__);
     }
 
+    // Determine the interface to run the test from if running in
+    // the AP or MD mode, otherwise keep unspecified
+    ifname = NULL;
+    if(IS_OPM(UNUM_OPM_AP | UNUM_OPM_MD) &&
+       util_get_ipv4_gw_oif(ifname_buf) == 0)
+    {
+        ifname = ifname_buf;
+    }
+    if(ifname) {
+        log("%s: binding to interface %s for the test\n", __func__, ifname);
+    } else {
+        log("%s: not binding to specifc interface for the test\n", __func__);
+    }
+
     // Iterate over individual tests, running each one at a time.
     int i;
     int limit = UTIL_ARRAY_SIZE(speedtests);
@@ -662,7 +689,7 @@ void speedtest_perform()
         // Let other threads have a turn.
         sched_yield();
         // Report intermediate results
-        if(i != limit-1) {
+        if(i < limit - 1) {
             // Stream results except for the last iteration-- the results
             // will be uploaded after the test is over anyway.
             speedtest_upload_results_failfast();
@@ -671,7 +698,7 @@ void speedtest_perform()
 
     // Deal with the various possible final states.
     if(settings.online == TRUE) {
-        if(speedtest_upload_results(3) < 0) {
+        if(speedtest_upload_results() < 0) {
             log("%s: results not uploaded to server\n", __func__);
         } else {
             log("%s: results successfully uploaded to server\n", __func__);
@@ -680,7 +707,7 @@ void speedtest_perform()
         log("%s: agent is not activated, not uploading results\n", __func__);
     }
 
-    char results[150];
+    char results[256];
     speedtest_results_to_json(results, sizeof(results));
     log("%s: results: %s\n", __func__, results);
 }

@@ -76,6 +76,10 @@ int agent_main(void)
         // should never reach this point
     }
 
+    // Log agent operation mode (it still can change in activate or
+    // when platform examines the config during init)
+    log("%s: opmode: \"%s\"\n", __func__, unum_config.opmode);
+
     // Initialize subsystems
     for(level = 1; level <= MAX_INIT_LEVEL; level++)
     {
@@ -90,6 +94,7 @@ int agent_main(void)
                 // should never reach this point
             }
         }
+        init_level_completed = level;
     }
     log_dbg("%s: Init done\n", __func__);
 

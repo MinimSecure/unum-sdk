@@ -125,6 +125,12 @@ void util_factory_reset(void);
 // does not define FACTORY_RESET_CMD)
 int __attribute__((weak)) util_platform_factory_reset(void);
 
+
+// Populate auth_info_key Auth Info Key
+// For Gl-inet B1300 it is serial number
+// For now (03/17/19), for all other devices, auth_info_key is not updated
+void __attribute__((weak)) util_get_auth_info_key(char *auth_info_key, int max_key_len);
+
 // Return uptime in specified fractions of the second (rounded to the low)
 unsigned long long util_time(unsigned int fraction);
 
@@ -175,8 +181,25 @@ unsigned int util_hash(void *dptr, int len);
 // str - ptr to the string to clean up
 void util_cleanup_str(char *str);
 
+// Configure the agent to the specified operation mode
+// opmode - the operation mode string pointer
+// Returns: 0 - success, negative - error setting the opmode
+// Note: this function is called from command line procesing routines
+//       before any init is done (i.e. even the log msgs would go to stdout)
+int util_set_opmode(char *opmode);
+
 // Optional platform init function
 int __attribute__((weak)) util_platform_init(int level);
+
+// Optional platform operation mode change handler, called if the 
+// opmode is changing after the INIT_LEVEL_SETUP is complete
+// (i.e. at activate). The function does not have to set the new flags
+// or modify the mode string in unum_config, just do platform specific
+// canges and return 0 for the common code to finish making changes.
+// old_flags - current opmode flags
+// new_flags - new opmode flags
+// Returns: 0 - ok, negative - can't accept the new flags
+int __attribute__((weak)) platform_change_opmode(int old_flags, int new_flags);
 
 // Subsystem init function
 int util_init(int level);

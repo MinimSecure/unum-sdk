@@ -111,6 +111,8 @@ int http_get_file(char *url, char *headers, char *file)
 
     for(retry = 0; err != 0 && retry < REQ_RETRIES; retry++)
     {
+        ftruncate(fileno(f), 0);
+
         ch = curl_easy_init();
         if(ch)
         {
@@ -218,7 +220,7 @@ static http_rsp *http_req(char *url, char *headers,
                           int type, char *data, int len)
 {
     CURL *ch;
-    int err;
+    int err = 0;
     int retry;
     http_rsp *rsp;
     long resp_code;
@@ -457,7 +459,8 @@ http_rsp *http_get_no_retry(char *url, char *headers)
 // Download file from a URL, without storing any data
 // this is used to test speeds. returns 0 if successful
 // error otherwise.
-int http_download_test(char *url, long timeout_in_sec, size_t *returned_size)
+int http_download_test(char *ifname, char *url,
+                       long timeout_in_sec, size_t *returned_size)
 {
     CURL *ch;
     CURLcode res;
@@ -468,7 +471,11 @@ int http_download_test(char *url, long timeout_in_sec, size_t *returned_size)
     ch = curl_easy_init();
 
     // Setup CURL options
+    if(ifname) {
+        curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
+    }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, speedtest_chunk);
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *)&total_size);
     curl_easy_setopt(ch, CURLOPT_USERAGENT, "unum/v3 (libcurl; minim.co)");
@@ -523,7 +530,8 @@ static size_t random_data_reader(void *ptr, size_t size,
 
 // Uploads random data to an endpoint to test the upload speed
 // returns 0 if successful, -1 otherwise.
-int http_upload_test(char *url, long timeout_in_sec, size_t *uploaded_size)
+int http_upload_test(char *ifname, char *url,
+                     long timeout_in_sec, size_t *uploaded_size)
 {
     CURL *ch;
     CURLcode res;
@@ -538,7 +546,11 @@ int http_upload_test(char *url, long timeout_in_sec, size_t *uploaded_size)
     ch = curl_easy_init();
 
     // Setup CURL options
+    if(ifname) {
+        curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
+    }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(ch, CURLOPT_READFUNCTION, random_data_reader);
     curl_easy_setopt(ch, CURLOPT_READDATA, (void *)&ts);

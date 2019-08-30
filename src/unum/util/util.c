@@ -87,6 +87,28 @@ void util_factory_reset(void)
     log("%s: not supported on the platform\n", __func__);
 }
 
+// Populate auth_info_key Auth Info Key
+// For Gl-inet B1300 it is serial number
+// For all other devices, auth_info_key is not updated
+#ifdef AUTH_INFO_GET_CMD
+void util_get_auth_info_key(char *auth_info_key, int max_key_len)
+{
+    char *get_auth_info_key_cmd = AUTH_INFO_GET_CMD;
+    int pstatus;
+
+    if(util_get_cmd_output(get_auth_info_key_cmd, auth_info_key,
+                               max_key_len, &pstatus) > 0) {
+        if(pstatus == -1) {
+            // Some error while getting the auth info key
+            // Zero the key
+            memset(auth_info_key, 0, max_key_len);
+            log("%s: Failed to get the auth info key\n", __func__);
+        }
+        return;
+    }
+}
+#endif // AUTH_INFO_GET_CMD
+
 // Return uptime in specified fractions of the second (rounded to the low)
 unsigned long long util_time(unsigned int fraction)
 {
@@ -364,6 +386,68 @@ void util_cleanup_str(char *str)
         spaces = 0;
     }
     return;
+}
+
+// Configure the agent to the specified operation mode
+// opmode - the operation mode string pointer
+// Returns: 0 - success, negative - error setting the opmode
+// Note: this function is called from command line procesing routines
+//       before any init is done (i.e. even the log msgs would go to stdout)
+int util_set_opmode(char *opmode)
+{
+    int new_flags = 0;
+    char *new_mode = NULL;
+
+#if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_GW) == 0) {
+        new_flags = UNUM_OPM_GW;
+        new_mode = UNUM_OPMS_GW;
+    } else
+#endif // !FEATURE_LAN_ONLY
+#if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_AP) == 0) {
+        new_flags = UNUM_OPM_AP;
+        new_mode = UNUM_OPMS_AP;
+    } else
+#endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+#if defined(FEATURE_MANGED_DEVICE)
+    if(strcmp(opmode, UNUM_OPMS_MD) == 0) {
+        new_flags = UNUM_OPM_MD;
+        new_mode = UNUM_OPMS_MD;
+    } else
+#endif // FEATURE_MANGED_DEVICE
+#if defined(FEATURE_MESH_11S)
+# if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_GW) == 0) {
+        new_flags = UNUM_OPM_GW | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_GW;
+    } else
+# endif // !FEATURE_LAN_ONLY
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_AP) == 0) {
+        new_flags = UNUM_OPM_AP | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_AP;
+    } else
+#endif // FEATURE_MESH_11S
+    {
+        // Unrecognized mode, keeping the flags unchanged
+        return -1;
+    }
+
+    // If opmode change is requested after the setup stage of the init is done
+    // let the platform handle the opmode change (it might need to do something
+    // special or limit possible changes)
+    if(init_level_completed >= INIT_LEVEL_SETUP  &&
+       strcmp(unum_config.opmode, new_mode) != 0 &&
+       platform_change_opmode != NULL            &&
+       platform_change_opmode(unum_config.opmode_flags, new_flags) != 0)
+    {
+        return -2;
+    }
+
+    // All checks passed, change opmode
+    unum_config.opmode = new_mode;
+    unum_config.opmode_flags = new_flags;
+    return 0;
 }
 
 // Subsystem init function
