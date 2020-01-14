@@ -22,7 +22,7 @@ AP_HARDWARE_TYPES =
 
 # Generic libs
 LDFLAGS += -lrt -lcrypto
-CPPFLAGS += -DUSE_OPEN_SSL
+CPPFLAGS += -DUSE_OPEN_SSL -D_DEFAULT_SOURCE
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally
