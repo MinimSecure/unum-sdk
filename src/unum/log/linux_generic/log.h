@@ -20,10 +20,10 @@
 #ifndef _LOG_H
 #define _LOG_H
 
-// Define prefix for log files location. By default use /var/log
-// which typically points to RAM FS. Unless the device has a flash
-// chip that can sustain high number of erase cycles keep it default.
-#define LOG_PATH_PREFIX "/var/log"
+// Define prefix for log files location.
+#ifndef LOG_PATH_PREFIX
+#  define LOG_PATH_PREFIX "/var/log"
+#endif
 
 // Where to direct stdout and stderr in the daemon mode. Warning, do not
 // output to a file unless in debug mode. The file will eventually consume
