@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,13 +67,13 @@ static DT_IF_STATS_t stats_tbl[DEVTELEMETRY_NUM_SLICES][TPCAP_STAT_IF_MAX];
 static DT_TABLE_STATS_t dev_tbl_stats;
 static DT_TABLE_STATS_t conn_tbl_stats;
 
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
 // 25 bits of IP mcast MAC in network order for matching mcast destinations
 static uint32_t *ip_mc_mac =
     (uint32_t *)((char []){ 0x01, 0x00, 0x5E, 0x00 });
 static uint32_t *ip_mc_mac_mask =
     (uint32_t *)((char []){ 0xff, 0xff, 0xff, 0x80 });
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
 
 // Reset device telemetry main tables (including the table usage stats)
@@ -338,7 +338,7 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     int from_rtr = TRUE;
     int to_rtr = TRUE;
 
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
     // Is the packet from or to the router MAC address
     // If it is device->IP mcast pkt - assume to-the-router
     from_rtr = !memcmp(tpif->mac, ehdr->h_source, 6);
@@ -346,12 +346,15 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     to_rtr = !memcmp(tpif->mac, ehdr->h_dest, 6) ||
                      (!from_rtr && (*((uint32_t*)mac_ptr) & *ip_mc_mac_mask) ==
                                    *ip_mc_mac);
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
-#ifdef AP_MODE
+#ifdef FEATURE_LAN_ONLY
     // Use subnet match to figure if the traffic is to or from outside.
-    // For now check it only in the AP mode (currently this is the
-    // only way to identify the traffic direction in the AP mode).
+    // For the AP-only mode to work we should use the subnet match method
+    // (currently this is the only way to identify the traffic direction).
+    // For the managed devices (which are also LAN only devices) we can
+    // just match the MAC to src or dst, but for consistency will just use
+    // the subnet match method.
     if((iph->saddr & tpif->ipcfg.ipv4mask.i) ==
        (tpif->ipcfg.ipv4.i & tpif->ipcfg.ipv4mask.i))
     {
@@ -364,15 +367,26 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     }
     // In the AP mode we cannot see traffic of the devices that are not
     // sending through the AP's bridge interface, but we could see their
-    // multicast/broadcast traffic and would report false info and pretense
-    // we are monitoring them, so kill all the local LAN multicasts here.
+    // multicast/broadcast traffic and unless filtered would report false
+    // info and pretend we are monitoring them, so kill all the local LAN
+    // multicasts here.
     if(!from_rtr && (*ehdr->h_dest & 0x01) != 0) {
         //DPRINTF("%s: packet ignored, local mcast to "
         //        MAC_PRINTF_FMT_TPL "\n",
         //        __func__, MAC_PRINTF_ARG_TPL(ehdr->h_dest));
         return;
     }
-#endif // AP_MODE
+#ifdef FEATURE_MANAGED_DEVICE
+    // For managed devices drop all the traffic unrelated to the device itself
+    if(memcmp(tpif->mac, ehdr->h_source, 6) &&
+       memcmp(tpif->mac, ehdr->h_dest, 6))
+    {
+        //DPRINTF("%s: packet src & dst do not match the interface MAC\n",
+        //        __func__);
+        return;
+    }
+#endif //!FEATURE_MANAGED_DEVICE
+#endif // FEATURE_LAN_ONLY
 
     // Only take packets that go from some device to the
     // outside or back (i.e. try to go through the router)
@@ -406,7 +420,7 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
         peer_ipv4.i = iph->saddr;
     }
 
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
     // Drop packets that go to or come from the router/AP itself
     // This can only be seen in the router mode
     if(peer_ipv4.i == tpif->ipcfg.ipv4.i) {
@@ -414,17 +428,20 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
         //        __func__, IP_PRINTF_ARG_TPL(peer_ipv4.b));
         return;
     }
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
-#ifdef AP_MODE
-    // In the AP mode we will only see our own traffic to outside of the
-    // network (might be useful, but is inconsistent w/ the router mode)
+#ifdef FEATURE_LAN_ONLY
+    // Skip this check for managed devices, they must report their own traffic
+#ifndef FEATURE_MANAGED_DEVICE
+    // In the AP-only firmware we will only see our own traffic to outside of
+    // the network (might be useful, but is inconsistent w/ the router mode)
     if(dev_ipv4.i == tpif->ipcfg.ipv4.i) {
         //DPRINTF("%s: packet to/from AP " IP_PRINTF_FMT_TPL "\n",
         //        __func__, IP_PRINTF_ARG_TPL(dev_ipv4.b));
         return;
     }
-#endif // AP_MODE
+#endif //!FEATURE_MANAGED_DEVICE
+#endif // FEATURE_LAN_ONLY
 
     // First add or make sure device is in the devices table
     uint16_t rating = ((to_rtr | (from_rtr << 1))) << 1;
@@ -659,6 +676,9 @@ static void stats_ready_cb(TPCAP_IF_STATS_t *st)
         if(util_get_ipcfg(dtst->name, &dtst->ipcfg) != 0) {
             memset(&dtst->ipcfg, 0, sizeof(dtst->ipcfg));
         }
+        if(util_get_mac(dtst->name, dtst->mac) != 0) {
+            memset(&dtst->mac, 0, sizeof(dtst->mac));
+        }
         ste->len_t = 0;
         ++st_if_num;
     }
@@ -779,6 +799,14 @@ int devtelemetry_init(int level)
 {
     if(level == INIT_LEVEL_DEVTELEMETRY)
     {
+#ifndef FEATURE_LAN_ONLY
+        // Unless it is a standalone AP device firmware we do not do device
+        // telemetry in the AP operation mode (i.e. gateway firmware in the
+        // AP mode).
+        if(IS_OPM(UNUM_OPM_AP)) {
+            return 0;
+        }
+#endif // !FEATURE_LAN_ONLY
         // Initialize the device info collector
         if(dt_main_collector_init() != 0) {
             return -1;

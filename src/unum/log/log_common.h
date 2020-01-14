@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ typedef enum {
     LOG_DST_UNUM,    // generic agent logging to a file
     LOG_DST_HTTP,    // HTTP req/rsp logging to a file
     LOG_DST_MONITOR, // monitor process logging to a file
-#ifdef FW_UPDATER_OPMODE
+#ifdef FW_UPDATER_RUN_MODE
     LOG_DST_UPDATE,  // firmware updater process, file
     LOG_DST_UPDATE_MONITOR, // updater monitor, file
-#endif // FW_UPDATER_OPMODE
-#ifdef SUPPORT_OPMODE
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
     LOG_DST_SUPPORT, // support portal process, file
-#endif // SUPPORT_OPMODE
+#endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
     LOG_DST_DEBUG,   // debug logging to a file
 #endif // DEBUG

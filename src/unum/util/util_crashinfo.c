@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ static int crashinfo_overview(char *buf, int buf_len,
 
     // Note: do not add printouts that would make content change for the same
     //       crashes (like time, PID, etc)
-    PRNBUF("Unum v%s, stopped due to %s\n", VERSION, name);
+    PRNBUF("Unum v%s on %s, stopped due to %s\n", VERSION, DEVICE_PRODUCT_NAME, name);
 
     return count;
 }

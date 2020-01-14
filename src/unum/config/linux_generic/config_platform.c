@@ -1,4 +1,4 @@
-// Copyright 2019 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -133,6 +133,8 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
     size_t len = (size_t) cfg_len;
     FILE *conf = open_memstream(&cfg, &len);
     if (conf == NULL) {
+        pclose(out);
+        out = NULL;
         return -2;
     }
     char buf[PLATFORM_READ_BUFFER_SIZE];

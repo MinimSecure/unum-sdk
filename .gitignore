@@ -9,3 +9,4 @@ dist/debian/*.substvars
 dist/debian/*.ex
 dist/debian/files
 !dist/make_dotdeb.sh
+tags

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ int tracer_reset(int a, TRACER_CRASH_INFO_t **b) { return 0; };
 static __inline__
 int tracee_launch(void) { return 0; };
 static __inline__
-int tracer_update(int a, int b, TRACER_CRASH_INFO_t **c) { return 0; };
+int tracer_update(int a, int b, TRACER_CRASH_INFO_t **c) { return 1; };
 static __inline__
 int tracer_stop(void) { return 0; };
 

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -316,28 +316,34 @@ void process_monitor(int log_dst, char *pid_suffix)
             if(WIFEXITED(status)) {
                 val = WEXITSTATUS(status);
                 log("%s: process %d exited, status %d\n", __func__, pid, val);
-                if(val == EXIT_RESTART)  {
-                    process_start_reason.code = UNUM_START_REASON_RESTART;
-                    log("%s: restarting the agent...\n", __func__);
-                    break;
-                } else if(val == EXIT_REBOOT) {
+                if(val == EXIT_REBOOT) {
                     log("%s: rebooting the device...\n", __func__);
                     util_reboot();
                     // should never reach this point
-                }
+                } else {
+                    process_start_reason.code = val;
+                    log("%s: restarting the agent with reason code = %d\n",
+                                         __func__, val);
+                    break;
+                 }
                 exit(val);
-            } else if(WIFSIGNALED(status)) {
+            }
+            else if(WIFSIGNALED(status)) {
                 val = WTERMSIG(status);
                 process_start_reason.code = UNUM_START_REASON_CRASH;
                 log("%s: the agent was killed by signal %d, restarting...\n",
                     __func__, val);
                 break;
-            } else if(WIFSTOPPED(status)) {
+            }
+            else if(WIFSTOPPED(status)) {
                 val = WSTOPSIG(status);
                 log("%s: the agent was stopped by signal %d\n", __func__, val);
-            } else if(WIFCONTINUED(status)) {
+            }
+#ifdef WIFCONTINUED
+            else if(WIFCONTINUED(status)) {
                 log("%s: the agent was resumed\n", __func__);
             }
+#endif // WIFCONTINUED
         }
 
         // The wait loop has terminated, meaning that monitored process

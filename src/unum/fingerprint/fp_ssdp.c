@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -408,6 +408,14 @@ void cmd_ssdp_discovery(void)
 // Returns: 0 - if successful
 int fp_ssdp_init(void)
 {
+#ifndef FEATURE_LAN_ONLY
+    // We do not do SSDP discovery in the AP operation mode (i.e. gateway
+    // firmware in the AP mode), but do it in the standalone AP firmware
+    if(IS_OPM(UNUM_OPM_AP)) {
+        return 0;
+    }
+#endif // !FEATURE_LAN_ONLY
+
     // Allocate memory for the SSDP info table (never freed).
     // The memory for each element is allocated when required
     // and stores the pointer in the array. Once allocated the

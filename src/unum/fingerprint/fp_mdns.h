@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ FP_TABLE_STATS_t *fp_mdns_tbl_stats(int reset);
 FP_MDNS_t **fp_get_mdns_tbl(void);
 
 // The "do_mdns_discovery" command processor.
-int cmd_mdns_discovery(char *cmd, char *s, int s_len);
+// Note: declared weak so platforms not doing it do not have to stub
+int __attribute__((weak)) cmd_mdns_discovery(char *cmd, char *s, int s_len);
 
 // Reset all mDNS tables (including the table usage stats)
 void fp_reset_mdns_tables(void);

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,10 +48,10 @@
 #include <net/if.h>
 #include <poll.h>
 #include <unistd.h>
+#include <linux/types.h>
 #include <linux/reboot.h>
 #include <linux/filter.h>
 #include <linux/if_packet.h>
-#include <linux/virtio_net.h>
 #include <linux/sockios.h>
 #include <linux/rtnetlink.h>
 #include <sys/reboot.h>
@@ -62,6 +62,12 @@
 #include <signal.h>
 #include <jansson.h>
 #include <getopt.h>
+
+#ifdef USE_OPEN_SSL
+#  include <openssl/sha.h>
+#else
+#  include <mbedtls/sha256.h>
+#endif
 
 // Local includes
 #include "platform.h"
@@ -127,6 +133,9 @@
 // suffix is monitor, agent, support, fw_update, etc.
 #define AGENT_PID_FILE_PREFIX "/var/run/unum"
 
+// Macro for checking the agent current operation mode flags
+#define IS_OPM(feature) (((feature) & unum_config.opmode_flags) != 0)
+
 // Default agent config path, platforms can override in platform.h.
 #ifndef UNUM_CONFIG_PATH
 #  define UNUM_CONFIG_PATH "/tmp/unum.conf"
@@ -139,7 +148,19 @@ typedef struct {
     unsigned int no_provision:1;   // no provisioning (no wait for cert/key)
     unsigned int no_conncheck:1;   // no connectivity check
     char *url_prefix;              // custom "http(s)://<host>" URL part
-    char *mode;                    // special op. mode <u[pdate]|s[upport]...>
+    char *mode;                    // special run mode <u[pdate]|s[upport]...>
+#define UNUM_OPMS_MD          "md" // managed device mode
+#define UNUM_OPMS_AP          "ap" // AP mode
+#define UNUM_OPMS_GW          "gw" // gateway mode
+#define UNUM_OPMS_MESH_11S_AP "mesh_11s_ap" // AP in ieee802.11s mesh mode
+#define UNUM_OPMS_MESH_11S_GW "mesh_11s_gw" // gateway in ieee802.11s mesh mode
+    char *opmode;                  // agent opmode string (above) <gw|ap|...>
+#define UNUM_OPM_AUTO     0x1  // can pick operating mode automatically
+#define UNUM_OPM_GW       0x2  // operating in gateway mode
+#define UNUM_OPM_AP       0x4  // operating in wireless AP mode
+#define UNUM_OPM_MD       0x8  // operating in managed device mode
+#define UNUM_OPM_MESH_11S 0x10 // operating in ieee802.11s mesh mode
+    int opmode_flags;              // opmode flags (above, used by IS_OPM(...))
     char *ca_file;                 // trusted CA file for CURL
     char *pid_fprefix;             // PID file prefix, e.g. "/var/run/unum"
     int telemetry_period;          // router telemetry reporting period
@@ -154,6 +175,7 @@ typedef struct {
     int sysinfo_period;            // sysinfo reporting time period
     int ipt_period;                // iptables reporting time period
     char *config_path;             // path to config file
+    int dns_timeout;               // dns timeout value in seconds
     char wan_ifname[IFNAMSIZ];     // specify a custom wan interface name
     char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];             
                                    // list of custom lan interface names
@@ -165,11 +187,6 @@ typedef struct {
 // the reason for the agent start/re-start and in case of the restart due to
 // a failure the associated error information)
 typedef struct {
-#define UNUM_START_REASON_UNKNOWN 0 // power cycle, reset or unknow reason
-#define UNUM_START_REASON_CRASH   1 // agent restart due to a crash
-#define UNUM_START_REASON_RESTART 2 // self initiated restart
-#define UNUM_START_REASON_REBOOT  3 // self initiated reboot (not yet)
-#define UNUM_START_REASON_UPGRADE 4 // firmware upgrade (by agent, not yet)
     int code;                // stratup reason codes (see above)
     TRACER_CRASH_INFO_t *ci; // crash info (if UNUM_START_REASON_CRASH)
                              // this pointer (if set) can be freed by agent
@@ -194,6 +211,9 @@ extern UNUM_CONFIG_t unum_config;
 // process, monitored process after being forked can examine it and log, report
 // to the server or just ignore it)
 extern UNUM_START_REASON_t process_start_reason;
+
+// The init level that we have executed all the init routines for
+extern int init_level_completed;
 
 
 // The function parses config from the file or from the server activate

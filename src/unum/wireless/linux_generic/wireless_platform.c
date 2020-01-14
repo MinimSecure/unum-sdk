@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@
 int wireless_get_sta_counters(char *ifname, unsigned char* mac,
                               WIRELESS_COUNTERS_t *wc)
 {
+    if(wireless_iwinfo_platform_get_sta_counters != NULL) {
+        return wireless_iwinfo_platform_get_sta_counters(ifname, mac, wc);
+    }
     char *sysnetdev_dir = "/sys/class/net";
     struct dirent *de;
     int ret, ii;
@@ -58,6 +61,7 @@ int wireless_get_sta_counters(char *ifname, unsigned char* mac,
     buf = UTIL_MALLOC(IWINFO_BUFSIZE);
     if(!buf) {
         log("%s: error allocating %d bytes\n", __func__, IWINFO_BUFSIZE);
+        closedir(dd);
         return -2;
     }
     ret = -1;
@@ -113,6 +117,7 @@ int wireless_get_sta_counters(char *ifname, unsigned char* mac,
         buf = NULL;
     }
 
+    closedir(dd);
     return ret;
 }
 

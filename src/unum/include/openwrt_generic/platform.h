@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,11 @@
 // Platform specific include file.
 // The main purpose is to pull in all the platform specific headers.
 
-#ifndef _PLATFORM_H
-#define _PLATFORM_H
+#ifndef _PALTFORM_H
+#define _PALTFORM_H
 
-// Override the default config file path if ETC_PATH_PREFIX is defined
-#ifdef ETC_PATH_PREFIX
-#  undef UNUM_CONFIG_PATH
-#  define UNUM_CONFIG_PATH ETC_PATH_PREFIX "/config.json"
-#endif
-
+// Include LEDE UCI config library header
 #include <uci.h>
 
-#endif // _PLATFORM_H
+#endif // _PALTFORM_H
 

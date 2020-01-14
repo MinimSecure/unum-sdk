@@ -1,4 +1,4 @@
-# Copyright 2018 Minim Inc
+# Copyright 2020 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ OBJECTS += \
   ./fingerprint/fp_main.o \
   ./fingerprint/fp_ssdp.o \
   ./fingerprint/fp_dhcp.o \
-  ./fingerprint/fp_mdns.o
+  ./fingerprint/fp_mdns.o \
+  ./fingerprint/fp_useragent.o
 
 # Add subsystem initializer function
 INITLIST += fp_init

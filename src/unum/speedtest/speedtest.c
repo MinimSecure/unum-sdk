@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,28 @@
 //#undef LOG_DBG_DST
 //#define LOG_DST LOG_DST_STDOUT
 //#define LOG_DBG_DST LOG_DST_STDOUT
+/* In case normal logging doesn't work during the test */
+//#undef log
+//#define log printf
 
 #define SPEEDTEST_PROTO_VER "v2.1"
 
-#define SPEEDTEST_REMOTE_URL_BASE      "https://api.minim.co"
-#define SPEEDTEST_REMOTE_TELEMETRY_URL "%s/v3/unums/%s/speed_tests"
-#define SPEEDTEST_REMOTE_SETTINGS_URL  "%s/v3/unums/%s/speed_tests/settings"
+#define SPEEDTEST_REMOTE_TELEMETRY_PATH "/v3/unums/%s/speed_tests"
+#define SPEEDTEST_REMOTE_SETTINGS_PATH  "/v3/unums/%s/speed_tests/settings"
+
+#define MAX_SPEEDTEST_ENDPOINTS 5
+#define MAX_DOMAIN_STRING_LEN   64
+#define MAX_PROTOCOL_STIRNG_LEN 32
+
+// Endpoint Struct
+// Contains domain, port, protocol for a speedtest server
+// Server sends MAX_SPEEDTEST_ENDPOINTS of these
+typedef struct speedtest_endpoint
+{
+    int port;
+    char domain[MAX_DOMAIN_STRING_LEN];
+    char protocol[MAX_PROTOCOL_STIRNG_LEN];
+} speedtest_endpoint;
 
 // Settings struct with hard-coded defaults.
 // If Unum fails to obtain fresh settings from the Minim API during speedtest
@@ -49,16 +65,22 @@ typedef struct speedtest_settings
     // Each transfer is allowed a little more than half of the total
     // time limit.
     int transfer_time_limit_sec;
-    // Endpoint configuration.
-    int endpoint_port;
-    char endpoint_domain[64];
-    char endpoint_protocol[32];
-    // Resolved address for the configured endpoint above.
-    struct sockaddr s_addr;
-    struct sockaddr_in *s_addr_in_ptr;
+    // Speedtest servers
+    struct speedtest_endpoint endpoints[MAX_SPEEDTEST_ENDPOINTS];
     // Either TRUE if the agent is activated, otherwise FALSE.
     char online;
 } speedtest_settings;
+
+// Actual Test Server Parameters
+int endpoint_port;
+char endpoint_domain[MAX_DOMAIN_STRING_LEN];
+char endpoint_protocol[MAX_PROTOCOL_STIRNG_LEN];
+struct sockaddr s_addr;
+struct sockaddr_in *s_addr_in_ptr;
+
+// Interface to run the test from (if NULL no binding)
+static char *ifname = NULL;
+static char ifname_buf[IFNAMSIZ];
 
 // Endpoint URLs for communicating with the remote Minim API.
 static char endpoint_settings_url[256];
@@ -99,19 +121,51 @@ static speedtest speedtests[] = {
     speedtest_upload,
 };
 
+#define MIN_LATENCY_SAMPLES 1
+#define MAX_LATENCY_SAMPLES 10
+#define DEFAULT_LATENCY_SAMPLES 4
+
+#define MIN_TRANSFER_SAMPLES 1
+#define MAX_TRANSFER_SAMPLES 10
+#define DEFAULT_TRANSFER_SAMPLES 4
+
+#define MIN_TRANSFER_CONCURRENCY 1
+#define MAX_TRANSFER_CONCURRENCY 10
+#define DEFAULT_TRANSFER_CONCURRENCY 4
+
+#define MIN_TRANSFER_SIZE_BASE 1000
+#define MAX_TRANSFER_SIZE_BASE 10000
+#define DEFAULT_TRANSFER_SIZE_BASE 4000
+
+#define MIN_TIME_LIMIT 5
+#define MAX_TIME_LIMIT 120
+#define DEFAULT_TIME_LIMIT 20
+
+#define MIN_XFER_TIME_LIMIT 5
+#define MAX_XFER_TIME_LIMIT 120
+#define DEFAULT_XFER_TIME_LIMIT 11
+
+#define MIN_PORT 1
+#define MAX_PORT 65535
+#define DEFAULT_PORT 80
+
 // Default speedtest settings, used when settings cannot be fetched from the
 // remote Minim API.
 static speedtest_settings speedtest_default_settings() {
     speedtest_settings cfg = {
-        .latency_samples = 4,
-        .transfer_samples = 4,
-        .transfer_concurrency = 4,
-        .transfer_size_base = 4000,
-        .time_limit_sec = 20,
-        .transfer_time_limit_sec = 11,
-        .endpoint_port = 80,
-        .endpoint_domain = "speedtest-server.starry.com",
-        .endpoint_protocol = "http://",
+        .latency_samples = DEFAULT_LATENCY_SAMPLES,
+        .transfer_samples = DEFAULT_TRANSFER_SAMPLES,
+        .transfer_concurrency = DEFAULT_TRANSFER_CONCURRENCY,
+        .transfer_size_base = DEFAULT_TRANSFER_SIZE_BASE,
+        .time_limit_sec = DEFAULT_TIME_LIMIT,
+        .transfer_time_limit_sec = DEFAULT_XFER_TIME_LIMIT,
+        .endpoints = {
+            {
+                .domain = "speedtest-server.starry.com",
+                .protocol = "http://",
+                .port = DEFAULT_PORT,
+            }
+        },
         .online = FALSE
     };
     return cfg;
@@ -120,17 +174,15 @@ static speedtest_settings speedtest_default_settings() {
 // Set URLs for the remote Minim API.
 static void set_remote_urls()
 {
-    // Reads only, but no synchronization-- not thread safe.
-    snprintf(endpoint_settings_url, sizeof(endpoint_settings_url),
-        SPEEDTEST_REMOTE_SETTINGS_URL,
-        (unum_config.url_prefix ?
-            unum_config.url_prefix : SPEEDTEST_REMOTE_URL_BASE),
-        util_device_mac());
-    snprintf(endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
-        SPEEDTEST_REMOTE_TELEMETRY_URL,
-        (unum_config.url_prefix ?
-            unum_config.url_prefix : SPEEDTEST_REMOTE_URL_BASE),
-        util_device_mac());
+
+     util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                    endpoint_settings_url, sizeof(endpoint_settings_url),
+                    SPEEDTEST_REMOTE_SETTINGS_PATH, util_device_mac());
+
+     util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                    endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
+                    SPEEDTEST_REMOTE_TELEMETRY_PATH, util_device_mac());
+
 }
 
 // Populates res with the full download URL.
@@ -139,9 +191,9 @@ static int snprint_download_url(char *res, size_t sz)
     // Reads only, but no synchronization-- not thread safe.
     return snprintf(res, sz,
         "%s" IP_PRINTF_FMT_TPL ":%i/speedtest/random%ix%i.jpg",
-        settings.endpoint_protocol,
-        IP_PRINTF_ARG_TPL(&settings.s_addr_in_ptr->sin_addr),
-        settings.endpoint_port,
+        endpoint_protocol,
+        IP_PRINTF_ARG_TPL(&s_addr_in_ptr->sin_addr),
+        endpoint_port,
         settings.transfer_size_base, settings.transfer_size_base);
 }
 
@@ -151,9 +203,9 @@ static int snprint_upload_url(char *res, size_t sz)
     // Reads only, but no synchronization-- not thread safe.
     return snprintf(res, sz,
         "%s" IP_PRINTF_FMT_TPL ":%i/speedtest/upload.php",
-        settings.endpoint_protocol,
-        IP_PRINTF_ARG_TPL(&settings.s_addr_in_ptr->sin_addr),
-        settings.endpoint_port);
+        endpoint_protocol,
+        IP_PRINTF_ARG_TPL(&s_addr_in_ptr->sin_addr),
+        endpoint_port);
 }
 
 // Reset result variables.
@@ -174,6 +226,47 @@ static void reset_counters()
     worker_error = 0;
 }
 
+// Populates cfg endpoint from JSON data
+static void read_endpoint_entry(speedtest_settings *cfg, const json_t *root,
+                                const char *domain, const char *protocol,
+                                const char *port, int *index, int required)
+{
+    json_t *val;
+    const char *tmp;
+
+    if(cfg == NULL || root == NULL || domain == NULL || protocol == NULL ||
+       port == NULL || index == NULL)
+    {
+        log("%s: Invalid argument.\n", __func__);
+        return;
+    }
+
+    if((val = json_object_get(root, domain)) != NULL &&
+        (tmp = json_string_value(val)) != NULL)
+    {
+        strncpy(cfg->endpoints[(*index)].domain, tmp,
+                sizeof(cfg->endpoints[(*index)].domain));
+        cfg->endpoints[(*index)].domain[
+            sizeof(cfg->endpoints[(*index)].domain) - 1] = '\0';
+
+        if((val = json_object_get(root, protocol)) != NULL &&
+            (tmp = json_string_value(val)) != NULL) {
+            strncpy(cfg->endpoints[(*index)].protocol, tmp,
+                    sizeof(cfg->endpoints[(*index)].protocol));
+            cfg->endpoints[(*index)].protocol[
+                sizeof(cfg->endpoints[(*index)].protocol) - 1] = '\0';
+
+            if((val = json_object_get(root, port)) != NULL) {
+                cfg->endpoints[(*index)].port = json_integer_value(val) & 0xFFFF;
+                UTIL_RANGE_CHECK(cfg->endpoints[(*index)].port, MIN_PORT, MAX_PORT);
+                (*index)++;
+            }
+        }
+    }
+
+    return;
+}
+
 // Populates cfg with data stored in data_root.
 // Returns <0 if it fails on a required field.
 static int speedtest_read_settings(json_t *data_root, speedtest_settings *cfg)
@@ -181,54 +274,71 @@ static int speedtest_read_settings(json_t *data_root, speedtest_settings *cfg)
     if(cfg == NULL || data_root == NULL) {
         return -1;
     }
-    const char *tmp;
+
     json_t *val;
-    if((val = json_object_get(data_root, "endpoint_domain")) != NULL &&
-        (tmp = json_string_value(val)) != NULL) {
-        strncpy(cfg->endpoint_domain, tmp, sizeof(cfg->endpoint_domain));
-    } else {
-        return -1;
-    }
-    if((val = json_object_get(data_root, "endpoint_protocol")) != NULL &&
-        (tmp = json_string_value(val)) != NULL) {
-        strncpy(cfg->endpoint_protocol, tmp, sizeof(cfg->endpoint_protocol));
-    } else {
-        return -1;
-    }
-    if((val = json_object_get(data_root, "endpoint_port")) != NULL) {
-        cfg->endpoint_port = (int)UTIL_MIN(json_integer_value(val), 65535);
-    } else {
-        return -1;
-    }
+    int endpoint_index = 0;
+
+    read_endpoint_entry(cfg, data_root, "endpoint_domain", "endpoint_protocol",
+                        "endpoint_port", &endpoint_index, FALSE);
     if((val = json_object_get(data_root, "download_concurrency")) != NULL) {
-        cfg->transfer_concurrency = (int)UTIL_MIN(json_integer_value(val), 8);
+        cfg->transfer_concurrency = json_integer_value(val) & 0xFFFF;
+        UTIL_RANGE_CHECK(cfg->transfer_concurrency, MIN_TRANSFER_CONCURRENCY,
+                         MAX_TRANSFER_CONCURRENCY);
     } else {
         return -1;
     }
     if((val = json_object_get(data_root, "latency_samples")) != NULL) {
-        cfg->latency_samples = (int)UTIL_MIN(json_integer_value(val), 8);
+        cfg->latency_samples = json_integer_value(val) & 0xFFFF;
+        UTIL_RANGE_CHECK(cfg->latency_samples, MIN_LATENCY_SAMPLES,
+                         MAX_LATENCY_SAMPLES);
     } else {
         return -1;
     }
     if((val = json_object_get(data_root, "ookla_size")) != NULL) {
-        cfg->transfer_size_base = (int)UTIL_MIN(
-            json_integer_value(val), 8000);
+        cfg->transfer_size_base = json_integer_value(val) & 0xFFFF;
+        UTIL_RANGE_CHECK(cfg->transfer_size_base, MIN_TRANSFER_SIZE_BASE,
+                         MAX_TRANSFER_SIZE_BASE);
     } else {
         return -1;
     }
     if((val = json_object_get(data_root, "num_sizes")) != NULL) {
-        cfg->transfer_samples = (int)UTIL_MIN(json_integer_value(val), 8);
+        cfg->transfer_samples = json_integer_value(val) & 0xFFFF;
+        UTIL_RANGE_CHECK(cfg->transfer_samples, MIN_TRANSFER_SAMPLES,
+                         MAX_TRANSFER_SAMPLES);
     } else {
         return -1;
     }
     if((val = json_object_get(data_root, "test_timeout_in_sec")) != NULL) {
-        cfg->time_limit_sec = (int)UTIL_MIN(json_integer_value(val), 120);
+        cfg->time_limit_sec = json_integer_value(val) & 0xFFFF;
+        UTIL_RANGE_CHECK(cfg->time_limit_sec, MIN_TIME_LIMIT, MAX_TIME_LIMIT);
     } else {
         return -1;
+    }
+    if((val = json_object_get(data_root, "endpoints")) != NULL) {
+        json_t *entry;
+        size_t entry_index;
+        json_array_foreach(val, entry_index, entry)
+        {
+            if(endpoint_index >= MAX_SPEEDTEST_ENDPOINTS) {
+                break;
+            }
+            read_endpoint_entry(cfg, entry, "domain", "protocol", "port",
+                                &endpoint_index, TRUE);
+        }
+    } else {
+        // This field is optional
+    }
+    if(endpoint_index == 0) {
+        log("%s: No endpoints found in JSON\n", __func__);
+        return -1;
+    } else if(endpoint_index < MAX_SPEEDTEST_ENDPOINTS) {
+        cfg->endpoints[endpoint_index].domain[0] = '\0';
     }
     cfg->online = TRUE;
     return 0;
 }
+
+
 
 // Attempts to retrieve speedtest settings from the Minim API.
 // If the device is not activated or does not have SSL certificates
@@ -246,11 +356,11 @@ static int speedtest_fetch_settings(speedtest_settings *cfg)
         endpoint_settings_url,
         "Accept: application/json");
     if(rsp == NULL || (rsp->code / 100) != 2) {
+        log("%s: request error, code %d%s\n",
+            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
         if(rsp) {
             free_rsp(rsp);
         }
-        log("%s: request error, code %d%s\n",
-            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
         return -1;
     }
 
@@ -259,7 +369,7 @@ static int speedtest_fetch_settings(speedtest_settings *cfg)
     json_t *data_root = json_loads(rsp->data, JSON_ALLOW_NUL, &error);
     free_rsp(rsp);
     if(!data_root) {
-        log("%s: error parsing speedtest settings on line %d: %s\n",
+        log("%s: error parsing json on line %d: %s\n",
             __func__, error.line, error.text);
         return -1;
     }
@@ -267,8 +377,8 @@ static int speedtest_fetch_settings(speedtest_settings *cfg)
     int res = speedtest_read_settings(data_root, cfg);
     json_decref(data_root);
     if(res < 0) {
-        log("%s: error parsing speedtest settings on line %d: %s\n",
-            __func__, error.line, error.text);
+        log("%s: error parsing speedtest settings %d\n",
+            __func__, res);
         return -1;
     }
 
@@ -295,32 +405,28 @@ static void speedtest_print_settings()
         __func__, settings.transfer_size_base, settings.transfer_size_base);
     log("%s: per_test_time_limit(%isec)\n",
         __func__, settings.transfer_time_limit_sec);
-    if(settings.endpoint_domain == NULL ||
-        settings.endpoint_protocol == NULL)
+    int ii = 0;
+    for(ii = 0; ii < MAX_SPEEDTEST_ENDPOINTS &&
+        settings.endpoints[ii].domain[0] != '\0'; ii++)
     {
-        log("%s: cannot print endpoint settings, invalid pointer");
-        return;
+        log("%s: endpoint(%s%s:%i)\n",
+            __func__,
+            settings.endpoints[ii].protocol,
+            settings.endpoints[ii].domain,
+            settings.endpoints[ii].port);
     }
-    log("%s: endpoint(%s%s:%i)\n",
-        __func__,
-        settings.endpoint_protocol,
-        settings.endpoint_domain, settings.endpoint_port);
-    log("%s: endpoint_ipv4(%s" IP_PRINTF_FMT_TPL ":%i)\n",
-        __func__, settings.endpoint_protocol,
-        IP_PRINTF_ARG_TPL(&settings.s_addr_in_ptr->sin_addr),
-        settings.endpoint_port);
 }
 
 // Resolve the IP address for the configured speedtest endpoint domain.
 // Not thread safe. Should be called before starting any worker threads.
 static int resolve_server_addr(speedtest_settings *cfg)
 {
-    cfg->s_addr_in_ptr = (struct sockaddr_in*)&cfg->s_addr;
-    if(cfg->endpoint_domain == NULL) {
+    s_addr_in_ptr = (struct sockaddr_in*)&s_addr;
+    if(endpoint_domain == NULL) {
         return -1;
     }
-    if(util_get_ip4_addr(cfg->endpoint_domain, &cfg->s_addr) < 0 ||
-         cfg->s_addr.sa_family != AF_INET)
+    if(util_get_ip4_addr(endpoint_domain, &s_addr) < 0 ||
+         s_addr.sa_family != AF_INET)
     {
         return -1;
     }
@@ -352,6 +458,9 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
         // See the speedtest_transfer_worker function for an example.
         if(util_start_thrd("speedtest_transfer_worker", workfn, NULL, NULL) == 0) {
             ++starting_workers;
+        } else {
+            log("%s: speedtest worker failed to start\n", __func__);
+            return -1;
         }
     }
 
@@ -370,7 +479,8 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
 
     log("%s: %s complete after %lums and %lubytes\n",
         __func__, descriptor,
-        (end_time_in_ms - start_time_in_ms), total_bytes_transferred);
+        (unsigned long)(end_time_in_ms - start_time_in_ms),
+        (unsigned long)total_bytes_transferred);
 
     if(worker_error < 0) {
         log("%s: %s finished with errors, discarding result\n",
@@ -392,7 +502,7 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
 // Parameters, in order: the URL to fetch, the timeout in seconds, and finally,
 // the size_t out parameter which is populated with the number of bytes
 // transferred during the test.
-typedef int (*transfer_func)(char*, long, size_t*);
+typedef int (*transfer_func)(char*, char*, long, size_t*);
 
 // Performs one set of transfers generically by delegating most
 // of the work to the transfer_func function pointer, which should be
@@ -433,7 +543,7 @@ static void speedtest_transfer_worker(const char *descriptor,
 
         // Invoke the received transfer_func.
         size_t bytes_transferred;
-        if((*transfer_fn)(url,
+        if((*transfer_fn)(ifname, url,
             settings.transfer_time_limit_sec, &bytes_transferred) < 0)
         {
             log("%s(#%i): %s of chunk failed\n",
@@ -491,6 +601,10 @@ static int speedtest_results_to_json(char *out, int len)
             {.type = JSON_VAL_PINT, {.pi = upload   >= 0 ? &upload   : NULL}}},
         { "latency_ms",
             {.type = JSON_VAL_PINT, {.pi = latency  >= 0 ? &latency  : NULL}}},
+        { "interface",
+            {.type = JSON_VAL_STR,  {.s = ifname}}},
+        { "endpoint",
+            {.type = JSON_VAL_STR,  {.s = endpoint_domain}}},
         { NULL }
     };
 
@@ -503,7 +617,10 @@ static int speedtest_results_to_json(char *out, int len)
     if(json == NULL) {
         return -1;
     }
-    strncpy(out, json, len);
+    if(len > 0) {
+        strncpy(out, json, len);
+        out[len - 1] = 0;
+    }
     util_free_json_str(json);
     return 0;
 }
@@ -513,7 +630,7 @@ static int speedtest_results_to_json(char *out, int len)
 static int speedtest_do_upload_results(const char *jstr, char short_timeout)
 {
     http_rsp *rsp =
-        (short_timeout == TRUE ? http_post_short_timeout : http_post)(
+        (short_timeout ? http_post_short_timeout : http_post)(
             endpoint_telemetry_url,
             "Content-Type: application/json\0"
             "Accept: application/json\0",
@@ -521,7 +638,7 @@ static int speedtest_do_upload_results(const char *jstr, char short_timeout)
     int ret = 0;
     if(rsp == NULL || (rsp->code / 100) != 2) {
         log("%s: request error, code %d%s\n",
-            __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
+            __func__, (rsp ? rsp->code : 0), (rsp ? "" : "(none)"));
         ret = -1;
     }
     if(rsp) {
@@ -534,8 +651,8 @@ static int speedtest_do_upload_results(const char *jstr, char short_timeout)
 // Upload the current test results, but timeout quickly and do not retry.
 static int speedtest_upload_results_failfast()
 {
-    char jstr[200];
-    speedtest_results_to_json(jstr, 200);
+    char jstr[256];
+    speedtest_results_to_json(jstr, sizeof(jstr));
     return speedtest_do_upload_results(jstr, TRUE);
 }
 
@@ -550,8 +667,8 @@ static int speedtest_upload_results()
     }
     log("%s: uploading results to the Minim API\n", __func__);
 
-    char jstr[200];
-    speedtest_results_to_json(jstr, 200);
+    char jstr[256];
+    speedtest_results_to_json(jstr, sizeof(jstr));
     // Short timeout on the first try.
     if(speedtest_do_upload_results(jstr, TRUE) < 0) {
         // Upload failed.
@@ -585,26 +702,91 @@ static void speedtest_upload_worker(THRD_PARAM_t *p)
     speedtest_transfer_worker("upload", http_upload_test, url, p);
 }
 
-// Measures latency between the speedtest server and the agent.
-// The result will be < 0 if the test fails.
+// Performs count number of HTTP GETs to the URL and returns
+// the average time or -1 on failure.
+static int speedtest_ping(char *url, int count)
+{
+    int ii;
+    int latency_sum_ms = 0;
+
+    for(ii = 0; ii < count; ii++) {
+        http_rsp *rsp;
+        rsp = http_get_conn_time(url, NULL);
+        if(rsp == NULL) {
+            log("%s: HTTP GET Failure\n", __func__);
+            return -1;
+        }
+        latency_sum_ms += rsp->time;
+        free_rsp(rsp);
+    }
+
+    return latency_sum_ms / count;
+}
+
+// Measures latency between the candidate speedtest servers and the agent.
+// The actual speedtest server will be set to the candidate server with the
+// lowest latency after this function is executed. If the result is < 0
+// there were no candidate servers, their names could not be resolved
+// or they were unreachable.
 static int speedtest_latency()
 {
-    unsigned long sum = 0;
-    int x, samples = 0;
-    for(x = 0; x < settings.latency_samples; x++) {
-        int ret = util_ping(&settings.s_addr, 3);
-        if(ret < 0) {
+    char url[256];
+    int i;
+
+    int min_time = INT_MAX;
+    int min_time_index = -1;
+
+    for(i = 0; i < MAX_SPEEDTEST_ENDPOINTS &&
+        settings.endpoints[i].domain[0] != '\0'; i++)
+    {
+        int time;
+        struct sockaddr sa;
+
+        // Try to resolve name
+        if(util_get_ip4_addr(settings.endpoints[i].domain, &sa) < 0) {
+            // Name resolution failed, move to next server
             continue;
         }
-        sum += ret;
-        ++samples;
+
+        // Build URL w/ Server IP
+        snprintf(url, sizeof(url),
+                 "%s" IP_PRINTF_FMT_TPL ":%d/speedtest/latency.txt",
+                 settings.endpoints[i].protocol,
+                 IP_PRINTF_ARG_TPL(&((struct sockaddr_in*)&sa)->sin_addr),
+                 settings.endpoints[i].port);
+
+        // Send "ping" to Server
+        time = speedtest_ping(url, settings.latency_samples);
+
+        // If this was the lowest latency, record time and index
+        if(time >= 0 && time < min_time)
+        {
+            min_time = time;
+            min_time_index = i;
+        }
+
     }
-    if(samples <= 0) {
-        log("%s: no samples to calculate latency\n", __func__);
+
+    // No servers were reachable, return error
+    if(min_time_index == -1) {
         return -1;
     }
 
-    latency_ms = (int)(sum / samples);
+    // Copy lowest latency server params to the params we will use for test
+    strcpy(endpoint_domain, settings.endpoints[min_time_index].domain);
+    strcpy(endpoint_protocol, settings.endpoints[min_time_index].protocol);
+    endpoint_port = settings.endpoints[min_time_index].port;
+
+    // Resolve Server Address for target
+    if(resolve_server_addr(&settings) < 0) {
+       // Device is probably completely offline-- can't do anything but abort.
+       log("%s: unable to resolve remote host %s, aborting\n",
+           __func__, endpoint_domain);
+
+       return -1;
+    }
+
+    latency_ms = min_time;
     log("%s: average latency: %ims\n", __func__, latency_ms);
     return 0;
 }
@@ -619,8 +801,18 @@ static int speedtest_download()
 // Upload speed test procedure.
 static int speedtest_upload()
 {
-    return speedtest_transfer("upload",
-        speedtest_upload_worker, &upload_speed_kbps);
+    // Attempt transfer on requested port
+    int result = speedtest_transfer("upload", speedtest_upload_worker,
+                                    &upload_speed_kbps);
+
+    // Fallback to port 80 on failure
+    if(result < 0 && endpoint_port != DEFAULT_PORT) {
+        endpoint_port = DEFAULT_PORT;
+        result = speedtest_transfer("upload", speedtest_upload_worker,
+                                    &upload_speed_kbps);
+    }
+
+    return result;
 }
 
 // Performs the whole speed test, blocking until complete.
@@ -638,14 +830,6 @@ void speedtest_perform()
         log("%s: failed to fetch settings from remote API, "
             "continuing with defaults\n", __func__);
     }
-    // Resolve the endpoint domain or give up.
-    if(resolve_server_addr(&settings) < 0) {
-        // Device is probably completely offline-- can't do anything but abort.
-        log("%s: unable to resolve remote host %s, aborting\n",
-            __func__, settings.endpoint_domain);
-
-        return;
-    }
 
     // Print details of the configured environment.
     speedtest_print_settings();
@@ -654,15 +838,35 @@ void speedtest_perform()
         log("%s: streaming results to Minim API as tests finish\n", __func__);
     }
 
+    // Determine the interface to run the test from if running in
+    // the AP or MD mode, otherwise keep unspecified
+    ifname = NULL;
+    if(IS_OPM(UNUM_OPM_AP | UNUM_OPM_MD) &&
+       util_get_ipv4_gw_oif(ifname_buf) == 0)
+    {
+        ifname = ifname_buf;
+    }
+    if(ifname) {
+        log("%s: binding to interface %s for the test\n", __func__, ifname);
+    } else {
+        log("%s: not binding to specifc interface for the test\n", __func__);
+    }
+
     // Iterate over individual tests, running each one at a time.
     int i;
     int limit = UTIL_ARRAY_SIZE(speedtests);
     for(i = 0; i < limit; ++i) {
-        speedtests[i]();
+        int test_result;
+        // Run the test and record result
+        test_result = speedtests[i]();
+        if(test_result) {
+            log("%s: error %d while performing test %d\n", __func__, test_result, i);
+            break;
+        }
         // Let other threads have a turn.
         sched_yield();
         // Report intermediate results
-        if(i != limit-1) {
+        if(i < limit - 1) {
             // Stream results except for the last iteration-- the results
             // will be uploaded after the test is over anyway.
             speedtest_upload_results_failfast();
@@ -671,7 +875,7 @@ void speedtest_perform()
 
     // Deal with the various possible final states.
     if(settings.online == TRUE) {
-        if(speedtest_upload_results(3) < 0) {
+        if(speedtest_upload_results() < 0) {
             log("%s: results not uploaded to server\n", __func__);
         } else {
             log("%s: results successfully uploaded to server\n", __func__);
@@ -680,7 +884,7 @@ void speedtest_perform()
         log("%s: agent is not activated, not uploading results\n", __func__);
     }
 
-    char results[150];
+    char results[256];
     speedtest_results_to_json(results, sizeof(results));
     log("%s: results: %s\n", __func__, results);
 }

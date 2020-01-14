@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,8 @@ FP_SSDP_t **fp_get_ssdp_tbl(void);
 // concurrently with the SSDP timer driven routines and
 // has to make sure there is only one SSDP timer/discovery
 // set/being processed at any time.
-void cmd_ssdp_discovery(void);
+// Note: declared weak so platforms not doing it do not have to stub
+void __attribute__((weak)) cmd_ssdp_discovery(void);
 
 // Reset all SSDP tables (including the table usage stats)
 void fp_reset_ssdp_tables(void);

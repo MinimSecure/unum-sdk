@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ typedef struct _DT_IF_STATS {
     int slice;               // telemetry time slice # (0 - based)
     int wan;                 // TRUE if wan interface
     DEV_IP_CFG_t ipcfg;      // IP configuration of the interface
+    unsigned char mac[6];    // interface MAC address
 } DT_IF_STATS_t;
 
 // Structure tracking statistics of the table operations

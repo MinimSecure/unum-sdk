@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,7 +61,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     struct iwinfo_assoclist_entry *e;
     // STA extras template and values
     static int rx_rate;
+#ifndef WT_IWINFO_NO_MCS
     static int rx_mcs;
+#endif
     static int rx_bw;
     static int rx_short_gi;
     static int rx_is_ht;
@@ -69,7 +71,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     static int rx_nss;
     static JSON_OBJ_TPL_t extras_obj_rx_rate = {
       { "rate",     { .type = JSON_VAL_PINT, .pi = &rx_rate }},
+#ifndef WT_IWINFO_NO_MCS
       { "mcs",      { .type = JSON_VAL_PINT, .pi = &rx_mcs }},
+#endif
       { "bw",       { .type = JSON_VAL_PINT, .pi = &rx_bw }},
       { "short_gi", { .type = JSON_VAL_PINT, .pi = &rx_short_gi }},
       { "ht",       { .type = JSON_VAL_PINT, .pi = &rx_is_ht }},
@@ -78,7 +82,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
       { NULL }
     };
     static int tx_rate;
+#ifndef WT_IWINFO_NO_MCS
     static int tx_mcs;
+#endif
     static int tx_bw;
     static int tx_short_gi;
     static int tx_is_ht;
@@ -86,7 +92,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     static int tx_nss;
     static JSON_OBJ_TPL_t extras_obj_tx_rate = {
       { "rate",     { .type = JSON_VAL_PINT, .pi = &tx_rate }},
+#ifndef WT_IWINFO_NO_MCS
       { "mcs",      { .type = JSON_VAL_PINT, .pi = &tx_mcs }},
+#endif
       { "bw",       { .type = JSON_VAL_PINT, .pi = &tx_bw }},
       { "short_gi", { .type = JSON_VAL_PINT, .pi = &tx_short_gi }},
       { "ht",       { .type = JSON_VAL_PINT, .pi = &tx_is_ht }},
@@ -96,7 +104,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     };
     static int e_inactive;
     static unsigned long e_tx_pkts;
+#ifndef WT_IWINFO_NO_TXRETRY
     static unsigned long e_tx_retr;
+#endif
     static unsigned long e_tx_fail;
     static unsigned long e_rx_pkts;
     static unsigned long e_tx_bytes;
@@ -109,7 +119,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
       { "tx_rate",  { .type = JSON_VAL_OBJ,  .o = extras_obj_tx_rate }},
       { "inact_ms", { .type = JSON_VAL_PINT, .pi = &e_inactive }},
       { "tx_pkts",  { .type = JSON_VAL_PUL,  .pul = &e_tx_pkts }},
+#ifndef WT_IWINFO_NO_TXRETRY
       { "tx_retr",  { .type = JSON_VAL_PUL,  .pul = &e_tx_retr }},
+#endif
       { "tx_fail",  { .type = JSON_VAL_PUL,  .pul = &e_tx_fail }},
       { "rx_pkts",  { .type = JSON_VAL_PUL,  .pul = &e_rx_pkts }},
       { "tx_bytes", { .type = JSON_VAL_PUL,  .pul = &e_tx_bytes }},
@@ -146,7 +158,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     // Capture the extras
     e_inactive = e->inactive;
     e_tx_pkts = e->tx_packets;
+#ifndef WT_IWINFO_NO_TXRETRY
     e_tx_retr = e->tx_retries;
+#endif
     e_tx_fail = e->tx_failed;
     e_rx_pkts = e->rx_packets;
     e_tx_bytes = e->tx_bytes; // 32-bit
@@ -157,7 +171,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
 
     rx_rate = e->rx_rate.rate;
     if(rx_rate > 0) {
+#ifndef WT_IWINFO_NO_MCS
         rx_mcs = e->rx_rate.mcs;
+#endif
         rx_bw = e->rx_rate.mhz;
         rx_short_gi = e->rx_rate.is_short_gi;
         rx_is_ht = e->rx_rate.is_ht;
@@ -173,7 +189,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
 
     tx_rate = e->tx_rate.rate;
     if(tx_rate > 0) {
+#ifndef WT_IWINFO_NO_MCS
         tx_mcs = e->tx_rate.mcs;
+#endif
         tx_bw = e->tx_rate.mhz;
         tx_short_gi = e->tx_rate.is_short_gi;
         tx_is_ht = e->tx_rate.is_ht;

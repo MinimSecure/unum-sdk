@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ INIT_FUNC_t init_list[] = { INITLIST, NULL };
 // Array of init function names (matches the above)
 char *init_str_list[] = { INITSTRLIST, NULL };
 
+// The init level that we have executed all the init routines for
+int init_level_completed = 0;
+
+
 // Unum configuration context global structure
 UNUM_CONFIG_t unum_config = {
     .telemetry_period          = TELEMETRY_PERIOD,
@@ -33,6 +37,17 @@ UNUM_CONFIG_t unum_config = {
     .sysinfo_period            = SYSINFO_TELEMETRY_PERIOD,
     .ipt_period                = IPT_TELEMETRY_PERIOD,
     .config_path               = UNUM_CONFIG_PATH,
+    .dns_timeout               = DNS_TIMEOUT,
+#if defined(FEATURE_MANAGED_DEVICE)
+    .opmode                    = UNUM_OPMS_MD,
+    .opmode_flags              = UNUM_OPM_MD,
+#elif defined(FEATURE_LAN_ONLY)
+    .opmode                    = UNUM_OPMS_AP,
+    .opmode_flags              = UNUM_OPM_AP,
+#else  // Has both LAN & WAN and not a managed device
+    .opmode                    = UNUM_OPMS_GW,
+    .opmode_flags              = UNUM_OPM_AUTO | UNUM_OPM_GW,
+#endif // 
 };
 
 // long options table, we are using the option long name to encode
@@ -41,7 +56,7 @@ UNUM_CONFIG_t unum_config = {
 // 'n' - no argument option
 // 'c' - char string option
 // 'i' - takes an integer number
-// 'm' - mode change option
+// 'm' - run mode change option
 // the option scope:
 // 'o' - the option can be used in the command line only
 // 'c' - config option that can be in both command line and config file
@@ -60,16 +75,19 @@ static struct option long_options[] =
     {"no-provision\0nc",   no_argument,       NULL, 'p'},
     {"set-url-pfx\0cc",    required_argument, NULL, 's'},
 #endif // DEBUG
-#ifdef SUPPORT_OPMODE
+#ifdef SUPPORT_RUN_MODE
     {"support-period\0ic", required_argument, NULL, 'A'},
-#endif // SUPPORT_OPMODE
-#ifdef FW_UPDATER_OPMODE
+#endif // SUPPORT_RUN_MODE
+#ifdef FW_UPDATER_RUN_MODE
     {"fwupd-period\0ic",   required_argument, NULL, 'E'},
-#endif // FW_UPDATER_OPMODE
+#endif // FW_UPDATER_RUN_MODE
     {"pid-prefix\0cc",     required_argument, NULL, 'i'},
     {"trusted-ca\0cc",     required_argument, NULL, 'c'},
     {"mode\0mc",           required_argument, NULL, 'm'},
+    {"opmode\0ca",         required_argument, NULL, 'o'},
+#ifndef FEATURE_LAN_ONLY
     {"wan-if\0cc",         required_argument, NULL, 'w'},
+#endif // FEATURE_LAN_ONLY
     {"lan-if\0ca",         required_argument, NULL, 'l'},
     {"rtr-t-period\0ia",   required_argument, NULL, 'R'},
     {"tpcap-period\0ia",   required_argument, NULL, 'T'},
@@ -78,6 +96,7 @@ static struct option long_options[] =
     {"ipt-period\0ia",     required_argument, NULL, 'B'},
     {"sysinfo-period\0ia", required_argument, NULL, 'C'},
     {"tpcap-nice\0ia",     required_argument, NULL, 'N'},
+    {"dns-timeout\0ia",    required_argument, NULL, 'D'},
     {0, 0, 0, 0}
 };
 // The short options string for the above
@@ -96,6 +115,20 @@ static char proc_pid_file[256] = "";
 // the reason for the start/re-start and in case of the restart due to
 // a failure the associated error information)
 UNUM_START_REASON_t process_start_reason;
+
+// Helper to open file with close on exec flag
+static int open_cloexec(char *name, int flags, int mode)
+{
+#ifdef O_CLOEXEC
+   int fd = open(name, flags | O_CLOEXEC, mode);
+#else  // !O_CLOEXEC
+   int fd = open(proc_pid_file, flags, mode);
+   if(fd != -1) {
+     fcntl(fd, F_SETFD, FD_CLOEXEC);
+   }
+#endif // O_CLOEXEC
+   return fd;
+}
 
 // Check that the process is not already running and create its PID
 // file w/ specified suffix.
@@ -140,11 +173,11 @@ int unum_handle_start(char *suffix)
         if(ii > 0) {
             sleep(AGENT_STARTUP_RETRY_DELAY);
         }
-        int fd = open(proc_pid_file, O_CREAT|O_EXCL|O_RDWR|O_CLOEXEC, 0660);
+        int fd = open_cloexec(proc_pid_file, O_CREAT | O_EXCL | O_RDWR, 0660);
         if(fd < 0)
         {
             // try to open for read/write if can't create the file
-            if((fd = open(proc_pid_file, O_RDWR|O_CLOEXEC)) < 0) {
+            if((fd = open_cloexec(proc_pid_file, O_RDWR, 0)) < 0) {
                 log("%s: can't %s PID file <%s>: %s\n",
                     __func__, "open", proc_pid_file, strerror(errno));
                 ret = -1;
@@ -283,11 +316,12 @@ static void do_daemon(void)
         exit(EXIT_FAILURE);
     }
 
-    // Ignore SIGINT and SIGQUIT
+    // Ignore SIGINT, SIGQUIT and SIGPIPE
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;
     sigaction(SIGQUIT, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGPIPE, &sa, NULL);
 
     return;
 }
@@ -312,24 +346,44 @@ static void print_usage(int argc, char *argv[])
     printf(" -s, --set-url-pfx            - custom 'http(s)://<host>' URL\n");
     printf("                                prefix\n");
 #endif //DEBUG
-    printf(" -m, --mode                   - set operation mode\n");
-#ifdef FW_UPDATER_OPMODE
+    printf(" -m, --mode                   - set custom run mode\n");
+#ifdef FW_UPDATER_RUN_MODE
     printf("                                u[pdater]: firmware updater\n");
-#endif // FW_UPDATER_OPMODE
-#ifdef SUPPORT_OPMODE
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
     printf("                                s[upport]: support portal agent\n");
-#endif // SUPPORT_OPMODE
+#endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
     printf("                                t[1|2|3...]: run test 1,2,3...\n");
     printf(" -p, --no-provision           - skip provisioning (no client\n");
     printf("                                cert in the requests)\n");
 #endif // DEBUG
+    printf(" -o, --opmode <mode_name>     - set unum agent operation mode\n");
+#if !defined(FEATURE_LAN_ONLY)
+    printf("                                gw: gateway (default)\n");
+#endif // !FEATURE_LAN_ONLY
+#if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    printf("                                ap: wireless AP\n");
+#endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+#if defined(FEATURE_MANAGED_DEVICE)
+    printf("                                md: managed device\n");
+#endif // FEATURE_MANAGED_DEVICE
+#if defined(FEATURE_MESH_11S)
+# if !defined(FEATURE_LAN_ONLY)
+    printf("                                mesh_11s_gw: gw w/ 802.11s mesh\n");
+# endif // !FEATURE_LAN_ONLY
+# if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    printf("                                mesh_11s_ap: ap w/ 802.11s mesh\n");
+# endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+#endif // FEATURE_MESH_11S
     printf(" -c, --trusted-ca <PATHNAME>  - trusted CAs file pathname\n");
     printf(" -l, --lan-if <IFNAME_LIST>   - custom LAN interface name(s)\n");
     printf("                                separated by comma or space,\n");
     printf("                                list the main LAN ifname first,\n");
     printf("                                example: -l \"eth0 eth1 ...\"\n");
+#ifndef FEATURE_LAN_ONLY
     printf(" -w, --wan-if <IFNAME>        - custom WAN interface name\n");
+#endif // FEATURE_LAN_ONLY
     printf(" --rtr-t-period <5-120>       - router telemetry reporting\n");
     printf("                                interval\n");
     printf(" --tpcap-period <15-120>      - devices telemetry reporting\n");
@@ -344,16 +398,17 @@ static void print_usage(int argc, char *argv[])
     printf("                                0: disable reporting\n");
     printf(" --sysinfo-period <0-...>     - sysinfo reporting interval\n");
     printf("                                0: disable reporting\n");
-#ifdef FW_UPDATER_OPMODE
+    printf(" --dns-timeout <1-...>        - timeout in seconds for dns request\n");
+#ifdef FW_UPDATER_RUN_MODE
     printf(" --fwupd-period <60-...>      - firmware upgrade check time\n");
     printf("                                for \"-m updater\"\n");
 #endif //FW_UPDATER_MODE
-#ifdef SUPPORT_OPMODE
+#ifdef SUPPORT_RUN_MODE
     printf(" --support-period <%d-...>    - support connection attempt\n",
            SUPPORT_SHORT_PERIOD);
     printf("                                interval for \"-m support\"\n");
     printf("                                0: connect upon request only\n");
-#endif //SUPPORT_OPMODE
+#endif //SUPPORT_RUN_MODE
 }
 
 // Takes a list of interface names from the command line, separates them using
@@ -442,7 +497,7 @@ static int do_config_int(char opt_long, int optarg)
     // switched based off val returned by getopt
     switch(opt_long) 
     {
-#ifdef SUPPORT_OPMODE
+#ifdef SUPPORT_RUN_MODE
         case 'A':
             if(!unum_config.mode || *(unum_config.mode) != 's') {
                 status = -1;
@@ -454,8 +509,8 @@ static int do_config_int(char opt_long, int optarg)
                 status = -2;
             }
             break;
-#endif // SUPPORT_OPMODE
-#ifdef FW_UPDATER_OPMODE
+#endif // SUPPORT_RUN_MODE
+#ifdef FW_UPDATER_RUN_MODE
         case 'E':
             if(!unum_config.mode || *(unum_config.mode) != 'u') {
                 status = -3;
@@ -465,7 +520,7 @@ static int do_config_int(char opt_long, int optarg)
                 unum_config.fw_update_check_period = optarg;
             }
             break;
-#endif //FW_UPDATER_OPMODE
+#endif //FW_UPDATER_RUN_MODE
         case 'R':
             if(optarg < 5 || optarg > 120) {
                 status = -5;
@@ -517,8 +572,15 @@ static int do_config_int(char opt_long, int optarg)
                 unum_config.sysinfo_period = optarg;
             }
             break;
+        case 'D':
+            if(optarg < 1) {
+                status = -12;
+            } else {
+                unum_config.dns_timeout = optarg;
+            }
+            break;
         default:
-            status = -10;
+            status = -13;
             break;
     }
 	
@@ -561,6 +623,14 @@ static int do_config_char(char opt_long, char *optarg)
             unum_config.wan_ifname[sizeof(unum_config.wan_ifname) - 1] = 0;
             unum_config.wan_ifcount = 1;
             break;                
+        case 'o':
+            status = util_set_opmode(optarg);
+            if(status < 0) {
+                // Give status offset to avoid overlap with other errors here
+                status -= 10;
+                break;
+            }
+            break;
         default:
             status = -3;
             break;
@@ -579,12 +649,12 @@ static int do_config_mode(char *optarg)
         default:
             status = -1;
             // drop down (in case nothing is defined)
-#ifdef FW_UPDATER_OPMODE
+#ifdef FW_UPDATER_RUN_MODE
         case 'u':
-#endif // FW_UPDATER_OPMODE
-#ifdef SUPPORT_OPMODE
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
         case 's':
-#endif // SUPPORT_OPMODE
+#endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
         case 't':
 #endif // DEBUG
@@ -595,12 +665,12 @@ static int do_config_mode(char *optarg)
     return status;
 }
 
-// The function parses config from the file or from the server activate
-// response. The file (or the data buffer) must be a valid JSON and
-// only contain the key-value pairs with the keys same as the long options.
-// file_or_data - filename or JSON data (if at_activate is TRUE)
+// The function parses config JSON from the file or from the server activate
+// response. The JSON can only contain the key-value pairs with the keys same 
+// as the command line long options.
 // at_activate - TRUE if passing null-terminated JSON string received from
 //               server's activate response, FALSE if passing config file name
+// file_or_data - filename or JSON data (if at_activate is TRUE)
 // Note: the log() macro prints to stdout until the log subsystem
 //       is initialized
 int parse_config(int at_activate, char *file_or_data)
@@ -686,6 +756,11 @@ int parse_config(int at_activate, char *file_or_data)
                     log("%s: invalid value: %s for: %s\n",
                         __func__, (int_val ? "TRUE" : "FALSE"), key);
                     status = -3;
+                    break;
+                }
+                if(at_activate) {
+                    log("%s: turned %s %s at activate\n",
+                        __func__, key, (int_val ? "on" : "off"));
                 }
                 break;
 	
@@ -703,6 +778,11 @@ int parse_config(int at_activate, char *file_or_data)
                     log("%s: invalid value: %d for: %s\n",
                         __func__, int_val, key);
                     status = -5;
+                    break;
+                }
+                if(at_activate) {
+                    log("%s: set %s to %d at activate\n",
+                        __func__, key, int_val);
                 }
                 break;
 
@@ -721,6 +801,15 @@ int parse_config(int at_activate, char *file_or_data)
                     log("%s: invalid value: %s for: %s\n",
                         __func__, str_val, key);
                     status = -7;
+                    break;
+                }
+                // Bump up refcount for the string value since it might be
+                // stored as pointer (typical since we reuse cmdline handlers).
+                // The value stays allocated for the lifetime of the process.
+                json_incref(json_val);
+                if(at_activate) {
+                    log("%s: set %s to %s at activate\n",
+                        __func__, key, str_val);
                 }
                 break;
 
@@ -732,7 +821,7 @@ int parse_config(int at_activate, char *file_or_data)
         }
     }
 
-    // Free up the JSON resources    
+    // Free up unreferenced JSON resources
     json_decref(root);
 
     return status;
@@ -829,7 +918,7 @@ static int parse_cmdline(int pick_cfg_file_name)
             // mode option
             case 'm':
                 if(do_config_mode(optarg) != 0) {
-                    log("%s: invalid operation mode \"%s\"\n",
+                    log("%s: invalid run mode \"%s\"\n",
                         __func__, optarg);
                     status = -6;
                 }
@@ -880,21 +969,21 @@ int main(int argc, char *argv[])
         do_daemon();
     }
 
-    // Check and run code for the requested operation mode
+    // Check and run code for the requested run mode
     if(unum_config.mode)
     {
         switch(*(unum_config.mode))
         {
-#ifdef FW_UPDATER_OPMODE
+#ifdef FW_UPDATER_RUN_MODE
             case 'u':
                 // Until sure that updater never fails allow to monitor it.
                 process_monitor(LOG_DST_UPDATE_MONITOR, "updater_monitor");
                 return fw_update_main();
-#endif // FW_UPDATER_OPMODE
-#ifdef SUPPORT_OPMODE
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
             case 's':
                 return support_main();
-#endif // SUPPORT_OPMODE
+#endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
             case 't':
                 // Crash handling test requires monitoring
@@ -921,13 +1010,13 @@ int main(int argc, char *argv[])
 
     // Disable access to the logs the agent should not be touching
     unsigned long mask = (
-#ifdef FW_UPDATER_OPMODE
+#ifdef FW_UPDATER_RUN_MODE
       (1 << LOG_DST_UPDATE)         |
       (1 << LOG_DST_UPDATE_MONITOR) |
-#endif // FW_UPDATER_OPMODE
-#ifdef SUPPORT_OPMODE
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
       (1 << LOG_DST_SUPPORT)        |
-#endif // SUPPORT_OPMODE
+#endif // SUPPORT_RUN_MODE
       0
     );
     set_disabled_log_dst_mask(mask);

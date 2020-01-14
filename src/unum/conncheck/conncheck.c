@@ -49,14 +49,14 @@ void restart_conncheck(void) {
     // Just restart the agent to make it go through another conncheck
     // in case it is active and we are in monitored mode (i.e. will restart)
     if(cc_activated && !unum_config.unmonitored) {
-        util_restart();
+        util_restart(UNUM_START_REASON_CONNCHECK);
     }
 }
 
 // Returns true if agent subsystems have to use IP address for connecting
 // to the cloud server (instead of DNS name)
 int conncheck_no_dns(void) {
-    // For the operation modes that never run the troubleshooter
+    // For the run modes that do not use the troubleshooter
     // check the existence of the flag file and set the bit in the
     // conncheck state data structure.
     // TBD: we might be able to use conncheck_mk_info_file() to pull
@@ -110,6 +110,7 @@ static void conncheck_mk_info_file(void)
     char *no_ipv4_gw = cc_st.no_ipv4_gw ? "1" : NULL;
     char *bad_ipv4_gw = cc_st.bad_ipv4_gw ? "1" : NULL;
     char *no_dns = cc_st.no_dns ? "1" : NULL;
+    char *no_servers = cc_st.no_servers ? "1" : NULL;
 
     unsigned long *p_connect_uptime = NULL;
     unsigned long *p_cloud_utc = NULL;
@@ -132,6 +133,9 @@ static void conncheck_mk_info_file(void)
     }
     switch(cc_cstate)
     {
+        case CSTATE_GET_URLS:
+            cstate_str = "getting_server_urls";
+            break;
         case CSTATE_GRACE_PERIOD:
             cstate_str = "grace_period";
             break;
@@ -210,6 +214,7 @@ static void conncheck_mk_info_file(void)
       { "no_ipv4_gw",     {.type = JSON_VAL_STR, {.s = no_ipv4_gw}}},
       { "bad_ipv4_gw",    {.type = JSON_VAL_STR, {.s = bad_ipv4_gw}}},
       { "no_dns",         {.type = JSON_VAL_STR, {.s = no_dns}}},
+      { "no_servers",     {.type = JSON_VAL_STR, {.s = no_servers}}},
       // data
       { "connect_uptime", {.type = JSON_VAL_PUL, {.pul = p_connect_uptime}}},
       { "cloud_utc",      {.type = JSON_VAL_PUL, {.pul = p_cloud_utc}}},
@@ -381,7 +386,6 @@ static int conncheck_troubleshoot_https(void)
 //          positive - some DNS tests passed
 static int conncheck_troubleshoot_ipv4_dns(void)
 {
-    char **dns_list = http_dns_name_list();
     char *name;
     int ii, dns_list_count, dns_fails_ii = 0;
     int ok_count = 0, fail_count = 0;
@@ -390,14 +394,14 @@ static int conncheck_troubleshoot_ipv4_dns(void)
     conncheck_update_state_event(CSTATE_CHECKING_DNS, 0);
 
     // Count entries in the DNS name list
-    for(ii = 0; dns_list && dns_list[ii] != NULL; ++ii);
+    for(ii = 0; dns_entries[ii][0] != '\0'; ++ii);
     dns_list_count = ii;
 
     // Support portal is not used by HTTP and is not returned in
     // http_dns_name_list(), the loop is designed to check it first
     // before proceeding to the HTTP names list.
-    for(ii = 0, name = "support.minim.co";
-        dns_list && name; name = dns_list[ii++])
+    for(ii = 0, name = "support.minim.co"; name[0] != '\0';
+        name = dns_entries[ii++])
     {
         char buf[128];
         char *n = name;
@@ -455,6 +459,43 @@ static int conncheck_troubleshoot_ipv4_dns(void)
     return -1;
 }
 
+// Helper function for conncheck_troubleshoot_ipv4
+// pings an ipv4 gateway based on information in cc_st
+// struct and updates result
+static void ping_gateway_ipv4(void)
+{
+    int ii;
+    struct sockaddr saddr;
+    struct in_addr inaddr = { cc_st.ipv4gw.i };
+    if(util_get_ip4_addr(inet_ntoa(inaddr), &saddr) < 0)
+    {
+        log("%s: invalid IPv4 address " IP_PRINTF_FMT_TPL "\n",
+            __func__, IP_PRINTF_ARG_TPL(cc_st.ipv4gw.b));
+        cc_st.bad_ipv4_gw = TRUE;
+    } else {
+        int failed = 0;
+        int sum = 0;
+        for(ii = 0; ii < CONNCHECK_GW_PINGS; ++ii) {
+            int tt = util_ping(&saddr, CONNCHECK_GW_PINGS_TIMEOUT);
+            if(tt < 0) {
+                ++failed;
+            } else {
+                sum += tt;
+            }
+            conncheck_update_state_event(CSTATE_CHECKING_IPV4,
+                                         ((ii + 1) * 100) / CONNCHECK_GW_PINGS);
+        }
+        cc_st.gw_ping_err_ratio = (failed * 100) / CONNCHECK_GW_PINGS;
+        if(failed >= CONNCHECK_GW_PINGS) {
+            log("%s: IPv4 gw ping failed\n", __func__);
+        } else {
+            cc_st.gw_ping_rsp_time = sum / (CONNCHECK_GW_PINGS - failed);
+            log("%s: IPv4 gw ping error ratio %d%%, avg rsp %dms\n",
+                __func__, cc_st.gw_ping_err_ratio, cc_st.gw_ping_rsp_time);
+        }
+    }
+}
+
 // Connectivity troubleshooter for IPv4 layer
 // Returns: negative - unrecoverable IPv4 error detected
 //          0 - unable to id the IPv4 error, do more troubleshooting
@@ -489,42 +530,31 @@ static int conncheck_troubleshoot_ipv4(void)
          __func__, IP_PRINTF_ARG_TPL(cc_st.ipv4gw.b));
 
     // We have default gateway, check if it is reachable
-    struct sockaddr saddr;
-    struct in_addr inaddr = { cc_st.ipv4gw.i };
-    if(util_get_ip4_addr(inet_ntoa(inaddr), &saddr) < 0)
-    {
-        log("%s: invalid IPv4 address " IP_PRINTF_FMT_TPL "\n",
-            __func__, IP_PRINTF_ARG_TPL(cc_st.ipv4gw.b));
-        cc_st.bad_ipv4_gw = TRUE;
-    } else {
-        int failed = 0;
-        int sum = 0;
-        for(ii = 0; ii < CONNCHECK_GW_PINGS; ++ii) {
-            int tt = util_ping(&saddr, CONNCHECK_GW_PINGS_TIMEOUT);
-            if(tt < 0) {
-                ++failed;
-            } else {
-                sum += tt;
-            }
-            conncheck_update_state_event(CSTATE_CHECKING_IPV4,
-                                         ((ii + 1) * 100) / CONNCHECK_GW_PINGS);
-        }
-        cc_st.gw_ping_err_ratio = (failed * 100) / CONNCHECK_GW_PINGS;
-        if(failed >= CONNCHECK_GW_PINGS) {
-            log("%s: IPv4 gw ping failed\n", __func__);
-        } else {
-            cc_st.gw_ping_rsp_time = sum / (CONNCHECK_GW_PINGS - failed);
-            log("%s: IPv4 gw ping error ratio %d%%, avg rsp %dms\n",
-                __func__, cc_st.gw_ping_err_ratio, cc_st.gw_ping_rsp_time);
-        }
-    }
+    ping_gateway_ipv4();
+
     // In the normal ISP setup it is unlikely that a working gateway
-    // is not responding to pings, so no DNS test if all pings fail.
+    // is not responding to pings, release/renew DHCP if it doesn't
+    // respond.
     if(cc_st.gw_ping_err_ratio >= 100) {
+
+        if (platform_release_renew != NULL) {
+            // Perform release renew
+            log("%s: Attempting to repair IP configuration\n", __func__);
+            if(platform_release_renew() == 0) {
+                return 1;
+            }
+        }
         return ret;
     }
 
     // Check if the name resolution works for the DNS names we need.
+
+    // If we don't have the list of server URLs then the DNS test will
+    // not work proplerly
+    if (cc_st.no_servers) {
+        log("%s: Servers not available skipping DNS test\n", __func__);
+        return ret;
+    }
 
     // If we already determined that DNS is not working and retrying
     // the troubleshooting for potentially fixing something else, skip
@@ -571,15 +601,24 @@ static int conncheck_troubleshooter(void)
     // record uptime when we started troubleshooter
     cc_st.tb_start_uptime = util_time(1);
 
-    // Record interface name we are going to work with, in the AP
-    // mode use main LAN interface (TBD: this might not always be the only
+    // Record interface name we are going to work with. First, try to
+    // determine it dynamically, if unsuccessful then in the AP mode
+    // use main LAN interface (unlikely: this might not always be the only
     // way to connnect to Internet), in the router mode use WAN
-    // interface (we only support one)
-#ifdef AP_MODE
-    strncpy(cc_st.ifname, GET_MAIN_LAN_NET_DEV(), sizeof(cc_st.ifname));
-#else // AP_MODE
-    strncpy(cc_st.ifname, GET_MAIN_WAN_NET_DEV(), sizeof(cc_st.ifname));
-#endif // AP_MODE
+    // interface (currently we only support one).
+    // Note: for the AP mode it might not work when we change opmode after
+    //       receiving it in the activte response (this runs before activate).
+    if(util_get_ipv4_gw_oif(cc_st.ifname) == 0) {
+        // using outbound interface for default route traffic
+    } else if(IS_OPM(UNUM_OPM_AP)) {
+        strncpy(cc_st.ifname, GET_MAIN_LAN_NET_DEV(), sizeof(cc_st.ifname));
+    } else {
+#ifdef FEATURE_LAN_ONLY
+        strncpy(cc_st.ifname, GET_MAIN_LAN_NET_DEV(), sizeof(cc_st.ifname));
+#else // FEATURE_LAN_ONLY
+        strncpy(cc_st.ifname, GET_MAIN_WAN_NET_DEV(), sizeof(cc_st.ifname));
+#endif // FEATURE_LAN_ONLY
+    }
     cc_st.ifname[sizeof(cc_st.ifname) - 1] = 0;
 
     // Capture the base counters snapshot
@@ -697,9 +736,17 @@ static void conncheck(THRD_PARAM_t *p)
             continue;
         }
 
-        // If we are within the startup grace period try to connect and
-        // check against the server time
-        if(cur_t < start_tb_t)
+        // Get TXT Record from DNS to determine which servers to connect to
+        conncheck_update_state_event(CSTATE_GET_URLS, 0);
+        if(util_get_servers() != 0) {
+            log("%s: Cannot retrieve server endpoints\n", __func__);
+            cc_st.no_servers = 1;
+        }
+
+        // If we are within the startup grace period and we have retrieved
+        // server URLs from minim DNS try to connect and check against
+        // the server time
+        if(cur_t < start_tb_t && !cc_st.no_servers)
         {
             conncheck_update_state_event(CSTATE_GRACE_PERIOD,
                                          ((cur_t - wake_up_t) * 100) /

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,4 +67,11 @@ int __attribute__((weak)) test_fe_arp(void)
     return 0;
 }
 
+// Test TCP port scanner
+void __attribute__((weak)) test_port_scan(void)
+{
+    printf("Test %d is not implemented for the platform\n",
+           get_test_num());
+    return;
+}
 #endif // DEBUG

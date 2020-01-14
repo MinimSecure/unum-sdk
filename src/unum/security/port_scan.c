@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@
 // - the URL prefix
 // - MAC addr of gateway (in xx:xx:xx:xx:xx:xx format)
 // - MAC addr of device scanned
-#define POST_SCAN_RSP_URL "%s/v3/unums/%s/devices/%s/port_info"
-#define POST_SCAN_RSP_URL_HOST "https://api.minim.co"
+#define POST_SCAN_RSP_PATH "/v3/unums/%s/devices/%s/port_info"
 
 
 // Forward declaration for the packet capturing rule
@@ -131,6 +130,10 @@ static int report_device_scan(json_t *device, const char *mac,
         return -1;
     }
 
+    // Post the downloaded data to the server
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   POST_SCAN_RSP_PATH, my_mac, mac);
+
     json_t *open_port_array = NULL;
     char *json = NULL;
     http_rsp *rsp = NULL;
@@ -153,12 +156,6 @@ static int report_device_scan(json_t *device, const char *mac,
             log("%s: cannot allocate JSON response\n", __func__);
             break;
         }
-
-        // Post the downloaded data to the server
-        snprintf(url, sizeof(url), POST_SCAN_RSP_URL,
-                 (unum_config.url_prefix ?
-                  unum_config.url_prefix : POST_SCAN_RSP_URL_HOST),
-                 my_mac, mac);
 
 #if DEBUG
         if(get_test_num() == U_TEST_PORT_SCAN)
@@ -667,12 +664,26 @@ int cmd_port_scan(char *cmd, char *s, int s_len)
 #ifdef DEBUG
 void test_port_scan(void)
 {
-    char *jstr =
-        "[{\"mac\":\"00:0c:29:3b:b1:70\",\"ipv4\":\"192.168.0.100\","
-          "\"ports\":[\"80\", \"20-22\",\"443\"],"
-          "\"scan_delay\":200, \"wait_time\":1000},"
-         "{\"mac\":\"00:0c:29:f4:ae:07\",\"ipv4\":\"192.168.0.101\","
-          "\"ports\":[\"1-65535\"],\"retries\":0}]";
+    char mac1[20], mac2[20];
+    char ip1[20], ip2[20];
+    char jstr[512];
+
+    printf("Please enter MAC for scan destination one:\n");
+    scanf("%18s", mac1);
+    printf("Please enter IP for scan destination one:\n");
+    scanf("%16s", ip1);
+    printf("Please enter MAC for scan destination two:\n");
+    scanf("%18s", mac2);
+    printf("Please enter IP for scan destination two:\n");
+    scanf("%16s", ip2);
+    
+    sprintf(jstr, 
+            "[{\"mac\":\"%s\",\"ipv4\":\"%s\","
+            "\"ports\":[\"80\", \"20-22\",\"443\"],"
+            "\"scan_delay\":200, \"wait_time\":1000},"
+            "{\"mac\":\"%s\",\"ipv4\":\"%s\","
+            "\"ports\":[\"1-65535\"],\"retries\":0}]",
+            mac1, ip1, mac2, ip2);
 
     printf("Testing 'port_scan' command, JSON payload:\n%s\n", jstr);
     printf("Starting TPCAP...");

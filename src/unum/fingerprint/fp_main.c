@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@
 static JSON_VAL_TPL_t *tpl_fp_dhcp_array_f(char *key, int idx);
 static JSON_VAL_TPL_t *tpl_fp_mdns_array_f(char *key, int idx);
 static JSON_VAL_TPL_t *tpl_fp_ssdp_array_f(char *key, int idx);
+static JSON_VAL_TPL_t *tpl_fp_useragent_array_f(char *key, int idx);
 static JSON_VAL_TPL_t *tpl_fp_tbl_stats_array_f(char *key, int ii);
 
 
@@ -44,6 +45,7 @@ static JSON_OBJ_TPL_t tpl_fp_root = {
   { "ssdp",        {.type = JSON_VAL_FARRAY, {.fa = tpl_fp_ssdp_array_f}}},
   { "dhcp",        {.type = JSON_VAL_FARRAY, {.fa = tpl_fp_dhcp_array_f}}},
   { "mdns",        {.type = JSON_VAL_FARRAY, {.fa = tpl_fp_mdns_array_f}}},
+  { "useragent",   {.type = JSON_VAL_FARRAY, {.fa = tpl_fp_useragent_array_f}}},
   { "table_stats", {.type = JSON_VAL_FARRAY, {.fa = tpl_fp_tbl_stats_array_f}}},
   { NULL }
 };
@@ -244,6 +246,83 @@ static JSON_VAL_TPL_t *tpl_fp_mdns_array_f(char *key, int idx)
     return &tpl_tbl_mdns_obj_val;
 }
 
+// Dynamically builds JSON template for HTTP UserAgent fingerprinting info array.
+// Note: the generated jansson objects can refer to string
+//       pointers that can change when the function is called for the next
+//       element of the array.
+static JSON_VAL_TPL_t *tpl_fp_useragent_array_f(char *key, int idx)
+{
+    int ii, jj;
+
+    // Buffer for the device MAC address string
+    static char mac[MAC_ADDRSTRLEN];
+
+    // Template array for UserAgent Strings
+    static JSON_VAL_TPL_t arr[FP_MAX_USERAGENT_COUNT + 1] = {
+        [0 ... (FP_MAX_USERAGENT_COUNT - 1)] = { .type = JSON_VAL_STR },
+        [ FP_MAX_USERAGENT_COUNT ] = { .type = JSON_VAL_END }
+    };
+
+    // Template for generating UserAgent fingerprinting JSON.
+    static JSON_OBJ_TPL_t tpl_tbl_useragent_obj = {
+        { "mac",  { .type = JSON_VAL_STR, { .s = mac }}},
+        { "data", { .type = JSON_VAL_ARRAY, { .a = arr }}},
+        { NULL }
+     };
+    static JSON_VAL_TPL_t tpl_tbl_useragent_obj_val = {
+        .type = JSON_VAL_OBJ, { .o = tpl_tbl_useragent_obj }
+    };
+
+    static int last_idx = 0; // track last query index
+    static int last_ii = 0;  // array index we stopped at for last_idx
+
+    // If starting over
+    if(idx == 0) {
+        last_idx = last_ii = 0;
+    }
+    // The next query index should be the last +1, otherwise error
+    else if(idx != last_idx + 1) {
+        return NULL;
+    }
+    last_idx = idx;
+
+    // Get the ptr to the table
+    FP_USERAGENT_t *p_dev = fp_get_useragent_tbl();
+
+    // Continue searching from where we ended last +1
+    for(ii = last_ii + 1; ii < FP_MAX_DEV; ii++)
+    {
+        FP_USERAGENT_t *dev = &p_dev[ii];
+
+        if(!dev || !dev->busy) {
+           continue;
+        }
+
+        snprintf(mac, sizeof(mac), MAC_PRINTF_FMT_TPL,
+                 MAC_PRINTF_ARG_TPL(dev->mac));
+
+        for(jj = 0; jj < dev->index && jj < FP_MAX_USERAGENT_COUNT; jj++)
+        {
+            arr[jj].type = JSON_VAL_STR;
+            arr[jj].s = dev->ua[jj]->data;
+        }
+
+        if(jj < FP_MAX_USERAGENT_COUNT) {
+           arr[jj].type = JSON_VAL_END;
+        }
+
+        break;
+    }
+    last_ii = ii;
+
+    if(ii >= FP_MAX_DEV) {
+
+        return NULL;
+    }
+
+    return &tpl_tbl_useragent_obj_val;
+}
+
 // Dynamically builds JSON template for fingerprinting
 // table stats array.
 static JSON_VAL_TPL_t *tpl_fp_tbl_stats_array_f(char *key, int ii)
@@ -268,12 +347,14 @@ static JSON_VAL_TPL_t *tpl_fp_tbl_stats_array_f(char *key, int ii)
     static char *name[] = {
         "dhcp",
         "ssdp",
-        "mdns"
+        "mdns",
+        "useragent"
     };
     static FP_TABLE_STATS_t *(*func_ptr[])(int) = {
         fp_dhcp_tbl_stats,
         fp_ssdp_tbl_stats,
-        fp_mdns_tbl_stats
+        fp_mdns_tbl_stats,
+        fp_useragent_tbl_stats
     };
 
     if(ii >= UTIL_ARRAY_SIZE(func_ptr)) {
@@ -298,13 +379,15 @@ JSON_KEYVAL_TPL_t *fp_mk_json_tpl_f(char *key)
     FP_TABLE_STATS_t *dhcp_stats = fp_dhcp_tbl_stats(FALSE);
     FP_TABLE_STATS_t *mdns_stats = fp_mdns_tbl_stats(FALSE);
     FP_TABLE_STATS_t *ssdp_stats = fp_ssdp_tbl_stats(FALSE);
+    FP_TABLE_STATS_t *useragent_stats = fp_useragent_tbl_stats(FALSE);
 
     // If nothing to report return NULL (note add_all does not
     // guarantee entries in the tables, but it means there might
     // have been attempts to add data and we should report stats)
     if(dhcp_stats->add_all == 0 &&
        mdns_stats->add_all == 0 &&
-       ssdp_stats->add_all == 0)
+       ssdp_stats->add_all == 0 &&
+       useragent_stats->add_all == 0)
     {
         return NULL;
     }
@@ -318,9 +401,10 @@ JSON_KEYVAL_TPL_t *fp_mk_json_tpl_f(char *key)
 // (otherwise it will break devices telemetry tests)
 void fp_reset_tables(void)
 {
-  fp_reset_dhcp_tables();
-  fp_reset_mdns_tables();
-  fp_reset_ssdp_tables();
+    fp_reset_dhcp_tables();
+    fp_reset_mdns_tables();
+    fp_reset_ssdp_tables();
+    fp_reset_useragent_tables();
 }
 
 // Subsystem init fuction. The subsystem runs individual fingerprinting
@@ -336,12 +420,17 @@ int fp_init(int level)
 
         // Initialize the mDNS fingerprinting
         if(fp_mdns_init() != 0) {
-            return -1;
+            return -2;
         }
 
         // Initialize the mDNS fingerprinting
         if(fp_ssdp_init() != 0) {
-            return -1;
+            return -3;
+        }
+
+        // Initialize the UserAgent fingerprinting
+        if(fp_useragent_init() != 0) {
+            return -4;
         }
     }
     return 0;

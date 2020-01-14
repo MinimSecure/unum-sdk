@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -193,7 +193,9 @@ static int tpcap_setup_if(TPCAP_IF_t *tpif)
         return -3;
     }
 
-#ifdef AP_MODE
+#ifdef FEATURE_AP_ONLY
+    // For standalone AP firmware we want to see all packets passing through
+    // the bridge, so put the interface into promiscuous mode
     struct packet_mreq mr;
     memset(&mr, 0, sizeof(mr));
     mr.mr_ifindex = tpif->ifidx;
@@ -202,7 +204,7 @@ static int tpcap_setup_if(TPCAP_IF_t *tpif)
         log("%s: error setting PACKET_MR_PROMISC for %s, %s\n",
             __func__, tpif->name, strerror(errno));
     }
-#endif // AP_MODE
+#endif // FEATURE_AP_ONLY
 
     if(set_sockopt_hwtimestamp(fd, tpif->name) != 0) {
         log("%s: no hardware timestamps for %s, %s\n",
@@ -267,10 +269,10 @@ static int update_stats()
     TPCAP_IF_t *tpif = NULL;
     unsigned long new_t;
     struct timespec ts;
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
     TPCAP_IF_t tpwan = { TPCAP_IF_VALID | TPCAP_IF_FD_READY };
     strncpy(tpwan.name, GET_MAIN_WAN_NET_DEV(), sizeof(tpwan.name) - 1);
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
     ifcount = 0;
     for(ii = 0; ii < TPCAP_STAT_IF_MAX; ii++)
@@ -280,12 +282,17 @@ static int update_stats()
 
         if(ii < TPCAP_IF_MAX) {
             tpif = &(tp_ifs[ii]);
-#ifndef AP_MODE
+#ifndef FEATURE_LAN_ONLY
         } else if(ii == TPCAP_WAN_STATS_IDX) {
+            // Silently ignore WAN in the AP mode
+            if(IS_OPM(UNUM_OPM_AP)) {
+                continue;
+            }
+            // In non AP (gateway) mode collect WAN stats
             tpif = &tpwan;
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
         } else {
-            log("%s: invalid stats table index %d\n", __func__, ii);
+            log("%s: invalid stats interface index %d\n", __func__, ii);
             continue;
         }
         tpst = &(tp_if_stats[ii]);
@@ -526,13 +533,14 @@ static int discover_and_prep_interfaces(struct pollfd *pfd,
     }
 
     // Prepare WAN interface for collecting stats
-#ifndef AP_MODE
-    if(tpcap_prep_if_stats(TPCAP_WAN_STATS_IDX, GET_MAIN_WAN_NET_DEV()) != 0)
+#ifndef FEATURE_LAN_ONLY
+    if(IS_OPM(UNUM_OPM_GW) &&
+       tpcap_prep_if_stats(TPCAP_WAN_STATS_IDX, GET_MAIN_WAN_NET_DEV()) != 0)
     {
         log("%s: failed to prepare %s for collecting stats, continuing\n",
             __func__, GET_MAIN_WAN_NET_DEV());
     }
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 
     return ifcount;
 }
@@ -604,6 +612,9 @@ static void tpcap(THRD_PARAM_t *p)
 #endif // DEBUG
 
         // Collect capturing and interface usage statistics
+        // Note: we do not use the stats in the AP mode although still collect
+        //       them for the LAN interfaces (there's just no dev telemetry to
+        //       report them in).
         update_stats();
 
         // Call capturing cycle complete handlers for the

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,15 +28,15 @@
 // parameters:
 // - the URL prefix
 // - MAC addr of the router (in xx:xx:xx:xx:xx:xx format)
-#define WIRELESS_RADIOS_URL "%s/v3/unums/%s/radios"
-#define WIRELESS_SCAN_URL "%s/v3/unums/%s/neighboring_access_points"
-#define WIRELESS_URL_HOST "https://api.minim.co"
+#define WIRELESS_RADIOS_PATH "/v3/unums/%s/radios"
+#define WIRELESS_SCAN_PATH "/v3/unums/%s/neighboring_access_points"
 
 
 // Forward declarations
 static JSON_VAL_TPL_t *wt_tpl_radios_array_f(char *key, int ii);
 static JSON_VAL_TPL_t *wt_tpl_vaps_array_f(char *key, int ii);
 static JSON_VAL_TPL_t *wt_tpl_stas_array_f(char *key, int ii);
+static JSON_VAL_TPL_t *wt_tpl_assoc_array_f(char *key, int ii);
 static JSON_VAL_TPL_t *wt_tpl_scan_radios_array_f(char *key, int ii);
 static JSON_VAL_TPL_t *wt_tpl_scanlist_array_f(char *key, int ii);
 static JSON_KEYVAL_TPL_t *wt_tpl_radio_extras_f(char *);
@@ -53,7 +53,8 @@ static WT_JSON_TPL_RADIO_STATE_t wt_radio_state;
 static WT_JSON_TPL_VAP_STATE_t wt_vap_state;
 
 // The structure stores state of the current STA we are building
-// telemetry JSON template for
+// telemetry JSON template for or if we are in STA mode the state
+// our own association
 static WT_JSON_TPL_STA_STATE_t wt_sta_state;
 
 // The structure stores the scan list entry data we are building
@@ -107,13 +108,25 @@ static JSON_OBJ_TPL_t tpl_tbl_vaps_obj = {
   { "interface", { .type = JSON_VAL_STR, {.s = wt_vap_state.ifname}}},
   { "ssid",  { .type = JSON_VAL_STR, {.s = wt_vap_state.ssid}}},
   { "bssid", { .type = JSON_VAL_STR, {.s = wt_vap_state.bssid}}},
+  { "mode",  { .type = JSON_VAL_STR, {.s = wt_vap_state.mode }}},
   { "extras",{ .type = JSON_VAL_FOBJ, {.fo = wt_tpl_vap_extras_f}}},
   { "stas",  { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_stas_array_f}}},
   { NULL }
 };
 
-// STA info template
-static JSON_OBJ_TPL_t tpl_tbl_stas_obj = {
+// STA VAP (not really VAP, STA interface) info template
+static JSON_OBJ_TPL_t tpl_tbl_vapsta_obj = {
+  { "interface",   { .type = JSON_VAL_STR, {.s = wt_vap_state.ifname}}},
+  { "sta_mac",     { .type = JSON_VAL_STR, {.s = wt_vap_state.mac}}},
+  { "ssid",        { .type = JSON_VAL_STR, {.s = wt_vap_state.ssid}}},
+  { "mode",        { .type = JSON_VAL_STR, {.s = wt_vap_state.mode }}},
+  { "extras",      { .type = JSON_VAL_FOBJ, {.fo = wt_tpl_vap_extras_f}}},
+  { "assoc_info",  { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_assoc_array_f}}},
+  { NULL }
+};
+
+// STA/association info template
+static JSON_OBJ_TPL_t tpl_tbl_sta_state_obj = {
   { "mac",    { .type = JSON_VAL_STR, {.s = wt_sta_state.mac}}},
   { "rssi",   { .type = JSON_VAL_PINT, {.pi = &wt_sta_state.rssi}}},
   { "extras", { .type = JSON_VAL_FOBJ, {.fo = wt_tpl_sta_extras_f}}},
@@ -206,13 +219,13 @@ static JSON_KEYVAL_TPL_t *wt_tpl_sta_extras_f(char *key)
 static JSON_VAL_TPL_t *wt_tpl_stas_array_f(char *key, int ii)
 {
     static JSON_VAL_TPL_t tpl_tbl_stas_obj_val = {
-        .type = JSON_VAL_OBJ, { .o = tpl_tbl_stas_obj }
+        .type = JSON_VAL_OBJ, { .o = tpl_tbl_sta_state_obj }
     };
 
     memset(&wt_sta_state, 0, sizeof(wt_sta_state));
 
     // Check if the current VAP has that many STAs
-    if(ii < 0 || ii >= wt_vap_state.num_stas) {
+    if(ii < 0 || ii >= wt_vap_state.num_assocs) {
         return NULL;
     }
 
@@ -231,6 +244,38 @@ static JSON_VAL_TPL_t *wt_tpl_stas_array_f(char *key, int ii)
     return &tpl_tbl_stas_obj_val;
 }
 
+// Dynamically builds JSON template for the wireless telemetry
+// assoc info array we send if reporting for an interface in the STA mode.
+static JSON_VAL_TPL_t *wt_tpl_assoc_array_f(char *key, int ii)
+{
+    static JSON_VAL_TPL_t tpl_tbl_assoc_obj_val = {
+        .type = JSON_VAL_OBJ, { .o = tpl_tbl_sta_state_obj }
+    };
+
+    memset(&wt_sta_state, 0, sizeof(wt_sta_state));
+
+    // Check if we have the association info to report. Normally there will
+    // be just 1, the aray template here is used just for the code parody with
+    // the AP's STA list (but who knows, could be used for reporting preauth)
+    if(ii < 0 || ii >= wt_vap_state.num_assocs) {
+        return NULL;
+    }
+
+    // Populate the data we need to report for the association
+    int rc = wt_tpl_fill_assoc_info(&wt_radio_state,
+                                    &wt_vap_state,
+                                    &wt_sta_state, ii);
+    if(rc < 0) {
+        log("%s: unable to get the necessary data for STA %d, skipping\n",
+            __func__, ii);
+        return &tpl_tbl_array_skip_val;
+    } else if(rc > 0) { // No error, platform code asks to skip
+        return &tpl_tbl_array_skip_val;
+    }
+
+    return &tpl_tbl_assoc_obj_val;
+}
+
 // Return pointer to VAP "extras" JSON object template
 static JSON_KEYVAL_TPL_t *wt_tpl_vap_extras_f(char *key)
 {
@@ -243,6 +288,9 @@ static JSON_VAL_TPL_t *wt_tpl_vaps_array_f(char *key, int ii)
 {
     static JSON_VAL_TPL_t tpl_tbl_vaps_obj_val = {
         .type = JSON_VAL_OBJ, { .o = tpl_tbl_vaps_obj }
+    };
+    static JSON_VAL_TPL_t tpl_tbl_vapsta_obj_val = {
+        .type = JSON_VAL_OBJ, { .o = tpl_tbl_vapsta_obj }
     };
 
     memset(&wt_vap_state, 0, sizeof(wt_vap_state));
@@ -257,6 +305,11 @@ static JSON_VAL_TPL_t *wt_tpl_vaps_array_f(char *key, int ii)
     strncpy(wt_vap_state.ifname, wt_radio_state.vaps[ii], IFNAMSIZ);
     wt_vap_state.ifname[IFNAMSIZ - 1] = 0;
 
+    // Preset the default operation mode to "ap", the platform can
+    // override when reporting non-AP interfaces (like 802.11s mesh points)
+    strncpy(wt_vap_state.mode, WIRELESS_OPMODE_AP, sizeof(wt_vap_state.mode));
+    wt_vap_state.mode[sizeof(wt_vap_state.mode) - 1] = 0;
+
     // Populate the data we need to report for the VAP
     int rc = wt_tpl_fill_vap_info(&wt_radio_state, &wt_vap_state);
     if(rc < 0) {
@@ -265,6 +318,10 @@ static JSON_VAL_TPL_t *wt_tpl_vaps_array_f(char *key, int ii)
         return &tpl_tbl_array_skip_val;
     } else if(rc > 0) { // No error, platform code asks to skip
         return &tpl_tbl_array_skip_val;
+    }
+
+    if(strcmp(wt_vap_state.mode, WIRELESS_OPMODE_STA) == 0) {
+        return &tpl_tbl_vapsta_obj_val;
     }
 
     return &tpl_tbl_vaps_obj_val;
@@ -300,8 +357,10 @@ static JSON_VAL_TPL_t *wt_tpl_radios_array_f(char *key, int ii)
     // Populate the data we need to report for the radio
     int rc = wt_tpl_fill_radio_info(&wt_radio_state);
     if(rc < 0) {
-        log("%s: unable to get the necessary data for <%s>, skipping\n",
-            __func__, radio_name);
+        if (rc != WIRELESS_RADIO_IS_DOWN) {
+            log("%s: unable to get the necessary data for <%s>, skipping\n",
+                __func__, radio_name);
+        }
         return &tpl_tbl_array_skip_val;
     } else if(rc > 0) { // No error, platform code asks to skip
         return &tpl_tbl_array_skip_val;
@@ -319,6 +378,12 @@ static void wireless_do_radio_telemetry(void)
     char url[256];
     int err;
 
+    // Check that we have MAC address
+    if(!my_mac) {
+        log("%s: cannot get device MAC\n", __func__);
+        return;
+    }
+
     // Call platform telemetry submission init function
     err = wt_platform_subm_init();
     if(err != 0) {
@@ -326,18 +391,11 @@ static void wireless_do_radio_telemetry(void)
         return;
     }
 
-    for(;;) {
-        // Check that we have MAC address
-        if(!my_mac) {
-            log("%s: cannot get device MAC\n", __func__);
-            break;
-        }
+    // Prepare the URL string
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url,
+                   sizeof(url), WIRELESS_RADIOS_PATH, my_mac);
 
-        // Prepare the URL string
-        snprintf(url, sizeof(url), WIRELESS_RADIOS_URL,
-                 (unum_config.url_prefix ?
-                   unum_config.url_prefix : WIRELESS_URL_HOST),
-                 my_mac);
+    for(;;) {
 
         // Build the the radio telemetry data JSON
         jstr = util_tpl_to_json_str(wt_tpl_root);
@@ -408,10 +466,8 @@ static void wireless_do_scan_report(void)
         }
 
         // Prepare the URL string
-        snprintf(url, sizeof(url), WIRELESS_SCAN_URL,
-                 (unum_config.url_prefix ?
-                   unum_config.url_prefix : WIRELESS_URL_HOST),
-                 my_mac);
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url,
+                       sizeof(url), WIRELESS_SCAN_PATH, my_mac);
 
         // Build the the radio telemetry data JSON
         jstr = util_tpl_to_json_str(wt_tpl_scan_root);

@@ -1,4 +1,4 @@
-// Copyright 2019 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
 
 // From uci_internal.h - only include public attributes
 struct uci_parse_context {
-    const char *reason;
-    int line;
-    int byte;
+  const char *reason;
+  int line;
+  int byte;
 };
 
 /* Temporary, log to console from here */
@@ -38,7 +38,7 @@ struct uci_parse_context {
 // Returns: pointer to the 0-terminated config string or NULL if fails,
 //          the returned pointer has to be released with the
 //          platform_cfg_free() call ASAP, if successful the returned config
-//          length is stored in p_len (unless p_len is NULL). The length
+//          length is stored in p_len (uness p_len is NULL). The length
 //          includes the terminating 0.
 char *platform_cfg_get(int *p_len)
 {
@@ -172,6 +172,32 @@ void platform_cfg_free(char *buf)
     return;
 }
 
+
+static void util_restart_config(void)
+{
+#define RESTART_CONFIG "/usr/bin/restart_config.sh"
+    int err;
+    struct stat st;
+    char *restart_cmd = RESTART_CONFIG;
+    int ret;
+
+    err = stat(restart_cmd, &st);
+    if(err == 0) {
+        log("%s: Restart config using %s\n", __func__, restart_cmd);
+        ret = system(restart_cmd);
+        log("%s: Restarted config using %s. Return value: %d\n", __func__, 
+                    restart_cmd, ret);
+        if(ret  == -1) {
+            log("%s: Restarting LEDE config failed: %s\n", __func__,
+                    strerror(errno));
+        } else if((ret >> 8) == 1) {
+            log("%s: LEDE Mode changed. Restarting unum\n", __func__);
+            util_restart(UNUM_START_REASON_MODE_CHANGE);
+        }
+    }
+#undef RESTART_CONFIG
+}
+
 // Apply configuration from the memory buffer
 // Parameters:
 // - pointer to the config memory buffer
@@ -244,18 +270,18 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
     }
 
 #ifdef DEBUG
-        // Do not reboot if running config test
+    // Do not reboot if running config test
     if(get_test_num() == U_TEST_FILE_TO_CFG) {
         printf("Reboot is required to apply the config.\n");
         return 0;
     }
 #endif // DEBUG
 
-    log("%s: new config saved, rebooting the device\n", __func__);
-    util_reboot();
-    log("%s: reboot request has failed\n", __func__);
+    log("%s: new config saved, Restarting the init scripts\n", __func__);
+    util_restart_config();
+    log("%s: applied the updated configuration\n", __func__);
 
-    return -3;
+    return 0;
 }
 
 // Platform specific init for the config subsystem

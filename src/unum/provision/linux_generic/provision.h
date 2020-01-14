@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 static __inline__ void restart_provision(void) {
     unlink(PROVISION_CERT_PNAME);
     unlink(PROVISION_KEY_PNAME);
-    util_restart();
+    util_restart(UNUM_START_REASON_PROVISION);
 }
 
 #endif // _PROVISION_H

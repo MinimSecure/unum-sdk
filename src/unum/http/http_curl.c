@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,26 +26,6 @@
 
 // Cut off HTTP data in the log msgs if too long
 #define MAX_LOG_DATA_LEN 1024
-
-// Static host:port to IPs mapping to use if DNS is not working.
-// This list of pointers to the mapings should be terminated w/ NULL.
-// The mapings should be in the form: HOST:PORT:ADDRESS[,ADDRESS]...
-static char *dns_map[] = {
-    "api.minim.co:80:34.207.26.129",
-    "api.minim.co:443:34.207.26.129",
-    "my.minim.co:443:34.207.26.129",
-    "releases.minim.co:443:34.207.26.129",
-    "provision.minim.co:443:34.207.26.129",
-    NULL
-};
-
-// Returns NULL-teminated array of strings w/ hardcoded DNS names mapping
-// http subsystem will use if DNS is not working. The entries are in
-// the HOST:PORT:ADDRESS[,ADDRESS]... format.
-char **http_dns_name_list(void)
-{
-    return dns_map;
-}
 
 // Download file from a URL
 // The headers are passed as double 0 terminated multi-string.
@@ -93,10 +73,10 @@ int http_get_file(char *url, char *headers, char *file)
     {
         int ii;
         struct curl_slist *slold = NULL;
-        for(ii = 0; dns_map[ii] != NULL; ++ii)
+        for(ii = 0; dns_entries[ii][0] != '\0'; ++ii)
         {
             slold = sldns;
-            sldns = curl_slist_append(sldns, dns_map[ii]);
+            sldns = curl_slist_append(sldns, dns_entries[ii]);
             if(!sldns) {
                 break;
             }
@@ -111,6 +91,8 @@ int http_get_file(char *url, char *headers, char *file)
 
     for(retry = 0; err != 0 && retry < REQ_RETRIES; retry++)
     {
+        ftruncate(fileno(f), 0);
+
         ch = curl_easy_init();
         if(ch)
         {
@@ -213,12 +195,13 @@ static size_t speedtest_chunk(void *contents, size_t size, size_t nmemb, void *u
 #define HTTP_REQ_TYPE_MASK 0x0000ffff
 #define HTTP_REQ_FLAGS_CAPTURE_HEADERS 0x00010000
 #define HTTP_REQ_FLAGS_NO_RETRIES      0x00020000
-#define HTTP_REQ_FLAGS_SHORT_TIMEOUT   0x00030000
+#define HTTP_REQ_FLAGS_SHORT_TIMEOUT   0x00040000
+#define HTTP_REQ_FLAGS_GET_CONNTIME    0x00080000
 static http_rsp *http_req(char *url, char *headers,
                           int type, char *data, int len)
 {
     CURL *ch;
-    int err;
+    int err = 0;
     int retry;
     http_rsp *rsp;
     long resp_code;
@@ -263,7 +246,7 @@ static http_rsp *http_req(char *url, char *headers,
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, write_func);
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, &rsp);
     curl_easy_setopt(ch, CURLOPT_ERRORBUFFER, err_buf);
-    if ((type & HTTP_REQ_FLAGS_SHORT_TIMEOUT) == HTTP_REQ_FLAGS_SHORT_TIMEOUT) {
+    if ((type & HTTP_REQ_FLAGS_SHORT_TIMEOUT) != 0) {
         curl_easy_setopt(ch, CURLOPT_TIMEOUT, REQ_API_TIMEOUT_SHORT);
         // Give connecting the whole timeout, but just reuse the constant
         curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, REQ_API_TIMEOUT_SHORT);
@@ -298,10 +281,10 @@ static http_rsp *http_req(char *url, char *headers,
     {
         int ii;
         struct curl_slist *slold = NULL;
-        for(ii = 0; dns_map[ii] != NULL; ++ii)
+        for(ii = 0; dns_entries[ii][0] != '\0'; ++ii)
         {
             slold = sldns;
-            if((sldns = curl_slist_append(sldns, dns_map[ii])) == NULL) {
+            if((sldns = curl_slist_append(sldns, dns_entries[ii])) == NULL) {
                 break;
             }
         }
@@ -335,6 +318,8 @@ static http_rsp *http_req(char *url, char *headers,
     if((type & HTTP_REQ_FLAGS_NO_RETRIES) != 0) {
         num_retries = 1;
     }
+    curl_easy_setopt(ch, CURLOPT_DNS_CACHE_TIMEOUT, 200);
+    curl_easy_setopt(ch, CURLOPT_DNS_USE_GLOBAL_CACHE, 1);
 
     for(retry = 0; retry < num_retries; retry++)
     {
@@ -377,6 +362,13 @@ static http_rsp *http_req(char *url, char *headers,
     if(err) {
         free_rsp(rsp);
         return NULL;
+    }
+
+    if ((type & HTTP_REQ_FLAGS_GET_CONNTIME) != 0) {
+        double connect_time, name_lookup_time;
+        curl_easy_getinfo(ch, CURLINFO_CONNECT_TIME, &connect_time);
+        curl_easy_getinfo(ch, CURLINFO_NAMELOOKUP_TIME, &name_lookup_time);
+        rsp->time = (connect_time - name_lookup_time) * 1000.0;
     }
 
     return rsp;
@@ -453,11 +445,23 @@ http_rsp *http_get_no_retry(char *url, char *headers)
                     HTTP_REQ_TYPE_GET | HTTP_REQ_FLAGS_NO_RETRIES,
                     NULL, 0);
 }
+// The same as http_get(), but gets timing information
+http_rsp *http_get_conn_time(char *url, char *headers)
+{
+    return http_req(url, headers,
+                    HTTP_REQ_TYPE_GET | HTTP_REQ_FLAGS_NO_RETRIES |
+                    HTTP_REQ_FLAGS_SHORT_TIMEOUT | HTTP_REQ_FLAGS_GET_CONNTIME,
+                    NULL, 0);
+}
+
+
+
 
 // Download file from a URL, without storing any data
 // this is used to test speeds. returns 0 if successful
 // error otherwise.
-int http_download_test(char *url, long timeout_in_sec, size_t *returned_size)
+int http_download_test(char *ifname, char *url,
+                       long timeout_in_sec, size_t *returned_size)
 {
     CURL *ch;
     CURLcode res;
@@ -468,7 +472,11 @@ int http_download_test(char *url, long timeout_in_sec, size_t *returned_size)
     ch = curl_easy_init();
 
     // Setup CURL options
+    if(ifname) {
+        curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
+    }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, speedtest_chunk);
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *)&total_size);
     curl_easy_setopt(ch, CURLOPT_USERAGENT, "unum/v3 (libcurl; minim.co)");
@@ -523,7 +531,8 @@ static size_t random_data_reader(void *ptr, size_t size,
 
 // Uploads random data to an endpoint to test the upload speed
 // returns 0 if successful, -1 otherwise.
-int http_upload_test(char *url, long timeout_in_sec, size_t *uploaded_size)
+int http_upload_test(char *ifname, char *url,
+                     long timeout_in_sec, size_t *uploaded_size)
 {
     CURL *ch;
     CURLcode res;
@@ -538,7 +547,11 @@ int http_upload_test(char *url, long timeout_in_sec, size_t *uploaded_size)
     ch = curl_easy_init();
 
     // Setup CURL options
+    if(ifname) {
+        curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
+    }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(ch, CURLOPT_READFUNCTION, random_data_reader);
     curl_easy_setopt(ch, CURLOPT_READDATA, (void *)&ts);
@@ -580,5 +593,75 @@ int http_init(int level)
         log("%s: curl global init has failed, error %d\n", __func__, err);
     }
 
+#ifdef USE_OPENSSL
+    err = init_locks();
+    if(err != 0) {
+        log("%s: init_locks has failed, no memory\n", __func__);
+    }
+#endif
+
     return 0;
 }
+
+// technically this should be called on application exit
+void http_deinit()
+{
+#ifdef USE_OPENSSL
+    kill_locks();
+#endif
+}
+
+#ifdef USE_OPENSSL
+#include <openssl/crypto.h>
+static void lock_callback(int mode, int type, char *file, int line)
+{
+    (void)file;
+    (void)line;
+    if(mode & CRYPTO_LOCK) {
+        pthread_mutex_lock(&(lockarray[type]));
+    }
+    else {
+        pthread_mutex_unlock(&(lockarray[type]));
+    }
+}
+ 
+static unsigned long thread_id(void)
+{
+    unsigned long ret;
+ 
+    ret = (unsigned long)pthread_self();
+    return ret;
+}
+ 
+static int init_locks(void)
+{
+    int i;
+ 
+    lockarray = (pthread_mutex_t *)OPENSSL_malloc(CRYPTO_num_locks() *
+                                                sizeof(pthread_mutex_t));
+    if(lockarray == NULL) {
+         return -1;
+    }
+
+    for(i = 0; i<CRYPTO_num_locks(); i++) {
+        pthread_mutex_init(&(lockarray[i]), NULL);
+    }
+ 
+    CRYPTO_set_id_callback((unsigned long (*)())thread_id);
+    CRYPTO_set_locking_callback((void (*)())lock_callback);
+
+   return 0;
+}
+ 
+static void kill_locks(void)
+{
+    int i;
+ 
+    CRYPTO_set_locking_callback(NULL);
+    for(i = 0; i<CRYPTO_num_locks(); i++) {
+        pthread_mutex_destroy(&(lockarray[i]));
+    }
+ 
+    OPENSSL_free(lockarray);
+}
+#endif
