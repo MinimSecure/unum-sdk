@@ -1,4 +1,4 @@
-// Copyright 2020 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -412,6 +412,7 @@ void fp_reset_tables(void)
 // telemetry JSON.
 int fp_init(int level)
 {
+#if 0
     if(level == INIT_LEVEL_FINGERPRINT) {
         // Initialize the DHCP fingerprinting
         if(fp_dhcp_init() != 0) {
@@ -433,5 +434,6 @@ int fp_init(int level)
             return -4;
         }
     }
+#endif
     return 0;
 }
