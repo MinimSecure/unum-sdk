@@ -36,7 +36,7 @@ char servers[RESOURCE_TYPE_MAX][RESOURCE_URL_LEN];
 char dns_entries[DNS_ENTRIES_MAX + 1][DNS_ENTRY_MAX_LENGTH];
 
 // List of DNS Servers To Query
-static char *dns_servers[] = { "3.223.32.222", "8.8.8.8", "1.1.1.1", NULL };
+static char *dns_servers[] = { "8.8.8.8", "1.1.1.1", NULL };
 
 // If DNS Queries Fail, Use this Hardcoded TXT Record
 static void util_get_txt_record_static(char *txt, int len)
