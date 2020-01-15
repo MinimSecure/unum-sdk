@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,13 @@ static int proc_log_dst_id = -1;
 // Disabled log destinations mask, by default disable special
 // operation mode logs.
 static unsigned long disabled_mask =
+#ifdef FW_UPDATER_RUN_MODE
   (1 << LOG_DST_UPDATE) |
-  (1 << LOG_DST_SUPPORT);
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
+  (1 << LOG_DST_SUPPORT) |
+#endif // SUPPORT_RUN_MODE
+  0;
 
 // Forward declarations for local static functions
 static int init_log_entry(LOG_DST_t dst);

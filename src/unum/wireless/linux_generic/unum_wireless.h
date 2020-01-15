@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
 // Max number of radios we can have for the platform (used for platforms
 // where wireless code could be shared between hardare with potentially
 // different number of radios, for now iwinfo and wl)
-#define WIRELESS_MAX_RADIOS 4
+#define WIRELESS_MAX_RADIOS 3
 
 // Max VAPs per radio we can report (used in wireless_common.h)
-#define WIRELESS_MAX_VAPS 16
+#define WIRELESS_MAX_VAPS 4
 
 
 // Common header shared across all platforms

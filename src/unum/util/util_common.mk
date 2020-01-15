@@ -1,4 +1,4 @@
-# Copyright 2018 Minim Inc
+# Copyright 2019 - 2020 Minim Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 # Add code file(s)
 OBJECTS += ./util/util.o ./util/jobs.o ./util/util_event.o ./util/util_net.o
 OBJECTS += ./util/util_json.o ./util/util_timer.o ./util/util_crashinfo.o
-OBJECTS += ./util/util_stubs.o
-OBJECTS += ./util/$(MODEL)/util_platform.o ./util/util_stubs.o
+OBJECTS += ./util/$(MODEL)/util_platform.o ./util/util_stubs.o ./util/util_dns.o
+
+# Add C99 Code Files
+XOBJECTS = ./util/dns.o
 
 # Add subsystem initializer function
 INITLIST += util_init

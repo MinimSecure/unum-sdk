@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,13 +36,19 @@ void util_shutdown(int err_code)
 }
 
 // Restart agent (the function does not return to the caller)
-void util_restart(void)
+void util_restart(int code)
 {
     log("Terminating unum %s, restart requested\n", VERSION);
     if(unum_config.unmonitored || unum_config.mode != NULL) {
         log("The process is not monitored, restart manually\n");
     }
-    agent_exit(EXIT_RESTART);
+    agent_exit(code);
+}
+
+// Restart command from server
+void util_restart_from_server(void)
+{
+    util_restart(UNUM_START_REASON_SERVER);
 }
 
 // Reboot the device
@@ -64,7 +70,7 @@ void util_reboot(void)
     reboot(LINUX_REBOOT_CMD_RESTART);
     sleep(5);
     log("Failed to reboot, restarting the agent...\n");
-    util_restart();
+    util_restart(UNUM_START_REASON_REBOOT_FAIL);
 }
 
 // Factory reset the device (triggers reboot if successful)
@@ -86,6 +92,28 @@ void util_factory_reset(void)
 #endif // FACTORY_RESET_CMD
     log("%s: not supported on the platform\n", __func__);
 }
+
+// Populate auth_info_key Auth Info Key
+// For Gl-inet B1300 it is serial number
+// For all other devices, auth_info_key is not updated
+#ifdef AUTH_INFO_GET_CMD
+void util_get_auth_info_key(char *auth_info_key, int max_key_len)
+{
+    char *get_auth_info_key_cmd = AUTH_INFO_GET_CMD;
+    int pstatus;
+
+    if(util_get_cmd_output(get_auth_info_key_cmd, auth_info_key,
+                               max_key_len, &pstatus) > 0) {
+        if(pstatus == -1) {
+            // Some error while getting the auth info key
+            // Zero the key
+            memset(auth_info_key, 0, max_key_len);
+            log("%s: Failed to get the auth info key\n", __func__);
+        }
+        return;
+    }
+}
+#endif // AUTH_INFO_GET_CMD
 
 // Return uptime in specified fractions of the second (rounded to the low)
 unsigned long long util_time(unsigned int fraction)
@@ -109,6 +137,14 @@ void util_msleep(unsigned int msecs)
     nanosleep(&t, NULL);
 }
 
+// Create a blank file
+// file - Name of the file
+// crmode - File Permissions
+int touch_file (char *file, mode_t crmode)
+{
+    return creat(file, crmode);
+}
+
 // Save data from memory to a file, returns -1 if fails.
 int util_buf_to_file(char *file, void *buf, int len, mode_t crmode)
 {
@@ -126,6 +162,34 @@ int util_buf_to_file(char *file, void *buf, int len, mode_t crmode)
     }
     close(fd);
     return 0;
+}
+
+// Read data from file to a buffer
+// file - Name of the file
+// buf - Buffer to save the data to
+// buf_size - Maximum size of the buffer
+// Returns total number of bytes saved to the buffer if the file size is
+// greater than buf_size.
+// A maximum of buf_size bytes are returned if there is an overflow.
+// Returns negative value if there is an error,
+// The caller can use errno to get error code.
+size_t util_file_to_buf(char *file, char *buf, size_t buf_size)
+{
+    int len = 0;
+    int fd = open(file, O_RDONLY);
+    if (fd < 0) {
+        return -1;
+    }
+    len = read(fd, buf, buf_size);
+    if(len < 0)
+    {
+        int err = errno;
+        close(fd);
+        errno = err;
+        return -2;
+    }
+    close(fd);
+    return len;
 }
 
 // Compare two files.
@@ -366,6 +430,68 @@ void util_cleanup_str(char *str)
     return;
 }
 
+// Configure the agent to the specified operation mode
+// opmode - the operation mode string pointer
+// Returns: 0 - success, negative - error setting the opmode
+// Note: this function is called from command line procesing routines
+//       before any init is done (i.e. even the log msgs would go to stdout)
+int util_set_opmode(char *opmode)
+{
+    int new_flags = 0;
+    char *new_mode = NULL;
+
+#if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_GW) == 0) {
+        new_flags = UNUM_OPM_GW;
+        new_mode = UNUM_OPMS_GW;
+    } else
+#endif // !FEATURE_LAN_ONLY
+#if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_AP) == 0) {
+        new_flags = UNUM_OPM_AP;
+        new_mode = UNUM_OPMS_AP;
+    } else
+#endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+#if defined(FEATURE_MANGED_DEVICE)
+    if(strcmp(opmode, UNUM_OPMS_MD) == 0) {
+        new_flags = UNUM_OPM_MD;
+        new_mode = UNUM_OPMS_MD;
+    } else
+#endif // FEATURE_MANGED_DEVICE
+#if defined(FEATURE_MESH_11S)
+# if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_GW) == 0) {
+        new_flags = UNUM_OPM_GW | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_GW;
+    } else
+# endif // !FEATURE_LAN_ONLY
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_AP) == 0) {
+        new_flags = UNUM_OPM_AP | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_AP;
+    } else
+#endif // FEATURE_MESH_11S
+    {
+        // Unrecognized mode, keeping the flags unchanged
+        return -1;
+    }
+
+    // If opmode change is requested after the setup stage of the init is done
+    // let the platform handle the opmode change (it might need to do something
+    // special or limit possible changes)
+    if(init_level_completed >= INIT_LEVEL_SETUP  &&
+       strcmp(unum_config.opmode, new_mode) != 0 &&
+       platform_change_opmode != NULL            &&
+       platform_change_opmode(unum_config.opmode_flags, new_flags) != 0)
+    {
+        return -2;
+    }
+
+    // All checks passed, change opmode
+    unum_config.opmode = new_mode;
+    unum_config.opmode_flags = new_flags;
+    return 0;
+}
+
 // Subsystem init function
 int util_init(int level)
 {
@@ -401,4 +527,45 @@ int util_init(int level)
     }
 
     return ret;
+}
+
+// Build URL
+//
+// eg: build_url(RESOURCE_PROTO_HTTPS, RESOURCEE_TYPE_API, string, 256,
+//               "/v3/endpoint/%s", "abcdefg")
+//     string = "https://api.minim.co/v3/endpoint/abcdefg"
+//
+// proto    - url protocol string HTTPS, HTTP, etc
+// type     - resource type from RESOURCE_TYPE_* enums above
+// url      - pointer to string
+// length   - length of string to avoid overrun
+// template - string format, will be appended after scheme, host, etc
+// ...      - args for template
+void util_build_url(char *proto, int type, char *url, unsigned int length,
+                    const char *template, ...)
+{
+    int count = 0;
+
+    if(unum_config.url_prefix) {
+        // Unum Config Contains Custom URL Prefix
+        count = snprintf(url, length, "%s", unum_config.url_prefix);
+    } else if(servers[type]) {
+        // Use URL Mapping
+        count = snprintf(url, length, "%s://%s", proto, servers[type]);
+    } else {
+        // This is an error
+        log("%s: unable to build url for type %d\n", __FUNCTION__, type);
+        return;
+    }
+
+    // Append Requested Format and Args to URL
+    va_list args;
+    va_start(args, template);
+    vsnprintf(&url[count], length - count, template, args);
+    url[length - 1] = '\0';
+    va_end(args);
+
+    // Log URL
+    log_dbg("build_url: <%s>\n", url);
+
 }

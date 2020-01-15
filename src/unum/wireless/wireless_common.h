@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,14 @@
 // Radio & clients telemetry reporting period (in seconds)
 #define WIRELESS_TELEMETRY_PERIOD 30
 
+// Interface operation modes we report to the server
+// the max len is WT_JSON_TPL_VAP_STATE_t mode[] field below.
+#define WIRELESS_OPMODE_AP       "ap"       // typical AP
+#define WIRELESS_OPMODE_MESH_11S "mesh_11s" // 802.1s mesh point
+#define WIRELESS_OPMODE_STA      "sta"      // station in BSS
+
+#define WIRELESS_RADIO_IS_DOWN   -2
+
 
 // The structure for collecting state of the current radio being reported
 // in the telemetry JSON
@@ -50,8 +58,10 @@ typedef struct _WT_JSON_TPL_VAP_STATE {
     char ifname[IFNAMSIZ]; // The name of the VAP interface
     char ssid[65];  // SSID encoded in hexadecimal string form
     char bssid[MAC_ADDRSTRLEN];// BSSID as xx:xx:xx:xx:xx:xx string
+    char mac[MAC_ADDRSTRLEN];  // STA MAC as xx:xx:xx:xx:xx:xx string (if STA)
+    char mode[32];  // operation mode (defaults to "ap")
     JSON_KEYVAL_TPL_t *extras; // Ptr to template for platform extras
-    int num_stas;   // Number of STAs on the current VAP (limits enumeration)
+    int num_assocs; // Number of associations the current VAP or STA has
 } WT_JSON_TPL_VAP_STATE_t;
 
 // The structure for collecting state of the current STA being reported
@@ -144,6 +154,14 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo);
 int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
                          WT_JSON_TPL_VAP_STATE_t *vinfo);
 
+// Capture the association info
+// Returns: 0 - if successful (all required info captured),
+//          negative - error, positive - skip (no error)
+int wt_tpl_fill_assoc_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
+                           WT_JSON_TPL_VAP_STATE_t *vinfo,
+                           WT_JSON_TPL_STA_STATE_t *sinfo,
+                           int sta_num);
+
 // Capture the STA info
 // Returns: 0 - if successful (all required info captured),
 //          negative - error, positive - skip (no error)
@@ -183,6 +201,17 @@ void wt_scan_info_collected(void);
 // Returns:
 // 0 - ok, negative - unable to get the counters for the given MAC address
 int wireless_get_sta_counters(char *ifname, unsigned char* mac,
+                              WIRELESS_COUNTERS_t *wc);
+
+// Get wireless counters for a station.
+// Parameters:
+// ifname - The ifname to look up the STA on (could be NULL, search all)
+// mac_str - STA MAC address (binary)
+// wc - ptr to WIRELESS_COUNTERS_t buffer to return the data in
+// Returns:
+// 0 - ok, negative - unable to get the counters for the given MAC address
+int __attribute__((weak)) wireless_iwinfo_platform_get_sta_counters(char *ifname,
+                              unsigned char* mac,
                               WIRELESS_COUNTERS_t *wc);
 
 // Init function for the platform wireless APIs (if needed,

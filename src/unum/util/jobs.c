@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -282,7 +282,7 @@ void util_wd_check_all(void)
     for(ii = 1; ii < MAX_THRD_COUNT; ii++) {
         if(util_wd_check(&(threads[ii])) > 0) {
             log("%s: restarting due to wd timeout\n", __func__);
-            util_restart();
+            util_restart(UNUM_START_REASON_WD_TIMEOUT);
             // Should never reach this point
         }
     }

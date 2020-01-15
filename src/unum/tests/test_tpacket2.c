@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
                MAC_PRINTF_ARG_TPL(ehdr->h_source),
                MAC_PRINTF_ARG_TPL(ehdr->h_dest),
                ntohs(ehdr->h_proto));
+
         if(iph) {
             printf("  IP  " IP_PRINTF_FMT_TPL " -> " IP_PRINTF_FMT_TPL
                    " (%d)\n",
@@ -131,6 +132,22 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
         printf("    tp_snaplen : %d\n", thdr->tp_snaplen);
         printf("    tp_sec     : %d\n", thdr->tp_sec);
         printf("    tp_nsec    : %d\n", thdr->tp_nsec);
+
+//#define DBG_PRINT_PAYLOAD
+#ifdef DBG_PRINT_PAYLOAD
+        printf("    payload    :");
+        int ii, max = (thdr->tp_snaplen > 255) ? 255 : thdr->tp_snaplen;
+        unsigned char *ptr = (unsigned char *)ehdr;
+        for(ii = 0; ii < max; ++ii)
+        {
+            if(ii % 16 == 0) {
+                printf("\n      %03d:", ii);
+            }
+            printf(" %02x", (int)ptr[ii]);
+        }
+        printf("\n");
+#endif // DBG_PRINT_PAYLOAD
+
         return;
 }
 

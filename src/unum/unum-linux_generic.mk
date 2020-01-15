@@ -14,7 +14,7 @@
 
 # Platform makefile for unum agent executable build
 
-# Add linking flags for libs, they should be available 
+# Add linking flags for libs, they should be available
 # since our package depends on those libs
 
 HARDWARE = linux_generic
@@ -22,6 +22,7 @@ AP_HARDWARE_TYPES =
 
 # Generic libs
 LDFLAGS += -lrt -lcrypto
+CPPFLAGS += -DUSE_OPEN_SSL -D_DEFAULT_SOURCE
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -311,7 +311,7 @@ int wt_iwinfo_get_bssid(char *ifname, unsigned char *bssid, char *bssid_str)
 }
 
 // Get the interface or phy country code
-char *wt_iwinfo_get_country(char *ifname)
+char*  __attribute__((weak)) wt_iwinfo_get_country(char *ifname)
 {
     static char cc[32];
     const struct iwinfo_ops *iw = iwinfo_backend(ifname);
@@ -427,6 +427,15 @@ char *wt_iwinfo_get_mode(char *ifname, int *mode_id)
 // Returns: 0 - success or negative int if error
 int wt_iwinfo_mk_if_list(void)
 {
+    // Use platform interface list generator if defined
+    if(wt_platform_iwinfo_mk_if_list != NULL) {
+        return wt_platform_iwinfo_mk_if_list(wt_interfaces,
+                            wt_phys,
+                            wt_if_to_phy,
+                            &if_idx_next,
+                            &phy_idx_next);
+    }
+
     char *sysnetdev_dir = "/sys/class/net";
     struct dirent *de;
     int err, ii;

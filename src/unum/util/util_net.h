@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -172,6 +172,11 @@ typedef struct _UDP_PAYLOAD {
 // Returns: TRUE - interface is up, FALSE - down or error
 int util_net_dev_is_up(char *ifname);
 
+// Checks if the interface reports link UP
+// ifname - the interface name
+// Returns: TRUE - interface link is up, FALSE - down or error
+int util_net_dev_link_is_up(char *ifname);
+
 // Enumerite the list of the IP interfaces. For each interface a caller's
 // callback is invoked until all the interfaces are enumerated.
 // Returns: 0 - success, number of times the callback has failed
@@ -205,7 +210,8 @@ int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg);
 char *util_device_mac();
 
 // Get the IPv4 address (as a string) of a network device.
-// The buf length should be at least INET_ADDRSTRLEN bytes.
+// The buf length should be at least INET_ADDRSTRLEN bytes
+// If buf is NULL it is not used.
 // Returns 0 if successful, error code if fails.
 int util_get_ipv4(char *dev, char *buf);
 
@@ -243,6 +249,13 @@ unsigned short util_ip_cksum(unsigned short *addr, int len);
 // Returns: 0 - if gw_ip is populated w/ the gateway IP address,
 //          negative error code otherwise
 int util_get_ipv4_gw(IPV4_ADDR_t *gw_ip);
+
+// Get default route outbound interface name
+// ifnam - ptr to the buffer that receives the interface name
+//         the buffer has to be at least IFNAMSIZ long
+// Returns: 0 - if gw_ip is populated w/ the gateway IP address,
+//          negative error code otherwise
+int util_get_ipv4_gw_oif(char *ifnam);
 
 // Find a monitored LAN interface for sending traffic to the specified IP
 // address. Parameters:

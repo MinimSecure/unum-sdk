@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@
 // URL to post and get router config, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define CFG_URL "%s/v3/unums/%s/router_configs/raw"
-#define CFG_URL_HOST "https://api.minim.co"
+#define CFG_PATH "/v3/unums/%s/router_configs/raw"
 
 // UID of the last config that has been successfully
 // sent to the server (zeroed at bootup).
@@ -61,6 +60,8 @@ int cmd_update_config(char *cmd, char *s_unused, int len_unused)
 static void config(THRD_PARAM_t *p)
 {
     http_rsp *rsp = NULL;
+    char url[256];
+    char *my_mac = util_device_mac();
 
     log("%s: started\n", __func__);
 
@@ -68,34 +69,55 @@ static void config(THRD_PARAM_t *p)
     wait_for_activate();
     log("%s: done waiting for activate\n", __func__);
 
+
+    // Check that we have MAC address
+    if(!my_mac) {
+        log("%s: cannot get device MAC\n", __func__);
+        return;
+    }
+
 #ifdef DELAY_CONFIG_SEND_ON_STARTUP
     // Wait short random time to avoid all the jobs pending on
     // activate kick in at the same time
     sleep(rand() % CONFIG_PERIOD);
 #endif // DELAY_CONFIG_SEND_ON_STARTUP
 
+#ifdef FEATURE_ACTIVATE_SCRIPT
+    // Delay config subsystem till intial provisioning of the device
+    // from the cloud is complete.
+#if !defined(ACTIVATE_FLAG_FILE) || !defined(ACTIVATE_FLAG_FILE_TIMEOUT)
+#  error Platform must define ACTIVATE_FLAG_FILE and ACTIVATE_FLAG_FILE_TIMEOUT
+#endif // !ACTIVATE_FLAG_FILE || !ACTIVATE_FLAG_FILE_TIMEOUT
+    log("%s: waiting for config provisioning up to %dsec\n",
+        __func__, ACTIVATE_FLAG_FILE_TIMEOUT);
+    int time_count;
+    for(time_count = 0;
+        time_count < ACTIVATE_FLAG_FILE_TIMEOUT;
+        ++time_count, sleep(1))
+    {
+        struct stat st;
+        if(stat(ACTIVATE_FLAG_FILE, &st) == 0) {
+            log("%s: config provisioning is complete\n", __func__);
+            break;
+        }
+    }
+    if(time_count >= ACTIVATE_FLAG_FILE_TIMEOUT) {
+        log("%s: timed out waiting for config provisioning\n", __func__);
+    }
+#endif // FEATURE_ACTIVATE_SCRIPT
+
     util_wd_set_timeout(HTTP_REQ_MAX_TIME + CONFIG_PERIOD);
+
+    // Prepare the URL string
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   CFG_PATH, my_mac);
 
     for(;;) {
         char *cstr = NULL;
         int cstr_len = 0;
-        char *my_mac = util_device_mac();
         unsigned long delay;
-        char url[256];
 
         for(;;) {
-
-            // Check that we have MAC address
-            if(!my_mac) {
-                log("%s: cannot get device MAC\n", __func__);
-                break;
-            }
-
-            // Prepare the URL string
-            snprintf(url, sizeof(url), CFG_URL,
-                     (unum_config.url_prefix ?
-                       unum_config.url_prefix : CFG_URL_HOST),
-                     my_mac);
 
             // Prepare the config data JSON, if config is unchanged
             // or cannnot be retrieved at this time then NULL is returned.
@@ -177,8 +199,8 @@ static void config(THRD_PARAM_t *p)
                 break;
             }
 
-            log("%s: cloud config has been applied successfully\n", __func__);
-            delay = 0;
+            // Reset last_sent_uid to force config push to Retroelk
+            memset(&last_sent_uid, 0, sizeof(last_sent_uid));
             break;
         }
 

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,8 @@ static void print_tests_info()
            "- test forwarding engine table defrag\n");
     printf(UTIL_STR(U_TEST_FE_ARP)
            "- test forwarding engine ARP tracker\n");
-
+    printf(UTIL_STR(U_TEST_DNS)
+           "- test dns subsystem\n");
     printf(UTIL_STR(U_TEST_UNUSED)
            "- unused\n");
     printf("...\n");
@@ -156,6 +157,9 @@ static int run_platform_tests(int test_num, char *test_num_str)
         case U_TEST_FE_ARP:
             return test_fe_arp();
 
+        case U_TEST_DNS:
+            return test_dns();
+
         default:
             printf("There is no test %d\n", test_num);
             break;
@@ -203,7 +207,7 @@ int run_tests(char *test_num_str)
             if(err != 0) {
             	printf("%s: Error at init level %d in %s(), terminating.\n",
                        __func__, level, init_str_list[ii]);
-                util_restart();
+                util_restart(UNUM_START_REASON_START_FAIL);
                 // should never reach this point
             }
         }

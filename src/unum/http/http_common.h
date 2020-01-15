@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,10 @@
 
 // Structure containing HTTP request reply for GET/POST requests
 typedef struct {
-    int code;     // response code
-    int len;      // length of the response data
-    int size;     // size of the data buffer
+    int code;           // response code
+    int len;            // length of the response data
+    int size;           // size of the data buffer
+    unsigned long time; // connection time
     char data[0]; // response data
     // The http_rsp is allocated with extra space below
     // for storing the response data
@@ -112,17 +113,20 @@ http_rsp *http_put_all(char *url, char *headers, char *data, int len);
 http_rsp *http_get(char *url, char *headers);
 http_rsp *http_get_all(char *url, char *headers);
 http_rsp *http_get_no_retry(char *url, char *headers);
+http_rsp *http_get_conn_time(char *url, char *headers);
 
 // Download file from a URL, without storing any data
 // this is used to test speeds. returns 0 if successful
 // error otherwise.
 // Pass 0 as timeout_in_sec to disable the timeout completely.
-int http_download_test(char *url, long timeout_in_sec, size_t *size);
+int http_download_test(char *ifname, char *url,
+                       long timeout_in_sec, size_t *size);
 
 // Uploads random data to an endpoint to test the upload speed
 // returns 0 if successful, -1 otherwise.
 // Pass 0 as timeout_in_sec to disable the timeout completely.
-int http_upload_test(char *url, long timeout_in_sec, size_t *size);
+int http_upload_test(char *ifname, char *url,
+                     long timeout_in_sec, size_t *size);
 
 // Subsystem init function
 int http_init(int level);

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,11 +42,11 @@
 #define TPCAP_ETHTYPE_MIN 1536
 
 // The total number and index of the WAN interface in the TPCAP_IF_STATS table
-#ifndef AP_MODE // are we running on a router?
+#ifndef FEATURE_LAN_ONLY // are we running on a router?
 #  define TPCAP_STAT_IF_MAX (TPCAP_IF_MAX + 1)
-#else  // !AP_MODE
+#else  // !FEATURE_LAN_ONLY
 #  define TPCAP_STAT_IF_MAX TPCAP_IF_MAX
-#endif // !AP_MODE
+#endif // !FEATURE_LAN_ONLY
 #define TPCAP_WAN_STATS_IDX TPCAP_IF_MAX
 
 // Structure describing monitored interface

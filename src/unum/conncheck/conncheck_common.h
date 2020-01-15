@@ -37,7 +37,7 @@
 // greater or equal to the max.
 #define CONNCHECK_QUIET_TIME_START  60
 #define CONNCHECK_QUIET_TIME_INC    30
-#define CONNCHECK_QUIET_TIME_MAX   300
+#define CONNCHECK_QUIET_TIME_MAX   120
 
 // Max time (in sec) to keep tryinig connectivity test before assuming
 // that something is wrong and trying to recover. There are 3 types
@@ -67,17 +67,18 @@
 
 
 // IDs for conncheck state (cstate)
-typedef enum _CONNCHECK_SATES {
+typedef enum _CONNCHECK_STATES {
     CSTATE_UNINITIALIZED,    // 0 - not initialized
-    CSTATE_GRACE_PERIOD,     // 1 - connecting to cloud
-    CSTATE_RECOVERY,         // 2 - connecton recovery
-    CSTATE_CHECKING_IPV4,    // 3 - checking IPv4 connectivity
-    CSTATE_CHECKING_DNS,     // 4 - checking DNS
-    CSTATE_CHECKING_HTTPS,   // 5 - checking HTTPS
-    CSTATE_CHECKING_COUNTERS,// 6 - checking packet counters
-    CSTATE_DONE,             // 7 - done, info ready
+    CSTATE_GET_URLS,         // 1 - get server urls via DNS
+    CSTATE_GRACE_PERIOD,     // 2 - connecting to cloud
+    CSTATE_RECOVERY,         // 3 - connecton recovery
+    CSTATE_CHECKING_IPV4,    // 4 - checking IPv4 connectivity
+    CSTATE_CHECKING_DNS,     // 5 - checking DNS
+    CSTATE_CHECKING_HTTPS,   // 6 - checking HTTPS
+    CSTATE_CHECKING_COUNTERS,// 7 - checking packet counters
+    CSTATE_DONE,             // 8 - done, info ready
     CSTATE_MAX               // max
-} CONNCHECK_SATES_t;
+} CONNCHECK_STATES_t;
 
 // Structure for storing connectivity check status
 typedef struct _CONNCHECK_ST {
@@ -96,6 +97,7 @@ typedef struct _CONNCHECK_ST {
     unsigned int no_ipv4_gw:    1; // unable to get IPv4 default gateway info
     unsigned int bad_ipv4_gw:   1; // invalid IPv4 default gateway address
     unsigned int no_dns:        1; // no DNS, use hardcoded IPs for cloud access
+    unsigned int no_servers:    1; // no servers, couldn't get servers from dns
     // data
     unsigned long cloud_utc;       // UTC time in sec from the cloud
     unsigned long connect_uptime;  // uptime when connected

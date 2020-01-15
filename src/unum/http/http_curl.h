@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@
 // timeouts for curl
 #define REQ_CONNECT_TIMEOUT    20
 #define REQ_API_TIMEOUT        30
-#define REQ_API_TIMEOUT_SHORT  10
+#define REQ_API_TIMEOUT_SHORT  5
 #define REQ_FILE_TIMEOUT       480
 
 // Timeouts used in common code for setting up watchdog

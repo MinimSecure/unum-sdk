@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -189,6 +189,59 @@ static json_t *util_tpl_to_json_val(JSON_VAL_TPL_t *val, char *key, int *perr)
     }
 
     return jval;
+}
+
+// The functioon sets value pointer in the JSON object template
+// for the specified template entry. It suppors setting only the
+// pointers for values that are not functions.
+// Returns: 0 - success, negative - key not found or unsupported type
+int util_json_obj_tpl_set_val_ptr(JSON_OBJ_TPL_t tpl, char *key, void *ptr)
+{
+    JSON_KEYVAL_TPL_t *kv;
+    int err = 0;
+
+    // Loop through all keyvalue pairs of the template and find what we
+    // are asked to change.
+    int found = FALSE;
+    for(kv = tpl; kv && kv->key; kv++)
+    {
+        if(strcmp(kv->key, key) != 0) {
+            continue;
+        }
+        found = TRUE;
+        JSON_VAL_TPL_t *val = &kv->val;
+        switch(val->type) {
+            case JSON_VAL_STR:
+                val->s = (char *)ptr;
+                break;
+            case JSON_VAL_PINT:
+                val->pi = (int *)ptr;
+                break;
+            case JSON_VAL_PUL:
+                val->pul = (unsigned long *)ptr;
+                break;
+            case JSON_VAL_PUINT:
+                val->pui = (unsigned int *)ptr;
+                break;
+            case JSON_VAL_PJINT:
+                val->pji = (json_int_t *)ptr;
+                break;
+            case JSON_VAL_OBJ:
+                val->o = (struct _JSON_KEYVAL_TPL *)ptr;
+                break;
+            default:
+                log("%s: key %s value type %d is not supported\n",
+                    __func__, key, val->type);
+                err = -2;
+                break;
+        }
+    }
+    if(!found) {
+        log("%s: key %s is not found\n", __func__, key);
+        err = -1;
+    }
+
+    return err;
 }
 
 // Function for building libjansson JSON object from a template.

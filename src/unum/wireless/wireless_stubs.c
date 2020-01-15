@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,6 +71,18 @@ int __attribute__((weak)) wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
                                                WT_JSON_TPL_VAP_STATE_t *vinfo,
                                                WT_JSON_TPL_STA_STATE_t *sinfo,
                                                int ii)
+{
+    log_dbg("%s: not implemented\n", __func__);
+    return 0;
+}
+
+// Capture the association info
+// Returns: 0 - if successful (all required info captured),
+//          negative - error, positive - skip (no error)
+int __attribute__((weak)) wt_tpl_fill_assoc_info(WT_JSON_TPL_RADIO_STATE_t *r,
+                                                 WT_JSON_TPL_VAP_STATE_t *v,
+                                                 WT_JSON_TPL_STA_STATE_t *s,
+                                                 int ii)
 {
     log_dbg("%s: not implemented\n", __func__);
     return 0;

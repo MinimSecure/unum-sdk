@@ -30,6 +30,9 @@
 // SSDP (UPnP) fingerprinting include
 #include "fp_ssdp.h"
 
+// HTTP User Agent fingerprinting include
+#include "fp_useragent.h"
+
 
 // Functions returning template for building fingerprinting
 // JSON, called by devices telemetry when it prepares its own JSON.

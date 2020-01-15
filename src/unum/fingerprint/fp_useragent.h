@@ -12,27 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// DHCP fingerprinting subsystem include file
 
-#ifndef _FINGERPRINT_DHCP_H
-#define _FINGERPRINT_DHCP_H
+#ifndef _FINGERPRINT_USERAGENT_H
+#define _FINGERPRINT_USERAGENT_H
 
-// Returns pointer to the DHCP info table stats.
+// Returns pointer to the UserAgent info table stats.
 // Use from the tpcap callbacks only.
 // Subsequent calls override the returned data.
 // Pass TRUE to reset the table (allows to get data and reset in one call)
-FP_TABLE_STATS_t *fp_dhcp_tbl_stats(int reset);
+FP_TABLE_STATS_t *fp_useragent_tbl_stats(int reset);
 
-// Get the pointer to the DHCP info table
+// Get the pointer to the UserAgent info table
 // The table should only be accessed from the tpcap thread
-FP_DHCP_t **fp_get_dhcp_tbl(void);
+FP_USERAGENT_t *fp_get_useragent_tbl(void);
 
-// Reset all DHCP tables (including the table usage stats)
-void fp_reset_dhcp_tables(void);
+// Reset all UserAgent tables (including the table usage stats)
+void fp_reset_useragent_tables(void);
 
-// Init DHCP fingerprinting
+// Init UserAgent fingerprinting
 // Returns: 0 - if successful
-int fp_dhcp_init(void);
+int fp_useragent_init(void);
 
-#endif // _FINGERPRINT_DHCP_H
-
+#endif // _FINGERPRINT_USERAGENT_H

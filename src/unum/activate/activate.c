@@ -27,8 +27,7 @@
 // URL to send the activation info to, parameters:
 // - the URL prefix
 // - MAC addr of the router (in xx:xx:xx:xx:xx:xx format)
-#define ACTIVATE_URL "%s/v3/unums/%s/activate"
-#define ACTIVATE_URL_HOST "https://api.minim.co"
+#define ACTIVATE_PATH "/v3/unums/%s/activate"
 
 // Set to TRUE once we have activated the Unum
 static UTIL_EVENT_t activate_complete = UTIL_EVENT_INITIALIZER;
@@ -74,28 +73,102 @@ static char *router_activate_json(char *my_mac)
     char *crash_msg_ptr = NULL;
     JSON_KEYVAL_TPL_t *crashinfo_tpl_ptr = NULL;
     int add_crash_info = FALSE;
+    char *auth_info_key_ptr = NULL;
+    char wan_mac_buf[MAC_ADDRSTRLEN];
+    char *wan_mac = NULL;
 
-    if(process_start_reason.code == UNUM_START_REASON_UNKNOWN) {
-        start_reason = "normal_start";
-    } else if(process_start_reason.code == UNUM_START_REASON_RESTART) {
-        start_reason = "self_restart";
-    } else if(process_start_reason.code == UNUM_START_REASON_CRASH) {
-        start_reason = "exception";
-        if(process_start_reason.ci != NULL) {
-            TRACER_CRASH_INFO_t *ci = process_start_reason.ci;
-            add_crash_info = TRUE;
-            crash_type_ptr = ci->type;
-            crash_location_ptr = ci->location;
-            crash_msg_ptr = ci->msg;
-            // We have to complete building the URL by supplying the device MAC
-            if(ci->dumpurl[0] != 0) {
-                snprintf(crash_url, sizeof(crash_url), ci->dumpurl, my_mac);
-                crash_url_ptr = crash_url;
-            }
+#ifdef AUTH_INFO_KEY_LEN
+    char auth_info_key[AUTH_INFO_KEY_LEN];
+
+    // Get auth_info_key if platform has an API for that
+    if(util_get_auth_info_key != NULL) 
+    {
+        memset(auth_info_key, 0, sizeof(auth_info_key));
+        util_get_auth_info_key(auth_info_key, AUTH_INFO_KEY_LEN - 1);
+        if(strlen(auth_info_key) != 0) {
+            auth_info_key_ptr = auth_info_key;
         }
     } else {
         start_reason = NULL;
     }
+#endif // AUTH_INFO_KEY_LEN
+
+    // Get WAN MAC (only if working as a gateway)
+    if(IS_OPM(UNUM_OPM_GW))
+    {
+        unsigned char mac[6];
+        if(util_get_mac(GET_MAIN_WAN_NET_DEV(), mac) == 0 &&
+           snprintf(wan_mac_buf, MAC_ADDRSTRLEN,
+                    MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(mac)) > 0)
+        {
+            wan_mac = wan_mac_buf;
+        }
+    }
+
+    switch(process_start_reason.code) {
+        case UNUM_START_REASON_UNKNOWN:
+            start_reason = "normal_start";
+            break;
+        case UNUM_START_REASON_RESTART:
+            start_reason = "self_restart";
+            break;
+        case UNUM_START_REASON_CRASH:
+            start_reason = "exception";
+            if(process_start_reason.ci != NULL) {
+                TRACER_CRASH_INFO_t *ci = process_start_reason.ci;
+                add_crash_info = TRUE;
+                crash_type_ptr = ci->type;
+                crash_location_ptr = ci->location;
+                crash_msg_ptr = ci->msg;
+                // We have to complete building the URL by supplying the device MAC
+                if(ci->dumpurl[0] != 0) {
+                    snprintf(crash_url, sizeof(crash_url), ci->dumpurl, my_mac);
+                    crash_url_ptr = crash_url;
+                }
+            }
+            break;
+         case UNUM_START_REASON_START_FAIL:
+            start_reason = "start-fail";
+            break;
+         case UNUM_START_REASON_MODE_CHANGE:
+            start_reason = "opmode-change";
+            break;
+         case UNUM_START_REASON_CONNCHECK:
+            start_reason = "conncheck";
+            break;
+         case UNUM_START_REASON_PROVISION:
+            start_reason = "provision";
+            break;
+         case UNUM_START_REASON_SUPPORT_FAIL:
+            start_reason = "support-start-fail";
+            break;
+         case UNUM_START_REASON_TEST_RESTART:
+            start_reason = "test-crash";
+            break;
+         case UNUM_START_REASON_TEST_FAIL:
+            start_reason = "test-fail";
+            break;
+         case UNUM_START_REASON_DEVICE_INFO:
+            start_reason = "deviceinfo";
+            break;
+         case UNUM_START_REASON_WD_TIMEOUT:
+            start_reason = "wd-timeout";
+            break;
+         case UNUM_START_REASON_REBOOT_FAIL:
+            start_reason = "reboot-fail";
+            break;
+         case UNUM_START_REASON_SERVER:
+            start_reason = "server-cmd";
+            break;
+         case UNUM_START_REASON_FW_START_FAIL:
+            start_reason = "fw-process-fail";
+            break;
+         default:
+            start_reason = NULL;
+    }
+
+    // Reset reason code
+    process_start_reason.code = UNUM_START_REASON_UNKNOWN;
 
     JSON_OBJ_TPL_t tpl_tbl_crash_info = {
       { "type",       {.type = JSON_VAL_STR, { .s = crash_type_ptr }}},
@@ -116,6 +189,8 @@ static char *router_activate_json(char *my_mac)
       { "unum_agent_version",{.type = JSON_VAL_STR, {.s = agent_ver}}},
       { "start_reason",    {.type = JSON_VAL_STR, {.s = start_reason}}},
       { "crash_info",      {.type = JSON_VAL_OBJ, {.o = crashinfo_tpl_ptr}}},
+      { "auth_info_key",   {.type = JSON_VAL_STR, {.s = auth_info_key_ptr}}},
+      { "wan_mac_address", {.type = JSON_VAL_STR, {.s = wan_mac}}},
 #ifdef DEVELOPER_BUILD
       { "developer_build", {.type = JSON_VAL_INT, {.i = 1}}},
 #endif // DEVELOPER_BUILD
@@ -131,8 +206,16 @@ static void activate(THRD_PARAM_t *p)
     unsigned int delay = 0;
     int err;
     http_rsp *rsp = NULL;
+    char *my_mac = util_device_mac();
+    char url[256];
 
     log("%s: started\n", __func__);
+
+    // Check that we have MAC address
+    if(!my_mac) {
+        log("%s: cannot get device MAC\n", __func__);
+        return;
+    }
 
     log("%s: waiting for conncheck to complete\n", __func__);
     wait_for_conncheck();
@@ -152,20 +235,16 @@ static void activate(THRD_PARAM_t *p)
 
     util_wd_set_timeout(HTTP_REQ_MAX_TIME + ACTIVATE_MAX_PERIOD);
 
+    // Build Activation URL
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   ACTIVATE_PATH, my_mac);
+
     for(;;) {
         err = -1;
         for(;;) {
-            char *my_mac = util_device_mac();
             char *jstr = NULL;
-            char url[256];
 
             for(;;) {
-                // Check that we have MAC address
-                if(!my_mac) {
-                    log("%s: cannot get device MAC\n", __func__);
-                    break;
-                }
-
                 jstr = router_activate_json(my_mac);
                 if(!jstr) {
                     log("%s: JSON encode failed\n", __func__);
@@ -173,11 +252,6 @@ static void activate(THRD_PARAM_t *p)
                 }
 
                 // Activate us with the server
-                snprintf(url, sizeof(url), ACTIVATE_URL,
-                         (unum_config.url_prefix ?
-                           unum_config.url_prefix : ACTIVATE_URL_HOST),
-                         my_mac);
-
                 rsp = http_put(url,
                                "Content-Type: application/json\0"
                                "Accept: application/json\0",

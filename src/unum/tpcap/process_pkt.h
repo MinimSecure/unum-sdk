@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 
 // Forward declaration of the _PKT_PROC_ENTRY structure
 struct _PKT_PROC_ENTRY;
+
+// Forward declarations to avoid useless warnings
+struct tpacket2_hdr;
+struct iphdr;
+struct ethhdr;
 
 // Packet processing function types
 typedef void (*ETH_PROC_FUNC_t)(TPCAP_IF_t *tpif,

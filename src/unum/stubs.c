@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// unum router telemetry include file
+#include "unum.h"
 
-#ifndef _TELEMETRY_H
-#define _TELEMETRY_H
-
-#include "meminfo.h"
-#include "cpuinfo.h"
-#include "iptables.h"
-
-// Telemetry reporting period (in sec)
-#define TELEMETRY_PERIOD 15
-// System info (mem and CPU usage reporting period)
-#define SYSINFO_TELEMETRY_PERIOD 60
-// iptables rules reporting period
-#define IPT_TELEMETRY_PERIOD 300
-
-// Subsystem init function
-int telemetry_init(int level);
-
-#endif // _TELEMETRY_H
+// Stubs for the platforms that do not compile in fingerprinting.
+int __attribute__((weak)) fp_init(int level)
+{
+    return -1;
+}
+JSON_KEYVAL_TPL_t __attribute__((weak)) *fp_mk_json_tpl_f(char *key)
+{
+    return NULL;
+}
+void __attribute__((weak)) fp_reset_tables(void)
+{
+    return;
+}

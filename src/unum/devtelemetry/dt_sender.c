@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@
 // URL to send the router telemetry to, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define DEVTELEMETRY_URL "%s/v3/unums/%s/devices/telemetry"
-#define DEVTELEMETRY_URL_HOST "https://api.minim.co"
+#define DEVTELEMETRY_PATH "/v3/unums/%s/devices/telemetry"
 
 
 // Forward declarations
@@ -231,13 +230,14 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
         if(!dev || dev->rating == 0) {
             continue;
         }
-#ifdef AP_MODE
-        // For the AP mode ignore devices unless see in & out traffic to
-        // avoid entries popping up when traffic to unknown MACs is flooded
+#ifdef FEATURE_LAN_ONLY
+        // For the standalone device firmware ignore connection unless see in &
+        // out traffic to avoid entries popping up when traffic to unknown MACs
+        // is flooded
         if((dev->rating & 6) != 6) {
             continue;
         }
-#endif // AP_MODE
+#endif // FEATURE_LAN_ONLY
         snprintf(dev_ip, sizeof(dev_ip), IP_PRINTF_FMT_TPL,
                  IP_PRINTF_ARG_TPL(dev->ipv4.b));
         snprintf(dev_mac, sizeof(dev_mac), MAC_PRINTF_FMT_TPL,
@@ -331,17 +331,17 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
     // Static buffer tpl_tbl_interfaces_obj refers to (the array builder just
     // have to memcpy() data here for the template to pick it up.
     static DT_IF_STATS_t dtst;
-    // Static buffers tpl_tbl_interfaces_obj refers to for ip addr and mask strs
+    // Static buffers tpl_tbl_interfaces_obj refers to for ip addr/mask/mac strs
     static char ip[INET_ADDRSTRLEN];
     static char mask[INET_ADDRSTRLEN];
+    static char mac[MAC_ADDRSTRLEN];
     // Template for generating interfaces JSON.
     static JSON_OBJ_TPL_t tpl_tbl_interfaces_obj = {
       { "ifname", { .type = JSON_VAL_STR, {.s = NULL}}}, // has to be first
+      { "mac", { .type = JSON_VAL_STR, {.s = mac}}},
       { "ip", { .type = JSON_VAL_STR, {.s = ip}}},
       { "mask", { .type = JSON_VAL_STR, {.s = mask}}},
-#ifndef AP_MODE
       { "wan",  { .type = JSON_VAL_PINT, {.pi = &dtst.wan}}},
-#endif // !AP_MODE
       { "slice",  { .type = JSON_VAL_PINT, {.pi = &dtst.slice}}},
       { "end_sec", { .type = JSON_VAL_PUL, {.pul = &dtst.sec}}},
       { "end_msec", { .type = JSON_VAL_PUL, {.pul = &dtst.msec}}},
@@ -370,6 +370,13 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
 
     tpl_tbl_interfaces_obj[0].val.s = pdtst[ii].name;
     memcpy(&dtst, &(pdtst[ii]), sizeof(dtst));
+    *mac = 0;
+    char null_mac[6] = {};
+    if(memcmp(pdtst[ii].mac, null_mac, sizeof(null_mac)) != 0) {
+        snprintf(mac, MAC_ADDRSTRLEN,
+                 MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(dtst.mac));
+    }
+    *ip = *mask = 0;
     if(dtst.ipcfg.ipv4.i != 0) {
         snprintf(ip, sizeof(ip), IP_PRINTF_FMT_TPL,
                  IP_PRINTF_ARG_TPL(dtst.ipcfg.ipv4.b));
@@ -549,8 +556,16 @@ static char *consume_devices_telemetry_json()
 static void dt_sender(THRD_PARAM_t *p)
 {
     http_rsp *rsp = NULL;
+    char url[256];
+    char *my_mac = util_device_mac();
 
     log("%s: started\n", __func__);
+
+    // Check that we have MAC address
+    if(!my_mac) {
+        log("%s: cannot get device MAC\n", __func__);
+        return;
+    }
 
     log("%s: waiting for activate to complete\n", __func__);
     wait_for_activate();
@@ -559,24 +574,15 @@ static void dt_sender(THRD_PARAM_t *p)
     util_wd_set_timeout(HTTP_REQ_MAX_TIME +
                         DEVTELEMETRY_NUM_SLICES * unum_config.tpcap_time_slice);
 
+    // Prepare the URL string
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   DEVTELEMETRY_PATH, my_mac);
+
     for(;;) {
         char *jstr = NULL;
-        char *my_mac = util_device_mac();
-        char url[256];
+
 
         for(;;) {
-
-            // Check that we have MAC address
-            if(!my_mac) {
-                log("%s: cannot get device MAC\n", __func__);
-                break;
-            }
-
-            // Prepare the URL string
-            snprintf(url, sizeof(url), DEVTELEMETRY_URL,
-                     (unum_config.url_prefix ?
-                       unum_config.url_prefix : DEVTELEMETRY_URL_HOST),
-                     my_mac);
 
             // Retrieve the telemetry data JSON
             jstr = consume_devices_telemetry_json();

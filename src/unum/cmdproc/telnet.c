@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@
 #define IAC 0xFF
 #define NAWS 31
 
-int negotiate_window_size(int socket, unsigned char *buffer, int len) {
+int negotiate_window_size(int socket, unsigned char *buffer, int len)
+{
     if (buffer[0] == IAC && buffer[1] == DO && buffer[2] == NAWS) {
         // If server requests NAWS, tell it yes
         unsigned char agree_naws[] = { IAC, WILL, NAWS };
@@ -71,14 +72,16 @@ int negotiate_window_size(int socket, unsigned char *buffer, int len) {
     return 0;
 }
 
-int manage_telnet_socket(int socket, TELNET_INFO_t *info) {
+int manage_telnet_socket(int socket, TELNET_INFO_t *info)
+{
     struct timeval ts;
     unsigned char buffer[3];
     int len;
     fd_set file_descriptor;
     int pauses = 0;
 
-    while ((pauses < 10) && (info->length < sizeof(info->output) - 1)) {
+    while ((pauses < 10) && (info->length < sizeof(info->output) - 1))
+    {
         FD_ZERO(&file_descriptor);
         if (socket != 0) {
             FD_SET(socket, &file_descriptor);
@@ -131,7 +134,8 @@ int manage_telnet_socket(int socket, TELNET_INFO_t *info) {
     return 0;
 }
 
-int attempt_telnet_login(TELNET_INFO_t *info) {
+int attempt_telnet_login(TELNET_INFO_t *info)
+{
     int retval = 0;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
@@ -156,7 +160,8 @@ int attempt_telnet_login(TELNET_INFO_t *info) {
     return retval;
 }
 
-int split_telnet_uri(TELNET_INFO_t *info, char *uri, int length) {
+int split_telnet_uri(TELNET_INFO_t *info, char *uri, int length)
+{
     info->port = 23;
     info->ip_addr[0] = '\0';
     info->username[0] = '\0';

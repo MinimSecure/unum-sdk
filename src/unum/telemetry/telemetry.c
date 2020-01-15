@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@
 // URL to send the router telemetry to, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define TELEMETRY_URL "%s/v3/unums/%s/telemetry"
-#define TELEMETRY_URL_HOST "https://api.minim.co"
+#define TELEMETRY_PATH "/v3/unums/%s/telemetry"
 
 // Structure for caching telemetry data
 typedef struct {
@@ -87,27 +86,29 @@ static char *router_telemetry_json()
     // Init the new data set by copying over the last sent data
     memcpy(&new_data, &last_sent, sizeof(new_data));
 
-    // Get the IP and MAC addresses info
+    // Get the IP and MAC addresses info for LAN
     if(util_get_ipv4(GET_MAIN_LAN_NET_DEV(), new_data.lan_ip) == 0 &&
        strncmp(last_sent.lan_ip, new_data.lan_ip, INET_ADDRSTRLEN) != 0)
     {
         lan_ip = new_data.lan_ip;
     }
-#ifndef AP_MODE
-    if(util_get_ipv4(GET_MAIN_WAN_NET_DEV(), new_data.wan_ip) == 0 &&
-       strncmp(last_sent.wan_ip, new_data.wan_ip, INET_ADDRSTRLEN) != 0)
+    // Get WAN IP and MAC (only if working as a gateway)
+    if(IS_OPM(UNUM_OPM_GW))
     {
-        wan_ip = new_data.wan_ip;
+        if(util_get_ipv4(GET_MAIN_WAN_NET_DEV(), new_data.wan_ip) == 0 &&
+           strncmp(last_sent.wan_ip, new_data.wan_ip, INET_ADDRSTRLEN) != 0)
+        {
+            wan_ip = new_data.wan_ip;
+        }
+        unsigned char mac[6];
+        if(util_get_mac(GET_MAIN_WAN_NET_DEV(), mac) == 0 &&
+           snprintf(new_data.wan_mac, MAC_ADDRSTRLEN,
+                    MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(mac)) > 0 &&
+           strncmp(last_sent.wan_mac, new_data.wan_mac, MAC_ADDRSTRLEN) != 0)
+        {
+            wan_mac = new_data.wan_mac;
+        }
     }
-    unsigned char mac[6];
-    if(util_get_mac(GET_MAIN_WAN_NET_DEV(), mac) == 0 &&
-       snprintf(new_data.wan_mac, MAC_ADDRSTRLEN,
-                MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(mac)) > 0 &&
-       strncmp(last_sent.wan_mac, new_data.wan_mac, MAC_ADDRSTRLEN) != 0)
-    {
-        wan_mac = new_data.wan_mac;
-    }
-#endif // !AP_MODE
 
     // The error flags are reported repeatedly (if there are errors)
     char *no_dns = NULL;
@@ -148,7 +149,7 @@ static char *router_telemetry_json()
     }
 
     // Check if it is time to update iptables telemetry
-    if(!ipt_check_diffs && unum_config.ipt_period > 0 &&
+    if(IS_OPM(UNUM_OPM_GW) && !ipt_check_diffs && unum_config.ipt_period > 0 &&
        ((last_ipt_telemetry == 0) ||
         ((util_time(1) - last_ipt_telemetry) >= unum_config.ipt_period)))
     {
@@ -298,6 +299,8 @@ static void telemetry(THRD_PARAM_t *p)
 {
     unsigned long no_rsp_t = 0;
     http_rsp *rsp = NULL;
+    char *my_mac = util_device_mac();
+    char url[256];
 
     log("%s: started\n", __func__);
 
@@ -307,26 +310,16 @@ static void telemetry(THRD_PARAM_t *p)
 
     util_wd_set_timeout(HTTP_REQ_MAX_TIME + unum_config.telemetry_period);
 
+    // Prepare the URL string
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   TELEMETRY_PATH, my_mac);
+
     for(;;) {
         json_t *rsp_root = NULL;
         char *jstr = NULL;
-        char *my_mac = util_device_mac();
         json_error_t jerr;
-        char url[256];
 
         for(;;) {
-
-            // Check that we have MAC address
-            if(!my_mac) {
-                log("%s: cannot get device MAC\n", __func__);
-                break;
-            }
-
-            // Prepare the URL string
-            snprintf(url, sizeof(url), TELEMETRY_URL,
-                     (unum_config.url_prefix ?
-                       unum_config.url_prefix : TELEMETRY_URL_HOST),
-                     my_mac);
 
             // Prepare the telemetry data JSON
             jstr = router_telemetry_json();

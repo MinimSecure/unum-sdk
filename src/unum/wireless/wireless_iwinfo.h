@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -121,5 +121,21 @@ int wt_iwinfo_mk_if_list(void);
 // Initializes iwinfo
 // Returns: 0 - success or negative int if error
 int wt_iwinfo_init(void);
+
+char* wt_iwinfo_get_vap_name(char *phyname);
+
+// This is a dummy function to be invoked when we use defaults
+// for enumerating the interface list.
+// Return some value greater than 0 to differentiate between
+// weak and non-weak functions.
+int __attribute__((weak)) wt_platform_iwinfo_mk_if_list(
+            char interfaces[WT_MAX_IWINFO_VIFS][IFNAMSIZ],
+            char phys[WT_MAX_IWINFO_PHYS][IFNAMSIZ],
+            int phy[WT_MAX_IWINFO_VIFS],
+            int *iif_idx_next,
+            int *pphy_idx_next);
+
+// Get the first VAP name
+char* __attribute__((weak)) wt_platform_iwinfo_get_vap(char *phyname);
 
 #endif // _WIRELESS_IWINFO_H

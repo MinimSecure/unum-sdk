@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,15 @@ char *cmd_q[CMD_Q_MAX_SIZE];
 static unsigned int cmd_q_start = 0;
 static unsigned int cmd_q_len = 0;
 
+// Function for a debug command testing crashing the agent
+#ifdef DEBUG
+static void trigger_crash(void) {
+    int *ptr = NULL;
+    *ptr = 0;
+    return;
+}
+#endif // DEBUG
+
 // Generic command set. It contains all command rules that are the same
 // for all the platforms, the platform specific rules can be added
 // to the cmd_platform_rules[] array in the platform subfolder.
@@ -47,7 +56,7 @@ static CMD_RULE_t cmd_gen_rules[] = {
       { .act_void = util_reboot }},
     { "restart_agent",      // restart the agent
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = util_restart }},
+      { .act_void = util_restart_from_server }},
     { "factory_reset",      // reset to factory defaults
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
       { .act_void = util_factory_reset }},
@@ -72,16 +81,21 @@ static CMD_RULE_t cmd_gen_rules[] = {
     { "fetch_urls", // fetch URLs requested by the server
       CMD_RULE_M_FULL | CMD_RULE_F_DATA,
       { .act_data = cmd_fetch_urls }},
-#ifdef FW_UPDATER_OPMODE
+#ifdef FW_UPDATER_RUN_MODE
     { "force_fw_update", // Force FW update (even for development versions)
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
       { .act_void = cmd_force_fw_update }},
-#endif // FW_UPDATER_OPMODE
+#endif // FW_UPDATER_RUN_MODE
 #ifdef DEBUG
     { "crash_me",        // Trigger a crash for debugging
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = NULL }},
-#endif // !DEBUG
+      { .act_void = trigger_crash }},
+#endif // DEBUG
+#ifdef SUPPORT_RUN_MODE
+    { "support_portal_connect",  // Create support check file
+      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
+      { .act_void = create_support_flag_file }},
+#endif // SUPPORT_RUN_MODE
     // CMD_RULE_M_ANY must be the last one
     { "shell_cmd", // generic commands, pass to shell
       CMD_RULE_M_ANY | CMD_RULE_F_DATA,
@@ -238,13 +252,20 @@ CMD_RULE_t *find_rule_by_cmd(CMD_RULE_t *rule_set, char *cmd)
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
 // - the command name
-#define CMD_URL "%s/v3/unums/%s/commands/%s"
-#define CMD_URL_HOST "https://api.minim.co"
+#define CMD_PATH "/v3/unums/%s/commands/%s"
 
 // Command processor loop
 static void cmdproc(THRD_PARAM_t *p)
 {
+    char *my_mac = util_device_mac();
     log("%s: started\n", __func__);
+
+    // Check that we have MAC address
+    if(!my_mac) {
+        log("%s: cannot get device MAC\n", __func__);
+        // We can't do much without MAC
+        return;
+    }
 
     log("%s: waiting for provision to complete\n", __func__);
     wait_for_provision();
@@ -255,10 +276,10 @@ static void cmdproc(THRD_PARAM_t *p)
 
     for(;;) {
         int rc, err, len;
-        char *cmd, *data;
+        char *cmd = NULL;
+        char *data = NULL;
         http_rsp *rsp = NULL;
         CMD_RULE_t *rule = NULL;
-        char *my_mac = util_device_mac();
         char url[256];
 
         util_wd_poll();
@@ -269,13 +290,6 @@ static void cmdproc(THRD_PARAM_t *p)
         } else if(rc < 0) {
             log("%s: internal error\n", __func__);
             sleep(CMD_RETRY_TIMEOUT);
-        }
-
-        // Check that we have MAC address
-        if(!my_mac) {
-            log("%s: cannot get device MAC\n", __func__);
-            // We can't do much without MAC
-            continue;
         }
 
         UTIL_MUTEX_TAKE(&cmd_q_m);
@@ -321,10 +335,8 @@ static void cmdproc(THRD_PARAM_t *p)
         for(;(rule->flags & CMD_RULE_F_DATA) != 0;)
         {
             // Prepare the URL string
-            snprintf(url, sizeof(url), CMD_URL,
-                     (unum_config.url_prefix ?
-                       unum_config.url_prefix : CMD_URL_HOST),
-                     my_mac, cmd);
+            util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url,
+                           sizeof(url), CMD_PATH, my_mac, cmd);
 
             // Get the command data
             rsp = http_get(url, "Accept: application/json\x00");
@@ -343,10 +355,20 @@ static void cmdproc(THRD_PARAM_t *p)
 
         // Call the command
         if(err == 0 && (rule->flags & CMD_RULE_F_VOID) != 0) {
-            rule->act_void();
+            if(rule->act_void != NULL) {
+                rule->act_void();
+            } else {
+                log("%s: cmd <%s> is not supported\n",
+                    __func__, (rule->cmd == NULL ? "No Name" : rule->cmd));
+            }
             err = 0;
         } else {
-            err = rule->act_data(cmd, data, len);
+            if(rule->act_data != NULL) {
+                err = rule->act_data(cmd, data, len);
+            } else {
+                log("%s: cmd <%s> is not supported\n",
+                    __func__, (rule->cmd == NULL ? "No Name" : rule->cmd));
+            }
         }
 
         // No longer need the response data

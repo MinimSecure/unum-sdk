@@ -27,8 +27,7 @@
 // - the URL prefix
 // - MAC addr of gateway (in xx:xx:xx:xx:xx:xx format)
 // - "cookie" the server passed to the agent w/ the request info
-#define FETCH_RSP_URL "%s/v3/unums/%s/url_contents/%s"
-#define FETCH_RSP_URL_HOST "https://api.minim.co"
+#define FETCH_RSP_PATH "/v3/unums/%s/url_contents/%s"
 
 // Defines for service IDs we use here
 #define FU_HTTP_ID       "http://"
@@ -69,10 +68,8 @@ static int report_rsp(char *cookie, char *data, int len)
     }
 
     // Post the downloaded data to the server
-    snprintf(url, sizeof(url), FETCH_RSP_URL,
-             (unum_config.url_prefix ?
-              unum_config.url_prefix : FETCH_RSP_URL_HOST),
-             my_mac, cookie);
+    util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API, url, sizeof(url),
+                   FETCH_RSP_PATH, my_mac, cookie);
 
     rsp = http_put(url, "Accept: application/json\0", data, len);
     if(rsp == NULL) {
@@ -218,8 +215,9 @@ static int process_http_req(char *cookie, char *url, json_t *req)
 // Returns: 0 if successful, error code otherwise
 static int process_telnet_req(char *cookie, char *url, json_t *req)
 {
+    int retval = 0;
+#ifdef FEATURE_TELNET_PASSWORDS
     TELNET_INFO_t info;
-    int retval;
     char *past_schema = url + FU_TELNET_SZ;
 
     memset(&info, 0, sizeof(info));
@@ -240,6 +238,7 @@ static int process_telnet_req(char *cookie, char *url, json_t *req)
         log("%s: failed to report response <%s>:<%s>\n", __func__, cookie, url);
         retval = -2;
     }
+#endif // FEATURE_TELNET_PASSWORDS
     return retval;
 }
 

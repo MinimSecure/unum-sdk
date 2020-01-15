@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ void destroy_provision_info(void)
             PROVISION_CERT_PNAME, PROVISION_KEY_PNAME);
         unlink(PROVISION_CERT_PNAME);
         unlink(PROVISION_KEY_PNAME);
-        util_restart();
+        util_restart(UNUM_START_REASON_PROVISION);
         // not reacheable
     }
     log("%s: device is not yet provisioned, continuing\n", __func__);
@@ -102,8 +102,7 @@ void set_provisioned(void)
 // URL to request device provisioning certs, parameters:
 // - the URL prefix
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
-#define PROVISION_URL "%s/v3/unums/%s/certificate"
-#define PROVISION_URL_HOST "https://provision.minim.co"
+#define PROVISION_URL "/v3/unums/%s/certificate"
 
 static void provision(THRD_PARAM_t *p)
 {
@@ -150,10 +149,8 @@ static void provision(THRD_PARAM_t *p)
             }
 
             // Get the device certificates
-            snprintf(url, sizeof(url), PROVISION_URL,
-                     (unum_config.url_prefix ?
-                       unum_config.url_prefix : PROVISION_URL_HOST),
-                     my_mac);
+            util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_PROVISION,
+                           url, sizeof(url), PROVISION_URL, my_mac);
 
             rsp = http_get(url, NULL);
 

@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,6 +61,24 @@ struct _FP_MDNS {
     unsigned short port; // SRV port
 };
 typedef struct _FP_MDNS FP_MDNS_t;
+
+// User Agent fingerprinting info
+struct _FP_USERAGENT {
+    unsigned char mac[6]; // MAC address of the device sending HTTP request
+    unsigned char index;  // Next index to write to in UserAgent Data Array
+    unsigned char busy;   // Entry is in use
+#define FP_MAX_USERAGENT_COUNT 2
+    struct _FP_USERAGENT_DATA *ua[FP_MAX_USERAGENT_COUNT];
+};
+typedef struct _FP_USERAGENT FP_USERAGENT_t;
+
+// User Agent fingerprinting info
+struct _FP_USERAGENT_DATA {
+    unsigned int hash;     // Hash of data for detecting duplicate entries
+#define FP_MAX_USERAGENT_LEN 128
+    char data[FP_MAX_USERAGENT_LEN];  // UserAgent String
+};
+typedef struct _FP_USERAGENT_DATA FP_USERAGENT_DATA_t;
 
 // Structure tracking statistics of the table operations
 // (same layout for all the tables)

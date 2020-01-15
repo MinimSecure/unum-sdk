@@ -23,7 +23,7 @@
 // 0-ACTIVATE_PERIOD_INC range
 #define ACTIVATE_PERIOD_INC    30
 // Ater reaching ACTIVATE_MAX_PERIOD the delay stays there
-#define ACTIVATE_MAX_PERIOD   600
+#define ACTIVATE_MAX_PERIOD   180
 
 // This function blocks the caller till device is activated.
 void wait_for_activate(void);

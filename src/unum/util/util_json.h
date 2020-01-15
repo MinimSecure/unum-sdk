@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2019 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,6 +89,11 @@ typedef struct _JSON_KEYVAL_TPL {
 // The last keyval pair must hould key == NULL
 typedef JSON_KEYVAL_TPL_t JSON_OBJ_TPL_t[];
 
+// The functioon sets value pointer in the JSON object template
+// for the specified template entry. It suppors setting only the
+// pointers for values that are not functions.
+// Returns: 0 - success, negative - key not found or unsupported type
+int util_json_obj_tpl_set_val_ptr(JSON_OBJ_TPL_t tpl, char *key, void *ptr);
 // Function for building libjansson JSON object from a template
 // The created object must be freed by json_decref() libjansson function.
 json_t *util_tpl_to_json_obj(JSON_OBJ_TPL_t tpl);
