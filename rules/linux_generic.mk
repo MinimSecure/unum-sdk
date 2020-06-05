@@ -63,8 +63,8 @@ endif
 ####################################################################
 
 ### iwinfo
-IWINFO_VERSION := iwinfo-c3044fbbe525cca36e4f0fb9ce0f257710cc6834
-TARGET_CFLAGS_iwinfo := -Wall -D_GNU_SOURCE -D_DEFAULT_SOURCE -I/usr/include/libnl3
+IWINFO_VERSION := iwinfo-lite-c3044fbb
+TARGET_CFLAGS_iwinfo := -Wall -D_GNU_SOURCE -I/usr/include/libnl3
 TARGET_LDFLAGS_iwinfo := -lnl-3 -lnl-genl-3
 TARGET_VARS_iwinfo := \
  	VERSION=$(IWINFO_VERSION) \
@@ -106,5 +106,5 @@ files.install:
 
 extras.install:
 	mkdir -p "$(TARGET_RFS)/extras"
-	cp -r -f $(TOP)/extras/$(MODEL)/etc $(TOP)/extras/$(MODEL)/sbin "$(TARGET_RFS)/extras"
-	cp -f "$(TOP)/extras/$(MODEL)/install.sh" "$(TARGET_RFS)/extras/install.sh"
+	cp -r -f $(TARGET_TOP)/extras/$(MODEL)/etc $(TARGET_TOP)/extras/$(MODEL)/sbin "$(TARGET_RFS)/extras"
+	cp -f "$(TARGET_TOP)/extras/$(MODEL)/install.sh" "$(TARGET_RFS)/extras/install.sh"

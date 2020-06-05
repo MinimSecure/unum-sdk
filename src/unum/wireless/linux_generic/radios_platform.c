@@ -1,4 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
+// Copyright 2018 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 
 
 // Return the name of the radio
-char* __attribute__((weak)) wt_get_radio_name(int ii)
+char *wt_get_radio_name(int ii)
 {
     return wt_iwinfo_get_phy(ii);
 }
@@ -56,12 +56,12 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
       { "country", { .type = JSON_VAL_STR, .s  = country }},
       { NULL }
     };
-    const char *cc;
 
     // Get the radio channel
     rinfo->chan = wt_iwinfo_get_channel(phyname);
     if(rinfo->chan <= 0) {
-        return WIRELESS_RADIO_IS_DOWN;
+        log("%s: failed to get channel for <%s>\n", __func__, phyname);
+        return -2;
     }
 
     // Get radio hardware mode
@@ -75,8 +75,7 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     }
 
     // Get the country code
-    cc = wt_iwinfo_get_country(phyname);
-
+    char *cc = wt_iwinfo_get_country(phyname);
     if(cc == NULL || *cc == 0)
     {
         log_dbg("%s: failed to get country for <%s>, using 'US'\n",
@@ -107,13 +106,7 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
         // Skip the interface if not in the AP mode
         int id;
         char *mode = wt_iwinfo_get_mode(ifname, &id);
-
-        // Only Access Points and if in mesh operation mode Mesh Points
-        if(mode == NULL || (id != IWINFO_OPMODE_MASTER &&
-                            id != IWINFO_OPMODE_CLIENT &&
-                            (id != IWINFO_OPMODE_MESHPOINT ||
-                             !IS_OPM(UNUM_OPM_MESH_11S))))
-        {
+        if(mode == NULL || id != IWINFO_OPMODE_MASTER) {
             log_dbg("%s: skipping <%s> on <%s>, in <%s> mode\n",
                     __func__, ifname, phyname, (mode ? mode : "unknown"));
             continue;
@@ -144,7 +137,6 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     static int max_txpower;
     static int txpower_offset;
     static int noise;
-
     static JSON_OBJ_TPL_t extras_obj = {
       // txpower should be at [0], noise at [1], txpower offset at [2]
       { "max_txpower", { .type = JSON_VAL_PINT, .pi = &max_txpower }},
@@ -152,20 +144,6 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
       { "txpower_offset", { .type = JSON_VAL_PINT, .pi = &txpower_offset }},
       { NULL }
     };
-    int id;
-    char *mode = wt_iwinfo_get_mode(ifname, &id);
-
-    if(mode == NULL || (id != IWINFO_OPMODE_MASTER &&
-                        id != IWINFO_OPMODE_CLIENT &&
-                        (id != IWINFO_OPMODE_MESHPOINT ||
-                         !IS_OPM(UNUM_OPM_MESH_11S))))
-    {
-        // We have added the VAP after checking the mode.
-        // this check might be redundant. But might not be bad to check here
-        log_dbg("%s: failed to get VAP Mode, skipping %s, mode %d\n",
-                                __func__, ifname, id);
-        return -4;
-    }
 
     // We already filtered all but AP interfaces when collected info
     // for the radio, just make sure the interface being reported is UP
@@ -173,21 +151,11 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         return 1;
     }
 
-    // Get MAC address of the interface (only used in STA mode)
-    unsigned char mac[6];
-    if(util_get_mac(ifname, mac) < 0) {
-        log("%s: error getting MAC address of %s\n", __func__, ifname);
-        return -6;
-    }
-    snprintf(vinfo->mac, sizeof(vinfo->mac),
-             MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(mac));
-
     if(wt_iwinfo_get_bssid(ifname, NULL, vinfo->bssid) != 0) {
         log("%s: failed to get VAP BSSID, skipping %s\n", __func__, ifname);
         return -1;
     }
 
-    // Mesh Points will get meshid (mesh ssid)
     if(wt_iwinfo_get_essid(ifname, buf, &essid_len) != 0) {
         log("%s: failed to get VAP SSID, skipping %s\n", __func__, ifname);
         return -2;
@@ -196,15 +164,6 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     {
         log("%s: invalid SSID for %s\n", __func__, ifname);
         return -3;
-    }
-
-    // Override mode for 802.11s mesh points
-    if(id == IWINFO_OPMODE_MESHPOINT) {
-        strncpy(vinfo->mode, WIRELESS_OPMODE_MESH_11S, sizeof(vinfo->mode));
-        vinfo->mode[sizeof(vinfo->mode) - 1] = 0;
-    } else if (id == IWINFO_OPMODE_CLIENT) {
-        strncpy(vinfo->mode, WIRELESS_OPMODE_STA, sizeof(vinfo->mode));
-        vinfo->mode[sizeof(vinfo->mode) - 1] = 0;
     }
 
     int extras_count = 0;

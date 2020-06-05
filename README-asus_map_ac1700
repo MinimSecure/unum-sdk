@@ -1,0 +1,11 @@
+This applies to Asus asus_map_ac1700 agent build
+(the agent for integration with the Asus asus_map_ac1700 firmware)
+
+This hardware type should be integrated with the asus_map_ac1700 branch of the asus repository
+https://github.com/violetatrium/asus/tree/asus_map_ac1700
+
+Build environment setup:
+------------------------
+https://github.com/violetatrium/asus/blob/asus_map_ac1700/README.md
+
+Please refer unum-2's README too.

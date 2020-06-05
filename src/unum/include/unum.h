@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2020 minim.co
 // Main unum include file that pulls in everything else
 
 #ifndef _UNUM_H
@@ -64,6 +51,7 @@
 #include <getopt.h>
 
 #ifdef USE_OPEN_SSL
+#  include <openssl/crypto.h>
 #  include <openssl/sha.h>
 #else
 #  include <mbedtls/sha256.h>
@@ -154,12 +142,18 @@ typedef struct {
 #define UNUM_OPMS_GW          "gw" // gateway mode
 #define UNUM_OPMS_MESH_11S_AP "mesh_11s_ap" // AP in ieee802.11s mesh mode
 #define UNUM_OPMS_MESH_11S_GW "mesh_11s_gw" // gateway in ieee802.11s mesh mode
+#define UNUM_OPMS_MESH_QCA_AP "mesh_qca_ap" // QCA Mesh AP
+#define UNUM_OPMS_MESH_QCA_GW "mesh_qca_gw" // QCA Mesh GW
+#define UNUM_OPMS_MTK_EM_AP   "mesh_em_ap"  // MTK EasyMesh AP
+#define UNUM_OPMS_MTK_EM_GW   "mesh_em_gw"  // MTK EasyMesh GW
     char *opmode;                  // agent opmode string (above) <gw|ap|...>
-#define UNUM_OPM_AUTO     0x1  // can pick operating mode automatically
-#define UNUM_OPM_GW       0x2  // operating in gateway mode
-#define UNUM_OPM_AP       0x4  // operating in wireless AP mode
-#define UNUM_OPM_MD       0x8  // operating in managed device mode
+#define UNUM_OPM_AUTO     0x01 // can pick operating mode automatically
+#define UNUM_OPM_GW       0x02 // operating in gateway mode
+#define UNUM_OPM_AP       0x04 // operating in wireless AP mode
+#define UNUM_OPM_MD       0x08 // operating in managed device mode
 #define UNUM_OPM_MESH_11S 0x10 // operating in ieee802.11s mesh mode
+#define UNUM_OPM_MESH_QCA 0x20 // operating in QCA mesh mode
+#define UNUM_OPM_MTK_EM   0x40 // operating in MTK EasyMesh mode
     int opmode_flags;              // opmode flags (above, used by IS_OPM(...))
     char *ca_file;                 // trusted CA file for CURL
     char *pid_fprefix;             // PID file prefix, e.g. "/var/run/unum"
@@ -177,7 +171,7 @@ typedef struct {
     char *config_path;             // path to config file
     int dns_timeout;               // dns timeout value in seconds
     char wan_ifname[IFNAMSIZ];     // specify a custom wan interface name
-    char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];             
+    char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];
                                    // list of custom lan interface names
     int lan_ifcount;               // specified lan interface count
     int wan_ifcount;               // 1 if wan interface was specified

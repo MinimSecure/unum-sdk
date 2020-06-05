@@ -1,17 +1,4 @@
-// Copyright 2018 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // unum router activate include file
 
 #ifndef _ACTIVATE_COMMON_H
@@ -24,6 +11,10 @@
 #define ACTIVATE_PERIOD_INC    30
 // Ater reaching ACTIVATE_MAX_PERIOD the delay stays there
 #define ACTIVATE_MAX_PERIOD   180
+
+// Maximum size for buffer holding MAC Addresses
+// This can hold upto 28 Addresses
+#define MAX_MAC_LIST_LEN 1024
 
 // This function blocks the caller till device is activated.
 void wait_for_activate(void);

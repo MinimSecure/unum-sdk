@@ -1,17 +1,4 @@
-// Copyright 2018 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // unum device activate code
 
 #include "unum.h"
@@ -74,6 +61,7 @@ static char *router_activate_json(char *my_mac)
     JSON_KEYVAL_TPL_t *crashinfo_tpl_ptr = NULL;
     int add_crash_info = FALSE;
     char *auth_info_key_ptr = NULL;
+    char *mac_list_ptr = NULL;
     char wan_mac_buf[MAC_ADDRSTRLEN];
     char *wan_mac = NULL;
 
@@ -88,10 +76,17 @@ static char *router_activate_json(char *my_mac)
         if(strlen(auth_info_key) != 0) {
             auth_info_key_ptr = auth_info_key;
         }
-    } else {
-        start_reason = NULL;
     }
 #endif // AUTH_INFO_KEY_LEN
+
+#ifdef MAX_MAC_LIST_LEN
+    char mac_list[MAX_MAC_LIST_LEN];
+    if (util_get_mac_list != NULL) {
+        memset(mac_list, 0, MAX_MAC_LIST_LEN);
+        util_get_mac_list(mac_list, MAX_MAC_LIST_LEN);
+        mac_list_ptr = mac_list;
+    }
+#endif
 
     // Get WAN MAC (only if working as a gateway)
     if(IS_OPM(UNUM_OPM_GW))
@@ -163,6 +158,9 @@ static char *router_activate_json(char *my_mac)
          case UNUM_START_REASON_FW_START_FAIL:
             start_reason = "fw-process-fail";
             break;
+         case UNUM_START_REASON_KILL:
+            start_reason = "killed";
+            break;
          default:
             start_reason = NULL;
     }
@@ -190,6 +188,7 @@ static char *router_activate_json(char *my_mac)
       { "start_reason",    {.type = JSON_VAL_STR, {.s = start_reason}}},
       { "crash_info",      {.type = JSON_VAL_OBJ, {.o = crashinfo_tpl_ptr}}},
       { "auth_info_key",   {.type = JSON_VAL_STR, {.s = auth_info_key_ptr}}},
+      { "mac_list",        {.type = JSON_VAL_STR, {.s = mac_list_ptr}}},
       { "wan_mac_address", {.type = JSON_VAL_STR, {.s = wan_mac}}},
 #ifdef DEVELOPER_BUILD
       { "developer_build", {.type = JSON_VAL_INT, {.i = 1}}},

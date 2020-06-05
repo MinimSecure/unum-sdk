@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2020 minim.co
 // HTTP APIs implementation on top of libcurl
 
 #include "unum.h"
@@ -579,6 +566,73 @@ int http_upload_test(char *ifname, char *url,
     return ret;
 }
 
+
+
+#if defined(USE_OPEN_SSL) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
+
+static UTIL_MUTEX_t *lockarray;
+
+static void lock_callback(int mode, int type, char *file, int line)
+{
+    (void)file;
+    (void)line;
+    if(mode & CRYPTO_LOCK) {
+        UTIL_MUTEX_TAKE(&(lockarray[type]));
+    }
+    else {
+        UTIL_MUTEX_GIVE(&(lockarray[type]));
+    }
+}
+
+static unsigned long thread_id(void)
+{
+    unsigned long ret;
+
+    ret = (unsigned long)pthread_self();
+    return ret;
+}
+
+static int init_locks(void)
+{
+    int i;
+
+    lockarray = (UTIL_MUTEX_t *)OPENSSL_malloc(CRYPTO_num_locks() *
+                                               sizeof(UTIL_MUTEX_t));
+    if(lockarray == NULL) {
+         return -1;
+    }
+
+    for(i = 0; i<CRYPTO_num_locks(); i++) {
+        UTIL_MUTEX_INIT(&(lockarray[i]));
+    }
+
+    CRYPTO_set_id_callback((unsigned long (*)())thread_id);
+    CRYPTO_set_locking_callback((void (*)())lock_callback);
+
+   return 0;
+}
+
+static void kill_locks(void)
+{
+    int i;
+
+    CRYPTO_set_locking_callback(NULL);
+    for(i = 0; i<CRYPTO_num_locks(); i++) {
+        UTIL_MUTEX_DEINIT(&(lockarray[i]));
+    }
+
+    OPENSSL_free(lockarray);
+}
+#endif
+
+// technically this should be called on application exit
+void http_deinit()
+{
+#if defined(USE_OPEN_SSL) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
+    kill_locks();
+#endif
+}
+
 // Subsystem init function (nothing to do here yet)
 int http_init(int level)
 {
@@ -593,7 +647,7 @@ int http_init(int level)
         log("%s: curl global init has failed, error %d\n", __func__, err);
     }
 
-#ifdef USE_OPENSSL
+#if defined(USE_OPEN_SSL) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
     err = init_locks();
     if(err != 0) {
         log("%s: init_locks has failed, no memory\n", __func__);
@@ -602,66 +656,3 @@ int http_init(int level)
 
     return 0;
 }
-
-// technically this should be called on application exit
-void http_deinit()
-{
-#ifdef USE_OPENSSL
-    kill_locks();
-#endif
-}
-
-#ifdef USE_OPENSSL
-#include <openssl/crypto.h>
-static void lock_callback(int mode, int type, char *file, int line)
-{
-    (void)file;
-    (void)line;
-    if(mode & CRYPTO_LOCK) {
-        pthread_mutex_lock(&(lockarray[type]));
-    }
-    else {
-        pthread_mutex_unlock(&(lockarray[type]));
-    }
-}
- 
-static unsigned long thread_id(void)
-{
-    unsigned long ret;
- 
-    ret = (unsigned long)pthread_self();
-    return ret;
-}
- 
-static int init_locks(void)
-{
-    int i;
- 
-    lockarray = (pthread_mutex_t *)OPENSSL_malloc(CRYPTO_num_locks() *
-                                                sizeof(pthread_mutex_t));
-    if(lockarray == NULL) {
-         return -1;
-    }
-
-    for(i = 0; i<CRYPTO_num_locks(); i++) {
-        pthread_mutex_init(&(lockarray[i]), NULL);
-    }
- 
-    CRYPTO_set_id_callback((unsigned long (*)())thread_id);
-    CRYPTO_set_locking_callback((void (*)())lock_callback);
-
-   return 0;
-}
- 
-static void kill_locks(void)
-{
-    int i;
- 
-    CRYPTO_set_locking_callback(NULL);
-    for(i = 0; i<CRYPTO_num_locks(); i++) {
-        pthread_mutex_destroy(&(lockarray[i]));
-    }
- 
-    OPENSSL_free(lockarray);
-}
-#endif

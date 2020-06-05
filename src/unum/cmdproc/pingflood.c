@@ -1,17 +1,4 @@
-// Copyright 2018 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2018 minim.co
 // ping flood tester code
 
 #include "unum.h"
@@ -300,6 +287,10 @@ static int do_flood(unsigned char *mac,
         // 64 bit counters
         dot11_bytes_tx_count = (wc_after.tx_b - wc_before.tx_b);
     }
+
+#ifdef WT_PINGFLOOD_DO_NOT_USE
+    dot11_bytes_tx_count = bytes_tx_count;
+#endif // WT_PINGFLOOD_DO_NOT_USE
 
     log("%s: pkts/bytes sent %lu/%lu, 802.11 bytes delivered on %s %lu\n",
         __func__, pkts_sent, bytes_tx_count,

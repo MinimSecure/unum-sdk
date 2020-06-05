@@ -1,0 +1,3 @@
+lan_only
+ap_only
+activate_script

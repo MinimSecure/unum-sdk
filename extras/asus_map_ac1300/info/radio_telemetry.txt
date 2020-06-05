@@ -1,0 +1,445 @@
+No clients on both radios
+
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/40:b0:76:55:89:ac/radios>:
+{
+  "radios": [
+    {
+      "vaps": [
+        {
+          "interface": "ath1",
+          "ssid": "417375735f313330305f3547",
+          "bssid": "40:b0:76:55:89:ac",
+          "mode": "ap",
+          "extras": {
+            "noise": -95,
+            "max_txpower": 24
+          },
+          "stas": []
+        }
+      ],
+      "name": "ath1",
+      "channel": 40,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "US"
+      }
+    },
+    {
+      "vaps": [
+        {
+          "interface": "ath0",
+          "ssid": "417375735f313330305f322e34",
+          "bssid": "40:b0:76:55:89:a8",
+          "mode": "ap",
+          "extras": {
+            "noise": -95,
+            "max_txpower": 25
+          },
+          "stas": []
+        }
+      ],
+      "name": "ath0",
+      "channel": 1,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "US"
+      }
+    }
+  ]
+}
+
+One client on 2.4G radio and another client on 5G radio
+
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/40:b0:76:55:89:ac/radios>:
+{
+  "radios": [
+    {
+      "name": "ath1",
+      "extras": {
+        "hwmode": "11anac",
+        "country": "US"
+      },
+      "channel": 40,
+      "vaps": [
+        {
+          "interface": "ath1",
+          "stas": [
+            {
+              "mac": "e4:a4:71:26:d5:36",
+              "rssi": -49,
+              "extras": {
+                "rx_rate": {
+                  "nss": 2,
+                  "rate": 866000,
+                  "bw": 80,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "ht": 0
+                },
+                "rx_pkts": 0,
+                "tx_rate": {
+                  "nss": 2,
+                  "rate": 866000,
+                  "bw": 80,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "ht": 0
+                },
+                "inact_ms": 0,
+                "tx_fail": 0,
+                "tx_pkts": 0,
+                "tx_bytes": 0,
+                "rx_bytes": 0,
+                "auth_ok": 1,
+                "wme": 0
+              }
+            }
+          ],
+          "ssid": "417375735f313330305f3547",
+          "bssid": "40:b0:76:55:89:ac",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 24,
+            "noise": -95
+          }
+        }
+      ]
+    },
+    {
+      "name": "ath0",
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "US"
+      },
+      "channel": 1,
+      "vaps": [
+        {
+          "interface": "ath0",
+          "stas": [
+            {
+              "mac": "c4:0b:cb:68:23:df",
+              "rssi": -42,
+              "extras": {
+                "rx_rate": {
+                  "nss": 1,
+                  "rate": 1000,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "ht": 1
+                },
+                "rx_pkts": 0,
+                "tx_rate": {
+                  "nss": 1,
+                  "rate": 72000,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "ht": 1
+                },
+                "inact_ms": 0,
+                "tx_fail": 0,
+                "tx_pkts": 0,
+                "tx_bytes": 0,
+                "rx_bytes": 0,
+                "auth_ok": 1,
+                "wme": 0
+              }
+            }
+          ],
+          "ssid": "417375735f313330305f322e34",
+          "bssid": "40:b0:76:55:89:a8",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 25,
+            "noise": -95
+          }
+        }
+      ]
+    }
+  ]
+}
+
+
+One client on 2.4G and two clients on 5G radio
+
+{
+  "radios": [
+    {
+      "extras": {
+        "hwmode": "11anac",
+        "country": "US"
+      },
+      "name": "ath1",
+      "channel": 40,
+      "vaps": [
+        {
+          "interface": "ath1",
+          "extras": {
+            "max_txpower": 24,
+            "noise": -95
+          },
+          "ssid": "417375735f313330305f3547",
+          "mode": "ap",
+          "stas": [
+            {
+              "extras": {
+                "auth_ok": 1,
+                "rx_rate": {
+                  "ht": 0,
+                  "rate": 866000,
+                  "bw": 80,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "tx_rate": {
+                  "ht": 0,
+                  "rate": 866000,
+                  "bw": 80,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "rx_pkts": 0,
+                "inact_ms": 0,
+                "tx_pkts": 0,
+                "tx_fail": 0,
+                "tx_bytes": 0,
+                "rx_bytes": 0,
+                "wme": 0
+              },
+              "mac": "e4:a4:71:26:d5:36",
+              "rssi": -50
+            },
+            {
+              "extras": {
+                "auth_ok": 1,
+                "rx_rate": {
+                  "ht": 1,
+                  "rate": 150000,
+                  "bw": 40,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "ht": 1,
+                  "rate": 121000,
+                  "bw": 40,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "rx_pkts": 0,
+                "inact_ms": 0,
+                "tx_pkts": 0,
+                "tx_fail": 0,
+                "tx_bytes": 0,
+                "rx_bytes": 0,
+                "wme": 0
+              },
+              "mac": "c0:f2:fb:9b:84:d4",
+              "rssi": -51
+            }
+          ],
+          "bssid": "40:b0:76:55:89:ac"
+        }
+      ]
+    },
+    {
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "US"
+      },
+      "name": "ath0",
+      "channel": 1,
+      "vaps": [
+        {
+          "interface": "ath0",
+          "extras": {
+            "max_txpower": 25,
+            "noise": -95
+          },
+          "ssid": "417375735f313330305f322e34",
+          "stas": [
+            {
+              "extras": {
+                "auth_ok": 1,
+                "rx_rate": {
+                  "ht": 1,
+                  "rate": 26000,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "ht": 1,
+                  "rate": 72000,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "rx_pkts": 0,
+                "inact_ms": 0,
+                "tx_pkts": 0,
+                "tx_fail": 0,
+                "tx_bytes": 0,
+                "rx_bytes": 0,
+                "wme": 0
+              },
+              "mac": "c4:0b:cb:68:23:df",
+              "rssi": -48
+            }
+          ],
+          "bssid": "40:b0:76:55:89:a8"
+          "mode": "ap",
+        }
+      ]
+    }
+  ]
+}
+
+Another entry with inactive time captured
+
+{
+  "radios": [
+    {
+      "name": "ath1",
+      "channel": 40,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "US"
+      },
+      "vaps": [
+        {
+          "interface": "ath1",
+          "bssid": "40:b0:76:55:89:ac",
+          "mode": "ap",
+          "ssid": "417375735f313330305f3547",
+          "stas": [
+            {
+              "extras": {
+                "rx_bytes": 0,
+                "rx_rate": {
+                  "rate": 866000,
+                  "bw": 80,
+                  "ht": 0,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "tx_rate": {
+                  "rate": 866000,
+                  "bw": 80,
+                  "ht": 0,
+                  "short_gi": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "inact_ms": 0,
+                "tx_pkts": 0,
+                "wme": 0,
+                "tx_fail": 0,
+                "rx_pkts": 0,
+                "tx_bytes": 0,
+                "auth_ok": 1
+              },
+              "rssi": -54,
+              "mac": "e4:a4:71:26:d5:36"
+            },
+            {
+              "extras": {
+                "rx_bytes": 0,
+                "rx_rate": {
+                  "rate": 150000,
+                  "bw": 40,
+                  "ht": 1,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 150000,
+                  "bw": 40,
+                  "ht": 1,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 45,
+                "tx_pkts": 0,
+                "wme": 0,
+                "tx_fail": 0,
+                "rx_pkts": 0,
+                "tx_bytes": 0,
+                "auth_ok": 1
+              },
+              "rssi": -59,
+              "mac": "c0:f2:fb:9b:84:d4"
+            }
+          ],
+          "extras": {
+            "max_txpower": 24,
+            "noise": -95
+          }
+        }
+      ]
+    },
+    {
+      "name": "ath0",
+      "channel": 1,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "US"
+      },
+      "vaps": [
+        {
+          "interface": "ath0",
+          "bssid": "40:b0:76:55:89:a8",
+          "mode": "ap",
+          "ssid": "417375735f313330305f322e34",
+          "stas": [
+            {
+              "extras": {
+                "rx_bytes": 0,
+                "rx_rate": {
+                  "rate": 1000,
+                  "bw": 20,
+                  "ht": 1,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 72000,
+                  "bw": 20,
+                  "ht": 1,
+                  "short_gi": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 2,
+                "tx_pkts": 0,
+                "wme": 0,
+                "tx_fail": 0,
+                "rx_pkts": 0,
+                "tx_bytes": 0,
+                "auth_ok": 1
+              },
+              "rssi": -45,
+              "mac": "c4:0b:cb:68:23:df"
+            }
+          ],
+          "extras": {
+            "max_txpower": 25,
+            "noise": -95
+          }
+        }
+      ]
+    }
+  ]
+}
+

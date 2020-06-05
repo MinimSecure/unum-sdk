@@ -1,0 +1,4 @@
+if [ "$INTERFACE" == "lan" ] &&
+	[ "$ACTION" == "ifup" ]; then
+	/sbin/set_lan_iface.sh
+fi

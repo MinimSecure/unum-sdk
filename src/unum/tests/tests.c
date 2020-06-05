@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2018 minim.co
 // unum system tests common code
 
 #include "unum.h"
@@ -26,6 +13,26 @@ static int running_test_num = 0;
 int get_test_num(void)
 {
     return running_test_num;
+}
+
+// Helper routine to dump a memory buffer
+void print_mem_buf(void *buf, int len)
+{
+    int ii;
+    char str[24] = "";
+    for(ii = 0; ii < len; ++ii)
+    {
+        if((ii & 15) == 0) {
+            printf("%05d:", ii);
+        }
+        int val = (int)(((char *)buf)[ii]) & 0xff;
+        printf(" %02x", val);
+        str[ii & 15] = isprint(val) ? val : '.';
+        if((ii & 15) == 15 || ii + 1 >= len) {
+            printf("%*s%16s\n", ((15 - (ii & 15)) * 3) + 2, "", str);
+        }
+    }
+    return;
 }
 
 // Tests that can run on the platform

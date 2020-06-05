@@ -1,0 +1,1 @@
+fw_update_common.mk

@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // unum helper utils code
 
 #include "unum.h"
@@ -27,22 +14,30 @@ char *util_fw_version()
 #endif // AGENT_VERSION_IS_FW_VERSION
 }
 
-// Terminate agent. Use EXIT_SUCCESS, EXIT_FAILURE or
-// add more custom exit codes (see EXIT_RESTART, EXIT_REBOOT).
-void util_shutdown(int err_code)
+// Terminate agent.
+// err - ERROR_SUCCESS or ERROR_FAILURE (any non-zero value is
+//       treated as ERROR_FAILURE)
+void util_shutdown(int err)
 {
-    log("Terminating unum %s, exit code %d\n", VERSION, err_code);
-    agent_exit(err_code);
+    log("Terminating unum %s, error code %d\n", VERSION, err);
+    if(err == EXIT_SUCCESS) {
+        agent_exit(EXIT_SUCCESS);
+    }
+    // Any non-zero err value is treated as EXIT_FAILURE since only
+    // EXIT_SUCCESS and EXIT_FAILURE indicate to the monitor process
+    // that the termination is intended.
+    agent_exit(EXIT_FAILURE);
 }
 
 // Restart agent (the function does not return to the caller)
-void util_restart(int code)
+// reason - see enum unum_start_reason
+void util_restart(int reason)
 {
     log("Terminating unum %s, restart requested\n", VERSION);
     if(unum_config.unmonitored || unum_config.mode != NULL) {
         log("The process is not monitored, restart manually\n");
     }
-    agent_exit(code);
+    agent_exit(reason);
 }
 
 // Restart command from server
@@ -55,20 +50,16 @@ void util_restart_from_server(void)
 void util_reboot(void)
 {
 #ifdef REBOOT_CMD
-    int err;
-    struct stat st;
     char *reboot_cmd = REBOOT_CMD;
 
-    err = stat(reboot_cmd, &st);
-    if(err == 0) {
-        log("Reboot using %s...\n", reboot_cmd);
-        system(reboot_cmd);
-        sleep(5);
+    log("Reboot using %s...\n", reboot_cmd);
+    if(system(reboot_cmd) == 0) {
+        sleep(15);
     }
 #endif // REBOOT_CMD
     log("Reboot using syscall...\n");
     reboot(LINUX_REBOOT_CMD_RESTART);
-    sleep(5);
+    sleep(15);
     log("Failed to reboot, restarting the agent...\n");
     util_restart(UNUM_START_REASON_REBOOT_FAIL);
 }
@@ -93,20 +84,30 @@ void util_factory_reset(void)
     log("%s: not supported on the platform\n", __func__);
 }
 
-// Populate auth_info_key Auth Info Key
-// For Gl-inet B1300 it is serial number
-// For all other devices, auth_info_key is not updated
+// Populate auth_info_key. This is a unique identifier (typically
+// device serial number) that isn't as easy to guess as the MAC
+// address. It can provide extra security during initial onboardning
+// for the platforms that support it.
 #ifdef AUTH_INFO_GET_CMD
 void util_get_auth_info_key(char *auth_info_key, int max_key_len)
 {
     char *get_auth_info_key_cmd = AUTH_INFO_GET_CMD;
     int pstatus;
 
-    if(util_get_cmd_output(get_auth_info_key_cmd, auth_info_key,
-                               max_key_len, &pstatus) > 0) {
-        if(pstatus == -1) {
-            // Some error while getting the auth info key
-            // Zero the key
+    if(util_get_cmd_output(get_auth_info_key_cmd,
+                           auth_info_key, max_key_len, &pstatus) > 0)
+    {
+        if(pstatus == 0) {
+            // Chop CR/LF
+            int len;
+            while((len = strlen(auth_info_key)) > 0 &&
+                  (auth_info_key[len - 1] == '\r' ||
+                   auth_info_key[len - 1] == '\n'))
+            {
+                auth_info_key[len - 1] = 0;
+            }
+        } else {
+            // Some error while getting the auth info key, zero it
             memset(auth_info_key, 0, max_key_len);
             log("%s: Failed to get the auth info key\n", __func__);
         }
@@ -116,6 +117,8 @@ void util_get_auth_info_key(char *auth_info_key, int max_key_len)
 #endif // AUTH_INFO_GET_CMD
 
 // Return uptime in specified fractions of the second (rounded to the low)
+// Note: it's not uptime or montonic for some platforms, NTP makes it jump
+//       at least when intially sets the time.
 unsigned long long util_time(unsigned int fraction)
 {
     struct timespec t;
@@ -324,12 +327,12 @@ int util_system(char *cmd, unsigned int timeout, char *pid_file)
     return -1;
 }
 
-// Call an executable in shell and capture its stdout in a buffer.
-// Returns: negative if fails to start (see errno for the error code) or
-//          the length of the captured info (excluding terminating 0),
-//          if the returned value is not negative the status (if not NULL)
-//          is filled in with the exit status of the command or
-//          -1 if unable to get it.
+// Call cmd in shell and capture its stdout in a buffer.
+// Returns: negative if fails to start cmd (see errno for the error code), the
+//          length of the captured info (excluding terminating 0) if success.
+//          If the returned value is not negative the pstatus (unless NULL)
+//          contains command execution status (zero if the command terminated
+//          with status 0, negative if error).
 // If the buffer is too short the remainig output is ignored.
 // The captured output is always zero-terminated.
 int util_get_cmd_output(char *cmd, char *buf, int buf_len, int *pstatus)
@@ -437,9 +440,84 @@ void util_cleanup_str(char *str)
 //       before any init is done (i.e. even the log msgs would go to stdout)
 int util_set_opmode(char *opmode)
 {
+    int skip_generic_check = FALSE;
     int new_flags = 0;
     char *new_mode = NULL;
 
+// QCA mesh devices (only support QCA mesh AP/GW modes)
+#if defined(FEATURE_MESH_QCA)
+    if(strcmp(opmode, UNUM_OPMS_MESH_QCA_GW) == 0) {
+        new_flags = UNUM_OPM_GW | UNUM_OPM_MESH_QCA;
+        new_mode = UNUM_OPMS_MESH_QCA_GW;
+    } else if(strcmp(opmode, UNUM_OPMS_MESH_QCA_AP) == 0) {
+        new_flags = UNUM_OPM_AP | UNUM_OPM_MESH_QCA;
+        new_mode = UNUM_OPMS_MESH_QCA_AP;
+    } else  {
+        // Unrecognized mode, keeping the flags unchanged
+        // Mesh cannot be disabled for FEATURE_MESH_QCA
+        return -1;
+    }
+    skip_generic_check = TRUE;
+#endif // FEATURE_MESH_QCA
+
+// MTK EasyMesh devices (only support, currently different HW kinds for
+// router and extenders, each supports only its own mode of operation)
+#if defined(FEATURE_MTK_EASYMESH)
+# if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_MTK_EM_GW) == 0) {
+        new_flags = UNUM_OPM_GW | UNUM_OPM_MTK_EM;
+        new_mode = UNUM_OPMS_MTK_EM_GW;
+    } else
+# endif // !FEATURE_LAN_ONLY
+# if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_MTK_EM_AP) == 0) {
+        new_flags = UNUM_OPM_AP | UNUM_OPM_MTK_EM;
+        new_mode = UNUM_OPMS_MTK_EM_AP;
+    } else
+# endif // defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    {
+        // Unrecognized mode, keeping the flags unchanged
+        // Mesh cannot be disabled for FEATURE_MTK_EASYMESH
+        return -1;
+    }
+    skip_generic_check = TRUE;
+#endif // FEATURE_MTK_EASYMESH
+
+// Managed device (only supports its own mode of operation)
+#if defined(FEATURE_MANAGED_DEVICE)
+    if(strcmp(opmode, UNUM_OPMS_MD) == 0) {
+        new_flags = UNUM_OPM_MD;
+        new_mode = UNUM_OPMS_MD;
+    } else  {
+        // Unrecognized mode, keeping the flags unchanged
+        // Mesh cannot be disabled for FEATURE_MANAGED_DEVICE
+        return -1;
+    }
+    skip_generic_check = TRUE;
+#endif // FEATURE_MANAGED_DEVICE
+
+// 802.11s mesh, can be turned on and off
+#if defined(FEATURE_MESH_11S)
+# if !defined(FEATURE_LAN_ONLY)
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_GW) == 0) {
+        new_flags = UNUM_OPM_GW | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_GW;
+        skip_generic_check = TRUE;
+    } else
+# endif // !FEATURE_LAN_ONLY
+    if(strcmp(opmode, UNUM_OPMS_MESH_11S_AP) == 0) {
+        new_flags = UNUM_OPM_AP | UNUM_OPM_MESH_11S;
+        new_mode = UNUM_OPMS_MESH_11S_AP;
+        skip_generic_check = TRUE;
+    }
+#endif // FEATURE_MESH_11S
+
+    // Check for generic modes of operation.
+    // First see if we've already found the mode name match and 
+    // no longer need to check for the generic modes.
+    if(skip_generic_check) {
+       // Nothing to do here, new_flags, new_mode should be set already
+    } else
 #if !defined(FEATURE_LAN_ONLY)
     if(strcmp(opmode, UNUM_OPMS_GW) == 0) {
         new_flags = UNUM_OPM_GW;
@@ -452,24 +530,6 @@ int util_set_opmode(char *opmode)
         new_mode = UNUM_OPMS_AP;
     } else
 #endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
-#if defined(FEATURE_MANGED_DEVICE)
-    if(strcmp(opmode, UNUM_OPMS_MD) == 0) {
-        new_flags = UNUM_OPM_MD;
-        new_mode = UNUM_OPMS_MD;
-    } else
-#endif // FEATURE_MANGED_DEVICE
-#if defined(FEATURE_MESH_11S)
-# if !defined(FEATURE_LAN_ONLY)
-    if(strcmp(opmode, UNUM_OPMS_MESH_11S_GW) == 0) {
-        new_flags = UNUM_OPM_GW | UNUM_OPM_MESH_11S;
-        new_mode = UNUM_OPMS_MESH_11S_GW;
-    } else
-# endif // !FEATURE_LAN_ONLY
-    if(strcmp(opmode, UNUM_OPMS_MESH_11S_AP) == 0) {
-        new_flags = UNUM_OPM_AP | UNUM_OPM_MESH_11S;
-        new_mode = UNUM_OPMS_MESH_11S_AP;
-    } else
-#endif // FEATURE_MESH_11S
     {
         // Unrecognized mode, keeping the flags unchanged
         return -1;
@@ -490,43 +550,6 @@ int util_set_opmode(char *opmode)
     unum_config.opmode = new_mode;
     unum_config.opmode_flags = new_flags;
     return 0;
-}
-
-// Subsystem init function
-int util_init(int level)
-{
-    int ret = 0;
-
-    // If platform implemented its own init routine, call it
-    if(util_platform_init != NULL) {
-        ret |= util_platform_init(level);
-    }
-    // Initialize random number generator
-    if(level == INIT_LEVEL_RAND) {
-        unsigned int seed = 0;
-        unsigned int a, b, c, d;
-        char *mac;
-        if((mac = util_device_mac()) != NULL) {
-            sscanf(mac, "%*02x:%*02x:%02x:%02x:%02x:%02x", &a, &b, &c, &d);
-            seed = a | (b << 8) | (c << 16) | (d << 24);
-        }
-        seed += (unsigned int)util_time(1000000000);
-        srand(seed);
-        // Initialize the seed for the hash function
-        hash_seed = rand();
-    }
-    // Get ready to work with threads. This has to be run in
-    // the process main thread before util jobs APIs are used.
-    if(level == INIT_LEVEL_THREADS) {
-        util_init_thrd_key();
-        ret |= util_set_main_thrd();
-    }
-    // Init timers subsystem (Note: requires threads)
-    if(level == INIT_LEVEL_TIMERS) {
-        ret |= util_timers_init();
-    }
-
-    return ret;
 }
 
 // Build URL
@@ -564,8 +587,45 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
     vsnprintf(&url[count], length - count, template, args);
     url[length - 1] = '\0';
     va_end(args);
+}
 
-    // Log URL
-    log_dbg("build_url: <%s>\n", url);
+// Subsystem init function
+int util_init(int level)
+{
+    int ret = 0;
 
+    // If platform implemented its own init routine, call it
+    if(util_platform_init != NULL) {
+        ret |= util_platform_init(level);
+    }
+    // Initialize random number generator
+    if(level == INIT_LEVEL_RAND) {
+        unsigned int seed = 0;
+        unsigned int a, b, c, d;
+        char *mac;
+        if((mac = util_device_mac()) != NULL) {
+            sscanf(mac, "%*02x:%*02x:%02x:%02x:%02x:%02x", &a, &b, &c, &d);
+            seed = a | (b << 8) | (c << 16) | (d << 24);
+        }
+        seed += (unsigned int)util_time(1000000000);
+        srand(seed);
+        // Initialize the seed for the hash function
+        hash_seed = rand();
+    }
+    // Init default server list
+    if(level == INIT_LEVEL_SETUP) {
+        ret |= util_get_servers(TRUE);
+    }
+    // Get ready to work with threads. This has to be run in
+    // the process main thread before util jobs APIs are used.
+    if(level == INIT_LEVEL_THREADS) {
+        util_init_thrd_key();
+        ret |= util_set_main_thrd();
+    }
+    // Init timers subsystem (Note: requires threads)
+    if(level == INIT_LEVEL_TIMERS) {
+        ret |= util_timers_init();
+    }
+
+    return ret;
 }

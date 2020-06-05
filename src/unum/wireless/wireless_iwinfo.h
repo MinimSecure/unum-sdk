@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // unum wireless APIs include file (shared by openwrt/lede based
 // platforms or anything that works through libiwinfo)
 
@@ -134,6 +121,11 @@ int __attribute__((weak)) wt_platform_iwinfo_mk_if_list(
             int phy[WT_MAX_IWINFO_VIFS],
             int *iif_idx_next,
             int *pphy_idx_next);
+
+// This function is used for QCA interfaces to get the channel number
+// On iw drivers the channel number is fetched on phy
+// However on QCA drivers it should be fetched on VAPs
+int __attribute__((weak)) wt_platform_iwinfo_get_channel(char *phyname);
 
 // Get the first VAP name
 char* __attribute__((weak)) wt_platform_iwinfo_get_vap(char *phyname);

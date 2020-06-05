@@ -1,0 +1,59 @@
+# Common functions shared between agent init scripts
+# (C) 2017-2019 minim.co
+
+# Kills unum process instance using its PID file
+kill_unum() {
+  INST_NAME=$1
+  ORIG_PID_FN="$UNUM_PID_FILE_PREFIX-$INST_NAME.pid"
+  PID_FN=`readlink -f "$ORIG_PID_FN"`
+  if [ "$PID_FN" == "" ] || [ ! -e "$PID_FN" ]; then
+    echo "No unum process instance found for: $INST_NAME"
+    return
+  fi
+  PID=`cat "$PID_FN"`
+  if [ ! -e /proc/$PID/fd ]; then
+    echo "No unum $INST_NAME process with PID $PID"
+    return
+  fi
+  if ls -l /proc/$PID/fd/ | grep " $PID_FN\$" > /dev/null 2>&1; then
+    kill -9 $PID
+    rm -f "$PID_FN"
+  else
+    echo "Process $PID does not access \"$ORIG_PID_FN\", not killed"
+  fi
+}
+
+# Check if unum process instance is active
+is_running() {
+  INST_NAME=$1
+  PID_FN="$UNUM_PID_FILE_PREFIX-$INST_NAME.pid"
+  PID_FN=`readlink -f "$UNUM_PID_FILE_PREFIX-$INST_NAME.pid"`
+  if [ "$PID_FN" == "" ]; then
+    false
+  else
+    PID=`cat "$PID_FN"`
+    if [ ! -e /proc/$PID/fd ]; then
+      false
+    else
+      ls -l /proc/$PID/fd/ | grep " $PID_FN\$" > /dev/null 2>&1
+    fi
+  fi
+}
+
+# Prepare for the agent startup
+prep_startup() {
+  if [ -e /www ] && [ ! -e /www/provision.json ]; then
+    ln -sf /tmp/provision_info.json /www/provision.json
+  fi
+  if [ -e /sbin/platform_startup.sh ]; then
+    /sbin/platform_startup.sh
+  fi
+}
+
+eval_nicely() {
+  if [ "$UNUM_NICENESS" == "" ]; then
+    eval "$@"
+  else
+    eval "nice -n$UNUM_NICENESS $@"
+  fi
+}

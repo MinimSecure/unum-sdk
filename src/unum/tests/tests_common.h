@@ -1,24 +1,11 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2018 minim.co
 // unum command processor common include file
 
 #ifndef _TESTS_COMMON_H
 #define _TESTS_COMMON_H
 
 
-// Defines fot all test IDs. Platforms might implement subset,
+// Defines for all test IDs. Platforms might implement subset,
 // but all the IDs should stay the same for all platforms.
 #define U_TEST_CFG_TO_FILE   1 // test dumping cfg to file
 #define U_TEST_FILE_TO_CFG   2 // test restoring cfg from file
@@ -84,5 +71,8 @@ int get_test_num(void);
 
 // Test mode main entry point
 int run_tests(char *test_num_str);
+
+// Helper routine to dump a memory buffer
+void print_mem_buf(void *buf, int len);
 
 #endif // _TESTS_COMMON_H

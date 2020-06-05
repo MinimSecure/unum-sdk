@@ -1,0 +1,35 @@
+Directory structure:
+
+The subfolders are used to structure sources into specific categories 
+where a category might be either a service or just a collection of 
+APIs the rest of the agent code can call. A good reason to put something 
+into a subfolder is if the functionality present there is available 
+only for a subset of the device models. The other reason could be 
+to group and store in one place the related files.
+
+./util - common unum utility APIs sourcei and header files 
+./util/<MODEL> - device specific utility APIs source and header files
+./svc1 - svc1 source and header files
+./svc1/<MODEL> - device specific svc1 source and header files
+                 (if any needed)
+./svc2           ...
+./svc2/<MODEL>   ...
+
+Makefiles hierarchy:
+./Makefile - Main makefile, contains build rules and pulls in the service 
+             makefiles
+./unum_<MODEL>.mk - Top level MODEL specific options
+./<SVC>/<SVC>_<MODEL>.mk - model build options for the service, it is present
+                           only if service has to be included for the MODEL
+                           (symlink to <SVC>_common.mk if not MODEL specific)
+./<SVC>/<SVC>_common.mk - service build options shared by all MODELs, this file
+                          should be either includeed by <SVC>_<MODEL>.mk or 
+                          (if no device specific .mk needed) be the target the 
+                          <SVC>_<MODEL>.mk symlink points to.
+
+Coding style:
+- follow the style in unum.c/unum.h
+- use 4 spaces for TABs
+- document/comment in the code and try to keep comments it up-to-date
+- do not abuse malloc/free (avoid if possible), if using do it through
+  the util wrappers (UTIL_MALLOC(), UTIL_FREE(), ...)

@@ -1,0 +1,50 @@
+run_tests: Init level 1...
+run_tests: Init level 2...
+run_tests: Init level 3...
+run_tests: Init done
+wireless_do_scan_report: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/neighboring_access_points>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "scanlist": [
+        {
+          "bssid": "20:4e:7f:33:51:99",
+          "chan": 2,
+          "ssid": "576946692d446f6d2e72752d32373231",
+          "rssi": -55,
+          "extras": {
+            "quality": 93,
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)",
+            "max_quality": 94,
+            "mode": "master"
+          }
+        },
+        {
+          "bssid": "94:4a:0c:28:71:fe",
+          "chan": 11,
+          "ssid": "4265656c696e65313433",
+          "rssi": -44,
+          "extras": {
+            "quality": 94,
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)",
+            "max_quality": 94,
+            "mode": "master"
+          }
+        },
+        {
+          "bssid": "e8:37:7a:9a:a1:4c",
+          "chan": 12,
+          "ssid": "657670617479",
+          "rssi": -24,
+          "extras": {
+            "quality": 94,
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)",
+            "max_quality": 94,
+            "mode": "master"
+          }
+        }
+      ]
+    }
+  ]
+}

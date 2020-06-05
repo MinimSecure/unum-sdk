@@ -1,0 +1,12 @@
+This applies to Asus asus_map_ac1300 agent build
+(the agent for integration with the Asus asus_map_ac1300 firmware)
+
+
+This hardware type should be integrated with the asus_map_ac1300 branch of the asus repository
+https://github.com/violetatrium/asus/tree/asus_map_ac1300
+
+Build environment setup:
+------------------------
+https://github.com/violetatrium/asus/blob/asus_map_ac1300/README.md
+
+Please refer unum-2's README too.

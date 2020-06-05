@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+# When to start 
+START=11
+boot() {
+  /usr/bin/restart_config.sh 0
+}

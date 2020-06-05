@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2018 minim.co
 // process monitor code
 
 #include "unum.h"
@@ -320,17 +307,25 @@ void process_monitor(int log_dst, char *pid_suffix)
                     log("%s: rebooting the device...\n", __func__);
                     util_reboot();
                     // should never reach this point
+                } else if(val == EXIT_SUCCESS || val == EXIT_FAILURE) {
+                    log("%s: agent requested termination, status %d\n",
+                        __func__, val);
+                    exit(val);
+                    // should never reach this point
                 } else {
+                    // Agent requested restart
                     process_start_reason.code = val;
                     log("%s: restarting the agent with reason code = %d\n",
-                                         __func__, val);
-                    break;
-                 }
-                exit(val);
+                        __func__, val);
+                }
+                break;
             }
             else if(WIFSIGNALED(status)) {
                 val = WTERMSIG(status);
                 process_start_reason.code = UNUM_START_REASON_CRASH;
+                if(val == 9) {
+                    process_start_reason.code = UNUM_START_REASON_KILL;
+                }
                 log("%s: the agent was killed by signal %d, restarting...\n",
                     __func__, val);
                 break;

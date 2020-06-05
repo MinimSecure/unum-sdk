@@ -1,0 +1,4 @@
+Toolchains for building various targets (if keeping them withn the repository).
+Always name the tolchain appropriately and use symlink to point your hardware
+type to the toolchain folder.
+

@@ -1,0 +1,31 @@
+This procedure works for now, apparently LEDE does not check image
+consistency (besides it starting w/ a kernel uImage) before flashing it.
+
+den@den-ubuntu16-64:/work/archer-c7-info/c7v4$ binwalk Archer\ C7\(US\)_V4_170901.bin
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+22340         0x5744          U-Boot version string, "U-Boot 1.1.4 (Aug 10 2017 - 18:22:20)"
+22388         0x5774          CRC32 polynomial table, big endian
+23680         0x5C80          uImage header, header size: 64 bytes, header CRC: 0x1D8CBAE2, created: 2017-08-10 10:22:21, image size: 40139 bytes, Data Address: 0x80010000, Entry Point: 0x80010000, data CRC: 0xB115FAC2, OS: Linux, CPU: MIPS, image type: Firmware Image, compression type: lzma, image name: "u-boot image"
+23744         0x5CC0          LZMA compressed data, properties: 0x5D, dictionary size: 8388608 bytes, uncompressed size: 94956 bytes
+63884         0xF98C          uImage header, header size: 64 bytes, header CRC: 0xE03C87CA, created: 2017-08-15 06:22:52, image size: 1084052 bytes, Data Address: 0x80060000, Entry Point: 0x80060000, data CRC: 0x3CAFB81C, OS: Linux, CPU: MIPS, image type: Multi-File Image, compression type: lzma, image name: "MIPS OpenWrt Linux-3.3.8"
+63956         0xF9D4          LZMA compressed data, properties: 0x6D, dictionary size: 8388608 bytes, uncompressed size: 3155888 bytes
+1148001       0x118461        Squashfs filesystem, little endian, version 4.0, compression:xz, size: 13655928 bytes, 1775 inodes, blocksize: 65536 bytes, created: 2017-09-01 07:34:11
+14804312      0xE1E558        XML document, version: "1.0"
+14816454      0xE214C6        gzip compressed data, from Unix, last modified: 2017-09-01 07:35:48
+
+# strip all up to kernel uImage
+dd if=Archer\ C7\(US\)_V4_170901.bin of=kernel_plus_us_170901.bin bs=63884 skip=1
+# strip all up to root fs
+dd if=Archer\ C7\(US\)_V4_170901.bin of=squashfs_plus_us_170901.bin bs=1148001 skip=1
+# exreact kernel
+dd if=kernel_plus_us_170901.bin of=kernel_only.bin bs=1084117 count=1
+# extract filesystem
+dd if=squashfs_plus_us_170901.bin of=squashfs_only_us_170901.bin bs=13655928 count=1
+# construct the LEDE sysupgrade image
+dd if=/dev/zero ibs=1179648 count=1 | tr "\000" "\377" >pad.bin
+dd if=kernel_only.bin of=pad.bin conv=notrunc
+mv pad.bin kernel_only_padded.bin
+cat kernel_only_padded.bin squashfs_only.bin > stock_fw_recover_by_sysupgrade_us_170901.bin
+

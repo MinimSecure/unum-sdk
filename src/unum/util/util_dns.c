@@ -1,16 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// (c) 2019-2020 minim.co
 
 #include "unum.h"
 #include "dns.h"
@@ -271,12 +259,14 @@ static int send_query(const char *ns, const char *domain_name, char *txt,
         {
             log("%s: Error while polling for response, error=%d\n",
                 __FUNCTION__, error);
+            dns_so_close(so);
             return DNS_UTIL_ERR_LIB;
         }
         if(dns_so_elapsed(so) > unum_config.dns_timeout)
         {
             log("%s: Timed out after %d seconds\n", __FUNCTION__,
                 unum_config.dns_timeout);
+            dns_so_close(so);
             return DNS_UTIL_ERR_TIMEOUT;
         }
 
@@ -296,7 +286,7 @@ static int send_query(const char *ns, const char *domain_name, char *txt,
  *
  * @param txt - Character buffer to fill in with TXT data
  * @param buflen - Length of character buffer to prevent overrun
- * @return  Zero on success, -1 on error. 
+ * @return  Zero on success, -1 on error.
  */
 static int util_get_txt_record(char *txt, int buflen)
 {
@@ -473,17 +463,25 @@ void update_api_url_map_from_txt_record(char *txt)
 // The response is parsed and device specific URL information is loaded
 // into a server map for subsequent usage in HTTP requests.
 //
-int util_get_servers(void)
+// use_defaults - if TRUE fills the list with static defaults
+// Returns: 0 - success, negative value - error
+int util_get_servers(int use_defaults)
 {
     int result;
     char txt_record[1024];
 
     // Get TXT Record
-    log("%s: Retrieving TXT record...\n", __FUNCTION__);
-    result = util_get_txt_record(txt_record, sizeof(txt_record));
+    log("%s: Retrieving %sTXT record...\n", __FUNCTION__,
+        (use_defaults ? "default " : ""));
+    if(use_defaults) {
+        util_get_txt_record_static(txt_record, sizeof(txt_record));
+        result = 0;
+    } else {
+        result = util_get_txt_record(txt_record, sizeof(txt_record));
+    }
     log("%s: DONE, result=%d\n", __FUNCTION__, result);
 
-    if (result) {
+    if(result) {
         log("%s: failed to get dns!\n", __func__);
         return -1;
     }
@@ -578,6 +576,42 @@ static void util_get_txt_record_static_test4(char *txt, int len)
 }
 
 /***
+ * Returns a malformed TXT Record for Testing
+ *
+ * This TXT record has an address not on the whitelist (gominim.co)
+ *
+ */
+static void util_get_txt_record_static_test5(char *txt, int len)
+{
+    strncpy(txt,
+            "api:gominim.co:80:34.207.26.129;"
+            "api:gominim.co:443:34.207.26.129;"
+            "my:my.minim.co:443:34.207.26.129;"
+            "releases:releases.minim.co:443:34.207.26.129;"
+            "provision:provision.minim.co:443:34.207.26.129;",
+            len);
+    txt[len - 1] = '\0';
+}
+
+/***
+ * Returns a malformed TXT Record for Testing
+ *
+ * This TXT record has an address not on the whitelist (test.gominim.co)
+ *
+ */
+static void util_get_txt_record_static_test6(char *txt, int len)
+{
+    strncpy(txt,
+            "api:test.gominim.co:80:34.207.26.129;"
+            "api:gominim.co:443:34.207.26.129;"
+            "my:my.minim.co:443:34.207.26.129;"
+            "releases:releases.minim.co:443:34.207.26.129;"
+            "provision:provision.minim.co:443:34.207.26.129;",
+            len);
+    txt[len - 1] = '\0';
+}
+
+/***
  * Test Hash
  *
  * Gets device ID and computes hash and truncates to correct length
@@ -663,6 +697,24 @@ static void test_txt_is_valid()
     util_get_txt_record_static_test4(txt, sizeof(txt));
     printf("*************************************\n");
     printf("test4 txt record:\n%s\n", txt);
+    result = util_txt_record_is_valid(txt);
+    result == 0 ? printf("TXT Record Is Valid\n") :
+                  printf("TXT Record is Invalid\n");
+
+   // Get Test Record and Validate -- Should be Invalid
+    memset(txt, 0, 1024);
+    util_get_txt_record_static_test5(txt, sizeof(txt));
+    printf("*************************************\n");
+    printf("test5 txt record:\n%s\n", txt);
+    result = util_txt_record_is_valid(txt);
+    result == 0 ? printf("TXT Record Is Valid\n") :
+                  printf("TXT Record is Invalid\n");
+
+   // Get Test Record and Validate -- Should be Invalid
+    memset(txt, 0, 1024);
+    util_get_txt_record_static_test6(txt, sizeof(txt));
+    printf("*************************************\n");
+    printf("test6 txt record:\n%s\n", txt);
     result = util_txt_record_is_valid(txt);
     result == 0 ? printf("TXT Record Is Valid\n") :
                   printf("TXT Record is Invalid\n");
@@ -820,7 +872,7 @@ int test_dns()
             test_update_api_url_map();
             break;
         case 'f':
-            util_get_servers();
+            util_get_servers(FALSE);
             break;
         case 'g':
             util_test_atomic();

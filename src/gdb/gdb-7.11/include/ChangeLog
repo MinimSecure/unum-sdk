@@ -1,0 +1,94 @@
+2016-02-09  Nick Clifton  <nickc@redhat.com>
+
+	* opcode/metag.h (metag_scondtab): Mark as possibly unused.
+	* opcode/nds32.h (nds32_r45map): Likewise.
+	(nds32_r54map): Likewise.
+	* opcode/visium.h (gen_reg_table): Likewise.
+	(fp_reg_table, cc_table, opcode_table): Likewise.
+
+2016-02-09  Alan Modra  <amodra@gmail.com>
+
+	PR 16583
+	* elf/common.h (AT_SUN_HWCAP): Undef before defining.
+
+2016-02-04  Nick Clifton  <nickc@redhat.com>
+
+	PR target/19561
+	* opcode/msp430.h (IGNORE_CARRY_BIT): New define.
+	(RRUX): Synthesise using case 2 rather than 7.
+
+2016-01-19  John Baldwin  <jhb@FreeBSD.org>
+
+	* elf/common.h (NT_FREEBSD_THRMISC): Define.
+	(NT_FREEBSD_PROCSTAT_PROC): Define.
+	(NT_FREEBSD_PROCSTAT_FILES): Define.
+	(NT_FREEBSD_PROCSTAT_VMMAP): Define.
+	(NT_FREEBSD_PROCSTAT_GROUPS): Define.
+	(NT_FREEBSD_PROCSTAT_UMASK): Define.
+	(NT_FREEBSD_PROCSTAT_RLIMIT): Define.
+	(NT_FREEBSD_PROCSTAT_OSREL): Define.
+	(NT_FREEBSD_PROCSTAT_PSSTRINGS): Define.
+	(NT_FREEBSD_PROCSTAT_AUXV): Define.
+
+2016-01-18  Miranda Cupertino  <Cupertino.Miranda@synopsys.com>
+	    Zissulescu Claudiu  <Claudiu.Zissulescu@synopsys.com>
+
+	* elf/arc-reloc.def (ARC_32, ARC_GOTPC, ARC_TLS_GD_GOT)
+	(ARC_TLS_IE_GOT, ARC_TLS_DTPOFF, ARC_TLS_DTPOFF_S9, ARC_TLS_LE_S9)
+	(ARC_TLS_LE_32): Fixed formula.
+	(ARC_TLS_GD_LD): Use new special function.
+	* opcode/arc-func.h: Changed all the replacement
+	functions to clear the patching bits before doing an or it with the value
+	argument.
+
+2016-01-18  Nick Clifton  <nickc@redhat.com>
+
+	PR ld/19440
+	* coff/internal.h (internal_syment): Use int to hold section
+	number.
+	(N_UNDEF): Cast to int not short.
+	(N_ABS): Likewise.
+	(N_DEBUG): Likewise.
+	(N_TV): Likewise.
+	(P_TV): Likewise.
+
+2016-01-11  Nick Clifton  <nickc@redhat.com>
+
+	Import this change from GCC mainline:
+
+	2016-01-07  Mike Frysinger  <vapier@gentoo.org>
+
+	* longlong.h: Change !__SHMEDIA__ to
+	(!defined (__SHMEDIA__) || !__SHMEDIA__).
+	Change __SHMEDIA__ to defined (__SHMEDIA__) && __SHMEDIA__.
+
+2016-01-06  Maciej W. Rozycki  <macro@imgtec.com>
+
+	* opcode/mips.h: Add a summary of MIPS16 operand codes.
+
+2016-01-05  Mike Frysinger  <vapier@gentoo.org>
+
+	* libiberty.h (dupargv): Change arg to char * const *.
+	(writeargv, countargv): Likewise.
+
+2016-01-01  Alan Modra  <amodra@gmail.com>
+
+	Update year range in copyright notice of all files.
+
+For older changes see ChangeLog-0415, aout/ChangeLog-9115,
+cgen/ChangeLog-0915, coff/ChangeLog-0415, elf/ChangeLog-0415,
+mach-o/ChangeLog-1115, nlm/ChangeLog-9315, opcode/ChangeLog-0415,
+som/ChangeLog-1015, and vms/ChangeLog-1015
+
+Copyright (C) 2016 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:

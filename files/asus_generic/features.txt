@@ -1,0 +1,5 @@
+http-basic-auth-passwords
+telnet-passwords
+port_scanning
+rescan_devices
+mac_filter

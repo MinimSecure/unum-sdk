@@ -1,0 +1,27 @@
+This only builds gdbserver. 
+
+If want to build gdb for host extract all the files from the tar.gz
+(only the gdbserver necessary files are checked in into the repo now).
+Make a folder under build, go to that folder and run configure like this
+(example for BRCM toolchain):
+/work/unum-v2/src/gdb/gdb-7.11/configure --prefix=/projects/hnd/tools/linux/hndtools-arm-linux-2.6.36-uclibc-4.5.3 --host=x86_64-linux-gnu --target=arm-brcm-linux-uclibcgnueabi --disable-werror --without-uiout --disable-tui --disable-gdbtk --without-x --without-included-gettext --enable-threads --with-expat --without-python --disable-binutils --disable-ld --disable-gas --disable-sim
+Then run "make". Make sure the environment has no CC/LD/AR... otherwise
+it will use them for building the gdb insted of the --host stuff. One way
+to do this is to drop into shell after making the gdbserver, then
+export CC=/usr/bin/gcc
+export AR=/usr/bin/ar
+export AS=/usr/bin/as
+export LD=/usr/bin/ld
+export NM=/usr/bin/nm
+export RANLIB=/usr/bin/ranlib
+export STRIP=/usr/bin/strip
+export OBJCOPY=/usr/bin/objcopy
+export OBJDUMP=/usr/bin/objdump
+export READELF=/usr/bin/readelf
+and after that configure and build the host gdb.
+
+The OpenWrt gdb for similar platform might work for debugging too.
+
+For archer C2 und BRCM it can work witout specifying sysroot (no symbols 
+for libs anyway and it can load the stripped ones from the target).
+

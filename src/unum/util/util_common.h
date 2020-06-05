@@ -1,42 +1,8 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2020 minim.co
 // unum helper utils include file
 
 #ifndef _UTIL_COMMON_H
 #define _UTIL_COMMON_H
-
-// Unum Start Reason codes
-enum unum_start_reason {
-    UNUM_START_REASON_UNKNOWN = 0,  // power cycle, reset or unknow reason
-    UNUM_START_REASON_CRASH,        // agent restart due to a crash
-    UNUM_START_REASON_RESTART,      // self initiated restart
-    UNUM_START_REASON_REBOOT,       // self initiated reboot (not yet)
-    UNUM_START_REASON_UPGRADE,      // firmware upgrade (by agent, not yet)
-    UNUM_START_REASON_START_FAIL,   // Agent failed to start
-    UNUM_START_REASON_MODE_CHANGE,  // Opmode change
-    UNUM_START_REASON_CONNCHECK,    // Restart by conncheck module
-    UNUM_START_REASON_PROVISION,    // Restart by provision
-    UNUM_START_REASON_SUPPORT_FAIL, // Support daemon failed to start
-    UNUM_START_REASON_TEST_RESTART, // Test crash
-    UNUM_START_REASON_TEST_FAIL,    // Test process failed to start
-    UNUM_START_REASON_DEVICE_INFO,  // Failed to get device info
-    UNUM_START_REASON_WD_TIMEOUT,   // WD Timeout
-    UNUM_START_REASON_REBOOT_FAIL,  // Failed to reboot
-    UNUM_START_REASON_SERVER,       // Command from Server
-    UNUM_START_REASON_FW_START_FAIL,// Failed to start FW process
-};
 
 // Get number of elements in an array
 #define UTIL_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]) \
@@ -66,8 +32,33 @@ enum unum_start_reason {
 #ifndef EXIT_FAILURE
 #  define EXIT_FAILURE  1 // Terminate agent with failure
 #endif
-#define EXIT_RESTART  12 // Restart the process
-#define EXIT_REBOOT   13 // Reboot the device
+#define EXIT_REBOOT     2 // Reboot the device
+
+// Unum Start Reason codes (take the same numbering space as the above)
+// Pass to util_restart() to report the restart reason to the server or
+// (if the process is not monitored) just set the appropriate exit code
+enum unum_start_reason {
+    UNUM_START_REASON_UNKNOWN = 0,  // power cycle, reset or unknow (default)
+    UNUM_RESERVED = EXIT_REBOOT,    // reserved for requesting system reboot
+    // The reason codes below can be passed to util_restart()
+    UNUM_START_REASON_CRASH,        // agent restart due to a crash
+    UNUM_START_REASON_RESTART,      // self initiated restart
+    UNUM_START_REASON_REBOOT,       // self initiated reboot (not yet)
+    UNUM_START_REASON_UPGRADE,      // firmware upgrade (not yet)
+    UNUM_START_REASON_START_FAIL,   // agent failed to start
+    UNUM_START_REASON_MODE_CHANGE,  // opmode change
+    UNUM_START_REASON_CONNCHECK,    // restart by conncheck module
+    UNUM_START_REASON_PROVISION,    // restart by provisioning
+    UNUM_START_REASON_SUPPORT_FAIL, // support portal failed to start
+    UNUM_START_REASON_TEST_RESTART, // unit test initiated crash
+    UNUM_START_REASON_TEST_FAIL,    // test failed to start
+    UNUM_START_REASON_DEVICE_INFO,  // failed to get device info
+    UNUM_START_REASON_WD_TIMEOUT,   // watchdog timeout
+    UNUM_START_REASON_REBOOT_FAIL,  // failed to reboot
+    UNUM_START_REASON_SERVER,       // restart command from server
+    UNUM_START_REASON_FW_START_FAIL,// failed to start FW updater
+    UNUM_START_REASON_KILL,         // terminated by kill (set by monitor)
+};
 
 // Makes a hex digit from a 4-bit value
 #define UTIL_MAKE_HEX_DIGIT(a) ((((a)&0xf) > 9) ? (((a)&0xf)+87) : (((a)&0xf)+'0'))
@@ -139,10 +130,13 @@ static __inline__ void str_tolower(char *str) {
 char *util_fw_version();
 
 // Shutdown/terminate the agent (the function does not return to the caller)
-void util_shutdown(int err_code);
+// err - ERROR_SUCCESS or ERROR_FAILURE (any non-zero value is
+//       treated as ERROR_FAILURE)
+void util_shutdown(int err);
 
 // Restart agent (the function does not return to the caller)
-void util_restart(int code);
+// reason - see enum unum_start_reason
+void util_restart(int reason);
 
 // Restart command from server
 void util_restart_from_server(void);
@@ -164,7 +158,12 @@ int __attribute__((weak)) util_platform_factory_reset(void);
 // For now (03/17/19), for all other devices, auth_info_key is not updated
 void __attribute__((weak)) util_get_auth_info_key(char *auth_info_key, int max_key_len);
 
+// Get all the MAC Addresses on the router
+int  __attribute__((weak)) util_get_mac_list(char *mac_list, int max_len);
+
 // Return uptime in specified fractions of the second (rounded to the low)
+// Note: it's not uptime or montonic for some platforms, NTP makes it jump
+//       at least when intially sets the time.
 unsigned long long util_time(unsigned int fraction);
 
 // Sleep the specified number of milliseconds
@@ -200,12 +199,12 @@ void util_fix_crlf(char *str_in);
 // PID of the running process while it is executing.
 int util_system(char *cmd, unsigned int timeout, char *pid_file);
 
-// Call an executable in shell and capture its stdout in a buffer.
-// Returns: negative if fails to start (see errno for the error code) or
-//          the length of the captured info (excluding terminating 0),
-//          if the returned value is not negative the status (if not NULL)
-//          is filled in with the exit status of the command or
-//          -1 if unable to get it.
+// Call cmd in shell and capture its stdout in a buffer.
+// Returns: negative if fails to start cmd (see errno for the error code), the
+//          length of the captured info (excluding terminating 0) if success.
+//          If the returned value is not negative the pstatus (unless NULL)
+//          contains command execution status (zero if the command terminated
+//          with status 0, negative if error).
 // If the buffer is too short the remainig output is ignored.
 // The captured output is always zero-terminated.
 int util_get_cmd_output(char *cmd, char *buf, int buf_len, int *pstatus);
@@ -283,8 +282,9 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
                     const char *template, ...);
 
 // Get Server List from DNS and Populate DNS and Server Mapping
-//
-int util_get_servers();
+// use_defaults - if TRUE fills the list with static defaults
+// Returns: 0 - success, negative value - error
+int util_get_servers(int use_defaults);
 
 #ifndef API_SERVER_WHITELIST
 #define API_SERVER_WHITELIST {\

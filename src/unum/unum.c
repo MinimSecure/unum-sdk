@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // main entry point, option parsing, prepare and start the agent process
 
 #include "unum.h"
@@ -100,7 +87,7 @@ static struct option long_options[] =
     {0, 0, 0, 0}
 };
 // The short options string for the above
-static char *optstring = "hvzf:dunps:i:c:m:l:w:";
+static char *optstring = "hvzf:dunps:i:c:m:o:w:l:";
     
 // Global variables for storing command line args
 int arg_count;
@@ -359,12 +346,14 @@ static void print_usage(int argc, char *argv[])
     printf("                                cert in the requests)\n");
 #endif // DEBUG
     printf(" -o, --opmode <mode_name>     - set unum agent operation mode\n");
-#if !defined(FEATURE_LAN_ONLY)
+#if !defined(FEATURE_MESH_QCA) && !defined(FEATURE_MTK_EASYMESH)
+# if !defined(FEATURE_LAN_ONLY)
     printf("                                gw: gateway (default)\n");
-#endif // !FEATURE_LAN_ONLY
-#if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+# endif // !FEATURE_LAN_ONLY
+# if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
     printf("                                ap: wireless AP\n");
-#endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+# endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
+#endif // !FEATURE_MTK_EASYMESH && !FEATURE_MESH_QCA
 #if defined(FEATURE_MANAGED_DEVICE)
     printf("                                md: managed device\n");
 #endif // FEATURE_MANAGED_DEVICE
@@ -376,6 +365,18 @@ static void print_usage(int argc, char *argv[])
     printf("                                mesh_11s_ap: ap w/ 802.11s mesh\n");
 # endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
 #endif // FEATURE_MESH_11S
+#if defined(FEATURE_MESH_QCA)
+    printf("                                mesh_qca_gw: Qualcomm mesh gw\n");
+    printf("                                mesh_qca_ap: Qualcomm mesh ap\n");
+#endif // FEATURE_MESH_QCA
+#if defined(FEATURE_MTK_EASYMESH)
+# if !defined(FEATURE_LAN_ONLY)
+    printf("                                mesh_em_gw: Mediatek EasyMesh gw\n");
+# endif // !FEATURE_LAN_ONLY
+# if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+    printf("                                mesh_em_ap: Mediatek EasyMesh ap\n");
+# endif // defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
+#endif // FEATURE_MTK_EASYMESH
     printf(" -c, --trusted-ca <PATHNAME>  - trusted CAs file pathname\n");
     printf(" -l, --lan-if <IFNAME_LIST>   - custom LAN interface name(s)\n");
     printf("                                separated by comma or space,\n");
@@ -407,7 +408,7 @@ static void print_usage(int argc, char *argv[])
     printf(" --support-period <%d-...>    - support connection attempt\n",
            SUPPORT_SHORT_PERIOD);
     printf("                                interval for \"-m support\"\n");
-    printf("                                0: connect upon request only\n");
+    printf("                                0: disable periodic retries\n");
 #endif //SUPPORT_RUN_MODE
 }
 
@@ -639,7 +640,7 @@ static int do_config_char(char opt_long, char *optarg)
     return status;
 }
 
-// Function that will store in config the requested mode of operation
+// Function that will store in config the requested run mode
 static int do_config_mode(char *optarg)
 {
     int status = 0;

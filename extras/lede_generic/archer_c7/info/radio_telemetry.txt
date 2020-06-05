@@ -1,0 +1,140 @@
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v2/lans/84:16:f9:25:6f:e1/radios>:
+{
+  "radios": [
+    {
+      "vaps": [
+        {
+          "interface": "wlan1-1",
+          "ssid": "64656e2d746573742d6f7772742d32672d32",
+          "bssid": "86:16:f9:25:6f:e0",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 23,
+            "noise": -91
+          },
+          "stas": []
+        },
+        {
+          "interface": "wlan1",
+          "ssid": "64656e2d746573742d6f7772742d3267",
+          "bssid": "84:16:f9:25:6f:e0",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 23,
+            "noise": -91
+          },
+          "stas": [
+            {
+              "mac": "5c:51:88:22:a1:ef",
+              "rssi": -40,
+              "extras": {
+                "rx_rate": {     // object w/ rx (from STA) rate info
+                  "rate": 58500, // rate in kbps 
+                  "short_gi": 0, // short guard interval
+                  "bw": 20,      // bandwidth
+                  "mcs": 6,      // MCS
+                  "ht": 1,       // high througput mode (802.11n) mode (on/off)
+                  "vht": 0,      // very hight throughput (802.11ac) mode (on/off)
+                  "nss": 1       // number of spatial streams
+                },
+                "tx_rate": {     // object w/ tx (to STA) rate info
+                  "rate": 72200,
+                  "short_gi": 1,
+                  "bw": 20,
+                  "mcs": 7,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_fail": 499,     // # of times transmission to the STA has failed
+                "tx_bytes": 968860, // total bytes sent to the STA (32bit, will overflow)
+                "inact_ms": 6480,   // STA inactivity (in milliseconds)
+                "tx_pkts": 2283,    // total packets sent to the STA
+                "rx_pkts": 4508,    // total packets received from STA
+                "wme": 1,           // wireless media extensions (on/off)
+                "tx_retr": 170,     // # of times transmission to the STA was retried
+                "rx_bytes": 551692, // total bytes received from STA (32bit, will overflow)
+                "auth_ok": 1        // STA is authorized (allowed to send/receive data)
+              }
+            }
+          ]
+        }
+      ],
+      "name": "phy1",
+      "channel": 1,
+      "extras": {
+        "hwmode": "11bgn",          // 802.11 hw mode the radio supports
+        "country": "US"
+      }
+    },
+    {
+      "vaps": [
+        {
+          "interface": "wlan0-1",
+          "ssid": "64656e2d746573742d6f7772742d35672d32",
+          "bssid": "86:16:f9:25:6f:df",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 23,
+            "noise": -103,
+            "txpower_offset": 0
+          },
+          "stas": []
+        },
+        {
+          "interface": "wlan0",
+          "ssid": "64656e2d746573742d6f7772742d3567",
+          "bssid": "84:16:f9:25:6f:df",
+          "mode": "ap",
+          "extras": {
+            "max_txpower": 23,
+            "noise": -104,
+            "txpower_offset": 0  // offset from the max_txpower for tx on this VAP
+          },
+          "stas": [
+            {
+              "mac": "2c:44:01:c6:01:ed",
+              "rssi": -44,
+              "extras": {
+                "rx_rate": {
+                  "rate": 65000,
+                  "short_gi": 0,
+                  "bw": 20,
+                  "mcs": 7,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 6000,
+                  "short_gi": 0,
+                  "bw": 20,
+                  "mcs": 0,
+                  "ht": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_fail": 24,
+                "tx_bytes": 46466778,
+                "inact_ms": 19160,
+                "tx_pkts": 36904,
+                "rx_pkts": 31313,
+                "wme": 1,
+                "tx_retr": 0,
+                "rx_bytes": 19133927,
+                "auth_ok": 1
+              }
+            }
+          ]
+        }
+      ],
+      "name": "phy0",
+      "channel": 36,
+      "extras": {
+        "hwmode": "11nac",
+        "country": "US"
+      }
+    }
+  ]
+}
+

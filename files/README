@@ -1,0 +1,20 @@
+Files that do not require compilation and/or 
+complex processing before being populated into the root FS.
+
+The features-common.txt contains a common set of features applicable to all
+the platforms. During the build it is extended with the platform specific
+features.txt from the platform subfolder (if it exists). For lede_generic
+the platform specific features might depend on the hardware kind and
+the feature set is further extended by adding (if it exists) the
+features-<HW_kind>.txt from the lede_generic platform subfolder.
+
+The features are exposed to the unum code during the compilation through
+defines in the format:
+FEATURE_<upcase_feature_name_w_dashes_turned_to_underscores>
+example:
+my-feature => FEATURE_MY_FEATURE
+See .../src/unum/Makefile for the list of features that affect the agent build.
+
+The release_properties.json is the JSON template for reporting the features
+to the server side when publishing the firmware.
+

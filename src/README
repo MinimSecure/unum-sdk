@@ -1,0 +1,17 @@
+This folder contains agent components sources.
+Each component is located under its own folder.
+Each component is expected to be a standalone module that 
+is compiled into an executable or library. 
+The build system will go into all the folders listed in the 
+build rules/<model>.mk file for specific model and invoke make 
+with the necessary generic compiler options.
+
+If the component requires customization for the specifc 
+platform the custom options can be listed for that platform 
+in the platform rules/<model>.mk file.
+
+Buy default the sytem goes into the component folder and runs 
+make there only if the Makefiles or anything under the component's 
+folder changes. Use symlinks (under your component folder) pointing 
+to other components to access includes and/or make your component 
+depend on the others.

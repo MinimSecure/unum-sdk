@@ -1,0 +1,57 @@
+#!/bin/sh /etc/rc.common
+# (C) 2017 minim.co
+
+
+# Add status command
+EXTRA_COMMANDS="status"
+
+# When to start/stop the agent during the system init/deinit
+START=99
+STOP=35
+
+
+# Agent config folder on the target
+AGENT_ETC_DIR="/etc/unum"
+# Agent system config on the target
+AGENT_SYSTEM_CONF="$AGENT_ETC_DIR/system.conf"
+# Agent user config on the target
+AGENT_USER_CONF="$AGENT_ETC_DIR/user.conf"
+
+# Include system config file
+source "$AGENT_SYSTEM_CONF"
+# Include user config file
+[ ! -e "$AGENT_USER_CONF" ] || source "$AGENT_USER_CONF"
+
+# Include helper functions
+source "$AGENT_ETC_DIR/unum.common"
+
+# The command to run
+CMD="/usr/bin/unum -d -c \"$UNUM_CA_FILE\""
+
+# Report agent status
+status() {
+  if is_running "agent"; then
+    echo "Running"
+  else
+    echo "Stopped"
+  fi
+}
+
+# Stop the agent
+stop() {
+  kill_unum "monitor"
+  kill_unum "agent"
+}
+
+# Start the agent 
+start() {
+  stop
+  prep_startup
+  eval_nicely $CMD
+}
+
+# Restart the agent
+restart() {
+  stop
+  start
+}

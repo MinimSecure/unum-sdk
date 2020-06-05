@@ -1,0 +1,521 @@
+run_tests: Init level 1...
+run_tests: Init level 2...
+run_tests: Init level 3...
+run_tests: Init done
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/04:92:26:61:4f:10/radios>:
+{
+  "radios": [
+    {
+      "name": "ath0",
+      "channel": 6,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 18,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath0",
+          "ssid": "415355535f31305f3247",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:10"
+        }
+      ]
+    },
+    {
+      "name": "ath1",
+      "channel": 149,
+      "extras": {
+        "hwmode": "11anac",
+        "country": "CN"
+      },
+      "vaps": [
+        {
+          "extras": {
+            "max_txpower": 26,
+            "noise": -95
+          },
+          "mode": "ap",
+          "interface": "ath1",
+          "ssid": "415355535f31305f3547",
+          "stas": [],
+          "bssid": "04:92:26:61:4f:14"
+        }
+      ]
+    }
+  ]
+}

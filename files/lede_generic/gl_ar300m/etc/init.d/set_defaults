@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+# When to start/stop the agent during the system init/deinit
+START=12
+boot() {
+  /sbin/set_defaults.sh
+}

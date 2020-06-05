@@ -26,7 +26,7 @@ Find out more and sign up for an account on the [Minim Labs website][1].
 ## Building
 
 As far as build dependencies, building Unum requires make, gcc, libc6-pic, some
-flavor of libcurl-dev and libssl-dev, libjansson-dev, and a netlink library 
+flavor of libcurl-dev and openssl-dev, libjansson-dev, and a netlink library 
 like libnl-3-200 or libnl-tiny.
 
 On a fresh Ubuntu or Debian install, for example:
@@ -65,18 +65,6 @@ as built-in test mode with `UNUM_DEBUG=1`:
 ```bash
 make UNUM_DEBUG=1
 ```
-
-#### AP mode
-
-For devices that are not acting as gateways (ie. access point only), the Unum
-agent should be built in "access point mode" with `UNUM_AP_MODE=1`:
-
-```bash
-make UNUM_AP_MODE=1
-```
-
-Note that in AP mode, Unum will not collect connection telemetry. Wireless
-device telemetry and system management functionality works as expected.
 
 #### Build Model
 

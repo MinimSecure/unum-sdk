@@ -1,0 +1,86 @@
+#!/bin/sh /etc/rc.common
+# (C) 2017 minim.co
+
+
+# Add status command
+EXTRA_COMMANDS="status"
+
+# When to start/stop the agent during the system init/deinit
+START=99
+STOP=35
+
+
+# Unum instance name this file manages
+UNUM_INSTANCE="support"
+
+# Agent config folder on the target
+AGENT_ETC_DIR="/etc/unum"
+# Agent system config on the target
+AGENT_SYSTEM_CONF="$AGENT_ETC_DIR/system.conf"
+# Agent user config on the target
+AGENT_USER_CONF="$AGENT_ETC_DIR/user.conf"
+
+# Include system config file
+source "$AGENT_SYSTEM_CONF"
+# Include user config file
+[ ! -e "$AGENT_USER_CONF" ] || source "$AGENT_USER_CONF"
+
+# Include helper functions
+source "$AGENT_ETC_DIR/unum.common"
+
+# The command to run
+CMD="/usr/bin/unum -d -m \"$UNUM_INSTANCE\" -c \"$UNUM_CA_FILE\""
+
+
+# Set up dropbear authorized keys
+setup_keys() {
+  if [ ! -e "$UNUM_SSH_AKEYS" ]; then
+    return
+  fi
+  SRC="$UNUM_SSH_AKEYS"
+  TGT="/etc/dropbear/authorized_keys"
+  if [ -L "$TGT" ]; then
+    rm -f "$TGT"
+    touch "$TGT"
+  fi
+  SRC_SHA=$(/usr/bin/sha256sum "$SRC")
+  SRC_SHA=${SRC_SHA:0:8}
+  TAG_START="# start unum keys"
+  TAG_STOP="# end unum keys"
+  if /bin/grep "$TAG_START $SRC_SHA" "$TGT" >/dev/null 2>&1; then
+    return
+  fi
+  /bin/sed -i -e "/$TAG_START/,/$TAG_STOP/d" -e '$a\' "$TGT"
+  echo "$TAG_START $SRC_SHA" >> "$TGT"
+  cat "$SRC" >> "$TGT"
+  echo "$TAG_STOP $SRC_SHA" >> "$TGT"
+  chmod 0600 "$TGT"
+  /etc/init.d/dropbear reload
+}
+
+# Report agent status
+status() {
+  if is_running "$UNUM_INSTANCE"; then
+    echo "Running"
+  else
+    echo "Stopped"
+  fi
+}
+
+# Stop the agent
+stop() {
+  kill_unum "$UNUM_INSTANCE"
+}
+
+# Start the agent 
+start() {
+  setup_keys
+  stop
+  eval $CMD
+}
+
+# Restart the agent
+restart() {
+  stop
+  start
+}

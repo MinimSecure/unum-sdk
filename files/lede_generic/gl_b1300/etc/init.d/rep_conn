@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+START=99
+boot() {
+  /sbin/check_rep_connection.sh &
+}
+
+start() {
+  /sbin/check_rep_connection.sh &
+}
+
+stop() {
+  ps | grep check_rep_connection.sh  | grep -v grep | awk '{print $1}' | xargs kill
+  sleep 1
+  ps | grep check_rep_connection.sh  | grep -v grep | awk '{print $1}' | xargs kill -9
+}

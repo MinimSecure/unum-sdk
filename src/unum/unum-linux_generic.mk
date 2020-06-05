@@ -18,11 +18,10 @@
 # since our package depends on those libs
 
 HARDWARE = linux_generic
-AP_HARDWARE_TYPES =
 
 # Generic libs
 LDFLAGS += -lrt -lcrypto
-CPPFLAGS += -DUSE_OPEN_SSL -D_DEFAULT_SOURCE
+CPPFLAGS += -DUSE_OPEN_SSL
 
 # Add linking flags for libs that we built before the agent
 # (those migh differ for the platforms, so include conditionally
@@ -51,8 +50,3 @@ LDFLAGS += -L$(TARGET_LIBS)/
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
 CPPFLAGS += -Wno-format
 CPPFLAGS += -Wno-int-to-pointer-cast
-
-# Set the AP mode build flag if building for the AP hardware type
-ifeq ($(filter $(HARDWARE),$(AP_HARDWARE_TYPES)),$(HARDWARE))
-  UNUM_AP_MODE = 1
-endif

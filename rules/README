@@ -1,0 +1,7 @@
+Target specific include makefiles.
+The include makefiles contain instructions on what toolchain and options to use.
+What precompiled/proprietary libs to link with.
+What components to build and include into the target package.
+Where/how to install the components for the specifc target (i.e. install into
+appropriate paths as the components have to be in the target filesystem).
+

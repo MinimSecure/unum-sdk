@@ -1,0 +1,3 @@
+Precompiled/proprietary libraries for supported targets.
+This covers the libs that are already present on the device and
+can/have to be used by the software compiled here.

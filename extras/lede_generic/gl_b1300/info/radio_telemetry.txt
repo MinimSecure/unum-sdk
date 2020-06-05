@@ -1,0 +1,227 @@
+wireless_do_radio_telemetry: JSON for <https://api.minim.co/v3/unums/e4:95:6e:43:36:c2/radios>:
+{
+  "radios": [
+    {
+      "name": "phy1",
+      "channel": 36,
+      "extras": {
+        "hwmode": "11nac",
+        "country": "US"
+      },
+      "vaps": [
+        {
+          "interface": "wlan1",
+          "ssid": "4d696e696d4d657368",
+          "bssid": "e4:95:6e:43:36:c3",
+          "mode": "mesh_11s"
+          "extras": {
+            "max_txpower": 23,
+            "noise": -108,
+          },
+          "stas": [
+            {
+              "mac": "e4:95:6e:43:35:ef",
+              "rssi": -73,
+              "extras": {
+                "rx_rate": {
+                  "rate": 390000,
+                  "mcs": 4,
+                  "bw": 80,
+                  "short_gi": 1,
+                  "ht": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "tx_rate": {
+                  "rate": 390000,
+                  "mcs": 4,
+                  "bw": 80,
+                  "short_gi": 1,
+                  "ht": 0,
+                  "vht": 1,
+                  "nss": 2
+                },
+                "inact_ms": 0,
+                "tx_pkts": 1827334,
+                "tx_retr": 0,
+                "tx_fail": 19,
+                "rx_pkts": 1521541,
+                "tx_bytes": 2376823048,
+                "rx_bytes": 221816349,
+                "auth_ok": 1,
+                "wme": 1
+              }
+            },
+            {
+              "mac": "e4:95:6e:45:15:63",
+              "rssi": -66,
+              "extras": {
+                "rx_rate": {
+                  "rate": 292600,
+                  "mcs": 6,
+                  "bw": 80,
+                  "short_gi": 1,
+                  "ht": 0,
+                  "vht": 1,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 22400,
+                  "mcs": 0,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "ht": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 30,
+                "tx_pkts": 68573,
+                "tx_retr": 0,
+                "tx_fail": 0,
+                "rx_pkts": 945648,
+                "tx_bytes": 84904032,
+                "rx_bytes": 81282840,
+                "auth_ok": 1,
+                "wme": 1
+              }
+            }
+          ]
+        },
+        {
+          "interface": "wlan1-1",
+          "ssid": "646f6e74757365",
+          "bssid": "e6:95:6e:43:36:c3",
+          "mode": "ap"
+          "extras": {
+            "max_txpower": 23,
+            "noise": -108
+          },
+          "stas": [
+            {
+              "mac": "c0:f2:fb:9b:84:d4",
+              "rssi": -48,
+              "extras": {
+                "rx_rate": {
+                  "rate": 24000,
+                  "mcs": 0,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "ht": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 120000,
+                  "mcs": 5,
+                  "bw": 40,
+                  "short_gi": 1,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 10060,
+                "tx_pkts": 365,
+                "tx_retr": 0,
+                "tx_fail": 8,
+                "rx_pkts": 1178,
+                "tx_bytes": 152722,
+                "rx_bytes": 132055,
+                "auth_ok": 1,
+                "wme": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "phy0",
+      "channel": 11,
+      "extras": {
+        "hwmode": "11bgn",
+        "country": "US"
+      },
+      "vaps": [
+        {
+          "interface": "wlan0",
+          "ssid": "646f6e74757365",
+          "bssid": "e4:95:6e:43:36:c2",
+          "mode": "ap"
+          "extras": {
+            "max_txpower": 30,
+            "noise": -106
+          },
+          "stas": [
+            {
+              "mac": "c4:0b:cb:68:23:df",
+              "rssi": -70,
+              "extras": {
+                "rx_rate": {
+                  "rate": 6000,
+                  "mcs": 0,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "ht": 0,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 58500,
+                  "mcs": 6,
+                  "bw": 20,
+                  "short_gi": 0,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 6670,
+                "tx_pkts": 1824,
+                "tx_retr": 0,
+                "tx_fail": 0,
+                "rx_pkts": 2929,
+                "tx_bytes": 777923,
+                "rx_bytes": 1928542,
+                "auth_ok": 1,
+                "wme": 1
+              }
+            },
+            {
+              "mac": "e4:46:da:2b:07:9c",
+              "rssi": -67,
+              "extras": {
+                "rx_rate": {
+                  "rate": 65000,
+                  "mcs": 6,
+                  "bw": 20,
+                  "short_gi": 1,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "tx_rate": {
+                  "rate": 72200,
+                  "mcs": 7,
+                  "bw": 20,
+                  "short_gi": 1,
+                  "ht": 1,
+                  "vht": 0,
+                  "nss": 1
+                },
+                "inact_ms": 270,
+                "tx_pkts": 1443,
+                "tx_retr": 0,
+                "tx_fail": 0,
+                "rx_pkts": 1554,
+                "tx_bytes": 1046829,
+                "rx_bytes": 231956,
+                "auth_ok": 1,
+                "wme": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

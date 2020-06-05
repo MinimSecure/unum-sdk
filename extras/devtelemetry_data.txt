@@ -1,0 +1,519 @@
+
+Note1: see the data structures in 
+       .../src/unum/devtelemetry/dt_data_tables.h
+
+Note2: at the moment we only send one 30sec slice (not 3 of 10sec ones) in each telemetry.
+
+Device telemetry JSON:
+------------------------------
+{
+  "devices": [                     // Info about devices & connections
+    {
+      "mac": "c0:a8:00:21:62:72",  // device MAC (could be IP mcast MAC)
+      "ifname": "br0",             // interface where device was discovered
+      "ip": "192.168.0.33",        // device IP (could be IP mcast IP)
+      "conn": [                    // info about device's connections
+        {
+          "proto": 17,             // connection IP protocol #
+          "l_port": 9,             // local (device) port the connection is to
+          "r_ip": "10.4.1.125",    // peer's IP (or multicat IP the device sends to)
+          "b_in": [
+            0,                     // incoming (to device) bytes, time slice 0
+            0,                     // incoming (to device) bytes, time slice 1
+            0                      // incoming (to device) bytes, time slice 2
+          ],
+          "b_out": [
+            60,                    // outgoing (from device) bytes, time slice 0
+            0,                     // outgoing (from device) bytes, time slice 1
+            0                      // outgoing (from device) bytes, time slice 2
+          ]
+        }
+      ]
+    },
+    {
+      "mac": "c0:a8:00:67:62:72",
+      "ifname": "br0",
+      "ip": "192.168.0.103",
+      "conn": [
+        {
+          "r_ip": "50.31.164.155",
+          "r_port": 443,           // remote (peer's) port the connection is to
+          "proto": 6,
+          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
+          "b_in": [
+            45293,
+            9788,
+            34149
+          ],
+          "b_out": [
+            10534,
+            4853,
+            13603
+          ]
+        },
+        {
+          "r_ip": "54.192.48.169",
+          "r_port": 443,
+          "proto": 6,
+          "b_in": [
+            0,
+            0,
+            66
+          ],
+          "b_out": [
+            0,
+            0,
+            54
+          ]
+        }
+      ]
+    }
+  ],
+  "dns": [                         // discovered (during the telemetry time period)
+    {                              // IP to DNS name mappings (from the latest DNS pkt(s))
+      "name": "www.amazon.com",    // DNS name and IP address it was resoved to 
+      "ip": "54.230.38.207"        // (following up to 2 CNAME references chain)
+    },
+    {
+      "name": "www.amazon.com",
+      "ip": "54.230.38.141"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.106"
+    },
+    {
+      "name": "www.amazon.com",
+      "ip": "54.230.38.134"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.99"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.104"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.147"
+    },
+    {
+      "name": "www.amazon.com",
+      "ip": "54.230.38.62"
+    },
+    {
+      "name": "www.okob.net",
+      "ip": "24.61.110.29"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.105"
+    },
+    {
+      "name": "www.google.com",
+      "ip": "173.194.205.103"
+    }
+  ],
+  "interfaces": [                  // Interfaces info table
+    {
+      "slice": 0,                  // time slice # the entry is for
+      "end_sec": 1507148488,       // seconds (plus milliseconds below) since 
+      "end_msec": 294,             // epoch at the end of the time slice
+      "len_msec": 10010,           // time slice length in milliseconds
+      "ifname": "br0",             // interface name
+      "ip": "192.168.0.1",         // interface IP addr at the end of ther time slice
+      "mask": "255.255.255.0",     // interface IP mask at the end of ther time slice
+      "wan": 0,                    // is this WAN interface (1 - yes, 0 - no)
+      "bytes_in": 24354,           // interface bytes received
+      "bytes_out": 67390,          // interface bytes sent
+      "pcap_pkts": 220,            // TPCAP packets captured
+      "miss_pkts": 0               // missed (not captured) packets
+      "proc_pkts": 218,            // packets processed by devices telemetry
+    },
+    {
+      "end_msec": 294,
+      "pcap_pkts": 0,
+      "ifname": "eth0.2",
+      "ip": "10.4.1.114",
+      "mask": "255.255.0.0",
+      "len_msec": 10007,
+      "wan": 1,
+      "slice": 0,
+      "end_sec": 1507148488,
+      "bytes_in": 53162,
+      "bytes_out": 15317,
+      "proc_pkts": 0,
+      "miss_pkts": 0
+    },
+    {
+      "end_msec": 298,
+      "pcap_pkts": 205,
+      "ifname": "br0",
+      "ip": "192.168.0.1",
+      "mask": "255.255.255.0",
+      "len_msec": 10004,
+      "wan": 0,
+      "slice": 1,
+      "end_sec": 1507148498,
+      "bytes_in": 20894,
+      "bytes_out": 31465,
+      "proc_pkts": 205,
+      "miss_pkts": 0
+    },
+    {
+      "end_msec": 298,
+      "pcap_pkts": 0,
+      "ifname": "eth0.2",
+      "ip": "10.4.1.114",
+      "mask": "255.255.0.0",
+      "len_msec": 10004,
+      "wan": 1,
+      "slice": 1,
+      "end_sec": 1507148498,
+      "bytes_in": 17597,
+      "bytes_out": 14593,
+      "proc_pkts": 0,
+      "miss_pkts": 0
+    },
+    {
+      "end_msec": 302,
+      "pcap_pkts": 265,
+      "ifname": "br0",
+      "ip": "192.168.0.1",
+      "mask": "255.255.255.0",
+      "len_msec": 10004,
+      "wan": 0,
+      "slice": 2,
+      "end_sec": 1507148508,
+      "bytes_in": 38687,
+      "bytes_out": 56621,
+      "proc_pkts": 265,
+      "miss_pkts": 0
+    },
+    {
+      "end_msec": 302,
+      "pcap_pkts": 0,
+      "ifname": "eth0.2",
+      "ip": "10.4.1.114",
+      "mask": "255.255.0.0",
+      "len_msec": 10004,
+      "wan": 1,
+      "slice": 2,
+      "end_sec": 1507148508,
+      "bytes_in": 42824,
+      "bytes_out": 30703,
+      "proc_pkts": 0,
+      "miss_pkts": 0
+    }
+  ],
+  "table_stats": [                 // Information collection tables stats
+    {
+      "name": "dns_names",         // table name
+      "add_all": 17,               // total attempts to add an entry
+      "add_10": 17,                // found free cell at 10 or less tries
+      "add_limit": 0,              // failed due to memory or other limits
+      "add_busy": 0,               // failed due to lack of free cells
+      "add_repl": 0,               // found a cell to replace (devices table only)
+      "add_found": 11              // entry already in the table
+    },
+    {
+      "add_10": 11,
+      "add_all": 11,
+      "name": "dns_ips",
+      "add_limit": 0,
+      "add_busy": 0,
+      "add_repl": 0,
+      "add_found": 0
+    },
+    {
+      "add_10": 372,
+      "add_all": 372,
+      "name": "connections",
+      "add_limit": 0,
+      "add_busy": 0,
+      "add_repl": 0,
+      "add_found": 343
+    },
+    {
+      "add_10": 534,
+      "add_all": 534,
+      "name": "devices",
+      "add_limit": 0,
+      "add_busy": 0,
+      "add_repl": 0,
+      "add_found": 531
+    }
+  ],
+  "fingerprint": { 
+    "ssdp": [                            // Captured SSDP Data
+      {                                  // payload (only complete strings, all of them separated by \r\n)
+        "info": "CACHE-CONTROL: max-age=300\r\nLOCATION: http://192.168.0.7:1900/gatedesc.xml\r\n",
+        "short": 1,                      // shows up only if \r\n\r\n was not detected in the payload
+        "mac": "00:0c:29:3b:1b:07"
+      }
+    ],
+    "dhcp": [                            // Caputured DHCP Option Data
+         {
+           "mac": "7c:2a:31:d9:1b:92",
+           "blob": "3501033d07017c2a31d91b9232040a04013232e342e3137382d313635"
+         }
+    ],
+    "mdns": [                            // Captured MDNS Responses 
+      {
+        "name": "Nicholas��’s MacBook Pro (2)._ssh._tcp.local",
+        "mac": "ac:bc:32:9c:81:b9",
+        "blob": "00",
+        "port": 22
+      },
+      {
+        "name": "Nicholas��’s MacBook Pro (2)._sftp-ssh._tcp.local",
+        "mac": "ac:bc:32:9c:81:b9",
+        "blob": "00",
+        "port": 22
+      },
+      {
+        "name": "sonos949F3E8243F0._spotify-connect._tcp.local",
+        "mac": "94:9f:3e:82:43:f0",
+        "blob": "0b56455253494f4e3d312e301043506174683d2f73706f746966797a63",
+        "port": 1400
+      },
+      {
+        "name": "Nicholas��’s MacBook Pro (2)._device-info._tcp.local",
+        "mac": "ac:bc:32:9c:81:b9",
+        "blob": "146d6f64656c3d4d6163426f6f6b50726f31312c340a6f7378766572733d3138",
+        "port": 0
+      }
+    ],
+    "useragent": [                            // Captured HTTP UserAgent Headers
+      {
+        "mac": "08:00:27:7b:d4:39",           // MAC That Sent HTTP Request
+        "data": [
+          "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:69.0) Gecko/20100101 Firefox/69.0"
+        ]
+      }
+    ],
+    "table_stats": [                          // Table Stats for Fingerprint
+      {
+        "name": "dhcp",
+        "add_all": 0,
+        "add_limit": 0,
+        "add_busy": 0,
+        "add_10": 0,
+        "add_found": 0,
+        "add_new": 0
+      },
+      {
+        "name": "ssdp",
+        "add_all": 0,
+        "add_limit": 0,
+        "add_busy": 0,
+        "add_10": 0,
+        "add_found": 0,
+        "add_new": 0
+      },
+      {
+        "name": "mdns",
+        "add_all": 34,
+        "add_limit": 0,
+        "add_busy": 0,
+        "add_10": 34,
+        "add_found": 28,
+        "add_new": 6
+      },
+      {
+        "name": "useragent",
+        "add_all": 0,
+        "add_limit": 0,
+        "add_busy": 0,
+        "add_10": 0,
+        "add_found": 0,
+        "add_new": 0
+      }
+    ]
+  }
+}
+-----------------------------
+
+
+Devices and connections data w/ 3 of 10sec time slices for single 30sec 
+telemetry (slices show the data structure, normally sending 1 slice for 30sec):
+-------------------------------------------------------------------------------
+
+Devices & connections tables dump:
+----------------------------------
+00:0c:29:3b:b1:70 192.168.0.100 on br0 at 40 rated 3
+   6/TCP to 10.4.0.6 p:8080(their) 
+    pkts: 60, bytes in/out: 1296/2184 1296/2184 1296/2184 
+   2/IGMP to 224.0.0.22
+    pkts: 1, bytes in/out: 0/0 0/0 0/60 
+  17/UDP to 239.255.255.250 p:1900(their) 
+    pkts: 4, bytes in/out: 0/0 0/0 0/852 
+00:0c:29:f4:ae:07 192.168.0.101 on br0 at 66 rated 3
+   6/TCP to 10.4.1.125 p:9300(their) 
+    pkts: 58, bytes in/out: 0/2146 0/962 0/1184 
+   1/ICMP to 10.4.1.114
+    pkts: 12, bytes in/out: 306/0 306/0 612/0 
+   2/IGMP to 224.0.0.22
+    pkts: 1, bytes in/out: 0/0 0/60 0/0 
+----------------------------------
+Devices: 2 Connections: 6
+
+Devices table stats:
+  add_all = 136
+  add_limit = 0
+  add_busy = 0
+  add_repl = 0
+  add_10 = 136
+  add_found = 134
+Connections table stats:
+  add_all = 18
+  add_limit = 0
+  add_busy = 0
+  add_10 = 18
+  add_found = 14
+
+
+Counters data (include slice timestamp & duration):
+---------------------------------------------------
+br0: done at Fri Sep 29 15:11:22 2017 +507 msec, duration 10009 msec
+  bytes_in  : 4175
+  bytes_out : 12389
+  proc_pkts : 80
+  tp_packets: 80
+  tp_drops  : 0
+
+eth0.2: done at Fri Sep 29 15:11:22 2017 +507 msec, duration 10006 msec
+  bytes_in  : 1941
+  bytes_out : 2310
+  proc_pkts : 0
+  tp_packets: 0
+  tp_drops  : 0
+
+br0: done at Fri Sep 29 15:11:32 2017 +513 msec, duration 10006 msec
+  bytes_in  : 2795
+  bytes_out : 2751
+  proc_pkts : 41
+  tp_packets: 41
+  tp_drops  : 0
+
+eth0.2: done at Fri Sep 29 15:11:32 2017 +514 msec, duration 10006 msec
+  bytes_in  : 2270
+  bytes_out : 2352
+  proc_pkts : 0
+  tp_packets: 0
+  tp_drops  : 0
+
+br0: done at Fri Sep 29 15:11:42 2017 +517 msec, duration 10004 msec
+  bytes_in  : 4355
+  bytes_out : 2888
+  proc_pkts : 67
+  tp_packets: 67
+  tp_drops  : 0
+
+eth0.2: done at Fri Sep 29 15:11:42 2017 +518 msec, duration 10004 msec
+  bytes_in  : 2201
+  bytes_out : 2556
+  proc_pkts : 0
+  tp_packets: 0
+  tp_drops  : 0
+
+
+DNS data:
+---------
+IP->DNS tables dump:
+  [0001] 24.61.110.29 -> <okob.net> -> <www.okob.net>
+  [0000] 54.239.25.192 -> <amazon.com>
+  [0000] 54.239.17.6 -> <amazon.com>
+  [0001] 172.217.12.164 -> <www.google.com>
+  [0001] 54.239.25.200 -> <amazon.com>
+  [0000] 54.239.25.208 -> <amazon.com>
+  [0000] 54.239.17.7 -> <amazon.com>
+  [0000] 54.239.26.128 -> <amazon.com>
+  -----------------------------
+  Total: 8 Errors: 0
+
+Verified no result searching for unknown address
+
+DNS name table stats:
+  add_all = 10
+  add_limit = 0
+  add_busy = 0
+  add_10 = 10
+  add_found = 6
+IP table stats:
+  add_all = 8
+  add_limit = 0
+  add_busy = 0
+  add_10 = 8
+  add_found = 0
+  find_all = 174
+  find_fails = 163
+  find_10 = 174
+
+
+
+A few performance tests with packets processing turned on vs being turned off:
+------------------------------------------------------------------------------
+
+Iperf test over Wireless, server on WAN (17.4 Mbits/sec no apparent change):
+----------------------------------------------------------------------------
+br0: done at Thu Sep 28 14:20:19 2017 +879 msec, duration 30007 msec
+  bytes_in  : 22988086
+  bytes_out : 525702
+  proc_pkts : 23219
+  tp_packets: 23219
+  tp_drops  : 0
+
+eth0.2: done at Thu Sep 28 14:20:19 2017 +879 msec, duration 30005 msec
+  bytes_in  : 449468
+  bytes_out : 23201999
+  proc_pkts : 0
+  tp_packets: 0
+  tp_drops  : 0
+
+
+Iperf test over Ethernet, server on WAN (200-210 Mbits/sec 30-40Mbps slower):
+-----------------------------------------------------------------------------
+br0: done at Thu Sep 28 14:08:33 2017 +179 msec, duration 30007 msec
+  bytes_in  : 261365962
+  bytes_out : 5834965
+  proc_pkts : 1065
+  tp_packets: 262377
+  tp_drops  : 261312
+
+eth0.2: done at Thu Sep 28 14:08:33 2017 +179 msec, duration 30005 msec
+  bytes_in  : 4957463
+  bytes_out : 263803913
+  proc_pkts : 0
+  tp_packets: 0
+  tp_drops  : 0
+
+
+UDP Iperf test to see when TPCAP drops packets and how many:
+------------------------------------------------------------
+Simple, 2 clients, just UDP test traffic, 10sec test duration
+at 120Mbps all captured, 
+at 125Mbps 2-3% drop 
+at 150Mbps 40-50% drop
+at 200Mbps 80% drop
+
+
+
+Connection table overrun test:
+------------------------------
+Devices: 2 Connections: 4098
+
+Devices table stats:
+  add_all = 16372
+  add_limit = 0
+  add_busy = 0
+  add_repl = 0
+  add_10 = 16372
+  add_found = 16370
+Connections table stats:
+  add_all = 16318
+  add_limit = 0
+  add_busy = 2082
+  add_10 = 11543
+  add_found = 10140

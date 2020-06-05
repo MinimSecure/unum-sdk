@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+# When to start/stop the agent during the system init/deinit
+START=05
+boot() {
+	[ -f /etc/config/wireless ] && 	touch /tmp/wireless_exists.txt
+}

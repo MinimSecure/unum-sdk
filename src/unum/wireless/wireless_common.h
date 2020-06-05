@@ -1,17 +1,4 @@
-// Copyright 2019 - 2020 Minim Inc
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// (c) 2017-2019 minim.co
 // unum ieee802.11 common include file (shared by all platforms)
 
 #ifndef _WIRELESS_COMMON_H
@@ -47,7 +34,7 @@ typedef struct _WT_JSON_TPL_RADIO_STATE {
     JSON_KEYVAL_TPL_t *extras; // Ptr to template for platform extras
     int num_stas; // STAs on the radio (optional, if capturing them per-radio)
     int num_vaps; // VAPs in the 'vaps' array below
-    char vaps[WIRELESS_MAX_VAPS][IFNAMSIZ]; // interface names of the active VAPs
+    char vaps[WIRELESS_MAX_VAPS][IFNAMSIZ]; // interface names of active VAPs
 } WT_JSON_TPL_RADIO_STATE_t;
 
 // The structure for collecting state of the current VAP being reported

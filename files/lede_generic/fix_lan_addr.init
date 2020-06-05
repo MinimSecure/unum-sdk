@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+# Add fix_gateway_ip command
+EXTRA_COMMANDS="fix_gateway_ip"
+
+# When to start/stop the LAN IP fixup during the system init/deinit
+START=25
+STOP=15
+
+fix_gateway_ip() {
+  /usr/bin/fix_lan_addr.sh &
+}
+
+stop() {
+  SCRIPT_PID=`/usr/bin/pgrep -f /usr/bin/fix_lan_addr.sh`
+  [ ! -z "$SCRIPT_PID" ] && /bin/kill -9 $SCRIPT_PID
+  echo 'Stopped'
+}
+
+start() {
+  stop
+  fix_gateway_ip
+}
+
+restart() {
+  stop
+  start
+}
