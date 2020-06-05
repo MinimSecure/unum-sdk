@@ -1,1 +1,0 @@
-fw_update-linux_generic.mk

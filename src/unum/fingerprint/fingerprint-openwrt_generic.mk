@@ -1,1 +1,0 @@
-fingerprint-linux_generic.mk

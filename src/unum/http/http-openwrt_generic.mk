@@ -1,1 +1,0 @@
-http-linux_generic.mk

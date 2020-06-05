@@ -1,1 +1,0 @@
-log-linux_generic.mk

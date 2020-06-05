@@ -1,1 +1,0 @@
-wireless-linux_generic.mk

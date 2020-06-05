@@ -1,1 +1,0 @@
-telemetry-linux_generic.mk
