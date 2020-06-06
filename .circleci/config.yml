@@ -169,12 +169,22 @@ jobs:
 workflows:
   version: 2
 
-  # The "snapshot" workflow runs for all commits on any branch.
+  # The "snapshot" workflow runs for all commits on any branch
+  # (excluding unum-v2 for now).
   snapshot:
     jobs:
-      - build-amd64
-      - build-armhf
-      - build-docker
+      - build-amd64:
+          filters:
+            branches:
+              ignore: unum-v2
+      - build-armhf:
+          filters:
+            branches:
+              ignore: unum-v2
+      - build-docker:
+          filters:
+            branches:
+              ignore: unum-v2
 
   # The "release" workflow runs only for tagged commits.
   release:
