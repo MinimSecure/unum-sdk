@@ -68,6 +68,9 @@ TARGET_LDFLAGS_unum := -ldl -lm \
 	-L$(TARGET_LIBS)/libssl/lib/ -l:libssl.so \
 	-L$(TARGET_LIBS)/libssl/lib/ -l:libcrypto.so
         
+### GDB
+GDB_VERSION := gdb-7.11
+TARGET_VARS_gdb := VERSION=$(GDB_VERSION)
 
 TARGET_VARS_unum := MBEDTLS=$(MBEDTLS_VERSION) CURL=$(CURL_VERSION) \
                     IWINFO=$(IWINFO_VERSION) JANSSON=$(JANSSON_VERSION) 
