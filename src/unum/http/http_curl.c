@@ -306,7 +306,9 @@ static http_rsp *http_req(char *url, char *headers,
         num_retries = 1;
     }
     curl_easy_setopt(ch, CURLOPT_DNS_CACHE_TIMEOUT, 200);
-    curl_easy_setopt(ch, CURLOPT_DNS_USE_GLOBAL_CACHE, 1);
+    // CURLOPT_DNS_USE_GLOBAL_CACHE is not thread safe
+    // Deprecated (just NOP) since 7.62.0 
+    curl_easy_setopt(ch, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);
 
     for(retry = 0; retry < num_retries; retry++)
     {
