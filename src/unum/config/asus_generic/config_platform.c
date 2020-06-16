@@ -145,6 +145,7 @@ char *platform_cfg_get(int *p_len)
             if(is_skip_var(prev_ptr) != NULL)
             {
                 memmove(prev_ptr, ptr + 1, (cfg_end - (ptr + 1)));
+                cfg_end -= (ptr + 1) - prev_ptr;
                 ptr = prev_ptr;
                 continue;
             }
