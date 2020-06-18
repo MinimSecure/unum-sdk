@@ -20,7 +20,7 @@
 #ifdef DEBUG
 
 // Test config file name
-static char *cfg_fname = "/tmp/testcfg.xml";
+static char *cfg_fname = "/tmp/testcfg.txt";
 
 // Test load config()
 int test_loadCfg(void)
