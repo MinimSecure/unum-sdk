@@ -163,27 +163,38 @@ void platform_cfg_free(char *buf)
 }
 
 
-static void util_restart_config(void)
+#ifdef APPLY_CONFIG_CMD
+// Apply new configuration or return error if reboot is required to apply
+static int platform_apply_config(void)
 {
     int err;
     struct stat st;
-    char *restart_cmd = UNUM_RESTART_CONFIG_SCRIPT;
+    char *apply_cmd = APPLY_CONFIG_CMD;
     int ret;
 
-    err = stat(restart_cmd, &st);
+    err = stat(apply_cmd, &st);
     if(err == 0) {
-        log("%s: Restart config using %s\n", __func__, restart_cmd);
-        ret = system(restart_cmd);
-        log("%s: Restarted config using %s. Return value: %d\n", __func__, 
-            restart_cmd, ret);
-        if(ret  == -1) {
-            log("%s: Restart config failed, continuing anyway\n", __func__);
-        } else if((ret >> 8) == 1) {
-            log("%s: LEDE Mode changed. Restarting unum\n", __func__);
+        log("%s: applying config using %s\n", __func__, apply_cmd);
+        ret = util_system(apply_cmd, CMD_MAX_EXE_TIME, NULL);
+        log("%s: applied config using %s, return value: %d\n", __func__,
+            apply_cmd, ret);
+        if(ret == 0) {
+            // all good
+            return 0;
+        } else if(ret == -1) {
+            log("%s: apply config failed: %s\n", __func__, strerror(errno));
+        } else if(WIFEXITED(ret) && WEXITSTATUS(ret) == 1) {
+            log("%s: operation mode changed, restarting agent...\n", __func__);
             util_restart(UNUM_START_REASON_MODE_CHANGE);
+            // never gets here
         }
+        // killed by signal, shell cannot start, util_restart failed, e.t.c.
+        return ret;
     }
+
+    return -1;
 }
+#endif // APPLY_CONFIG_CMD
 
 // Apply configuration from the memory buffer
 // Parameters:
@@ -196,9 +207,9 @@ static void util_restart_config(void)
 //       successful (only returns if failed)
 int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 {
-    int ret = UCI_ERR_UNKNOWN;
     struct uci_package *package = NULL;
     struct uci_context *ctx = NULL;
+    int ret = UCI_ERR_UNKNOWN;
 
     FILE *input = fmemopen(cfg, cfg_len, "r");
     if(input == NULL) {
@@ -257,19 +268,30 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
     }
 
 #ifdef DEBUG
-    // Do apply automatically if running config test
+    // Do not reboot or apply automatically if running config test
     if(get_test_num() == U_TEST_FILE_TO_CFG) {
-        printf("Use %s to test applying the new config.\n",
-               UNUM_RESTART_CONFIG_SCRIPT);
+#ifdef APPLY_CONFIG_CMD
+        printf("Execute <%s> to apply the changes.\n", APPLY_CONFIG_CMD);
+#else // APPLY_CONFIG_CMD
+        printf("Reboot is required to apply the changes.\n");
+#endif // APPLY_CONFIG_CMD
         return 0;
     }
 #endif // DEBUG
 
-    log("%s: new config saved, Restarting the init scripts\n", __func__);
-    util_restart_config();
-    log("%s: applied the updated configuration\n", __func__);
+#ifdef APPLY_CONFIG_CMD
+    log("%s: new config saved, applying...\n", __func__);
+    if(platform_apply_config() == 0) {
+        log("%s: applied the updated configuration\n", __func__);
+        return 0;
+    }
+#endif // APPLY_CONFIG_CMD
 
-    return 0;
+    // Reboot if the config cannot be applied without it
+    util_reboot();
+    log("%s: reboot request has failed\n", __func__);
+
+    return -3;
 }
 
 // Platform specific init for the config subsystem

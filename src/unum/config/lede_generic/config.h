@@ -24,6 +24,11 @@
 #define ACTIVATE_FLAG_FILE "/etc/unum/.wifi_provisioned"
 #define ACTIVATE_FLAG_FILE_TIMEOUT 60
 
+// Define the shell command for applying the new config file
+// without rebooting the router.
+#define APPLY_CONFIG_CMD "/usr/bin/restart_config.sh"
+
+
 // Typedef for config UID on the platform (MD5 hash here).
 typedef char CONFIG_UID_t[16];
 
