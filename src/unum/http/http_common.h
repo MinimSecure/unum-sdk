@@ -54,8 +54,7 @@ static __inline__ http_rsp *alloc_rsp(http_rsp *old_rsp, int new_len)
     return new_rsp;
 }
 
-// Allocate (or reallocate) http_rsp structure that can fit
-// requested amount of data.
+// Free http_rsp structure
 static __inline__ void free_rsp(http_rsp *old_rsp)
 {
     UTIL_FREE(old_rsp);
