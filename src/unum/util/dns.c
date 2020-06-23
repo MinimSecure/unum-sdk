@@ -380,7 +380,7 @@ const char *dns_strerror(int error) {
 #endif
 
 #ifndef DNS_ATOMIC_FETCH_ADD
-#if HAVE___ATOMIC_FETCH_ADD && __GCC_ATOMIC_LONG_LOCK_FREE == 2
+#if HAVE___ATOMIC_FETCH_ADD
 #define DNS_ATOMIC_FETCH_ADD(i) __atomic_fetch_add((i), 1, __ATOMIC_RELAXED)
 #else
 #error "no atomic_fetch_add available"
@@ -389,7 +389,7 @@ const char *dns_strerror(int error) {
 #endif
 
 #ifndef DNS_ATOMIC_FETCH_SUB
-#if HAVE___ATOMIC_FETCH_SUB && __GCC_ATOMIC_LONG_LOCK_FREE == 2
+#if HAVE___ATOMIC_FETCH_SUB
 #define DNS_ATOMIC_FETCH_SUB(i) __atomic_fetch_sub((i), 1, __ATOMIC_RELAXED)
 #else
 #error "no atomic_fetch_sub available"
