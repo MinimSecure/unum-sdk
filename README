@@ -183,8 +183,13 @@ II. Adding the new hardware type to unum-v2 repo
 6. Make the ./extras/<hw_kind> folder and add there info and tools for
    the new hardware type. You can see the examples of what is useful
    in the open sourced hardware kind subfolders. Typically here you'd save
-   an example of the configuratin file, radio telemetry for the new type,
-   the gdb (host) and gdbserver (target) for debugging.
+   the examples of the configuratin, radio telemetry, the gdb (host) and
+   gdbserver (target) for debugging.
+   When capturing the configuration please provide an example of the
+   configuration changes for each parameter configurable through the
+   Minim cloud (for example cfg_bef_ssid_change.txt,
+   cfg_aft_ssid_change.txt, cfg_bef_radio_off.txt, cfg_aft_radio_off.txt,
+   cfg_bef_auth_open.txt, cfg_aft_auth_open.txt ...).
 
 
 III. Firmware modifications
