@@ -178,16 +178,16 @@ static void config(THRD_PARAM_t *p)
             }
             log("%s: downloaded config from cloud\n", __func__);
 
-            // If apply fails give up and force AP to re-send current config
+            // Try to apply the config
             if(platform_apply_cloud_cfg(rsp->data, rsp->len) != 0) {
                 log("%s: unable to apply cloud config\n", __func__);
-                memset(&last_sent_uid, 0, sizeof(last_sent_uid));
-                delay = 0;
-                break;
             }
 
-            // Reset last_sent_uid to force config push to Retroelk
+            // If we tried to apply the config regardless of the result
+            // force the agent to resend it without any delay.
             memset(&last_sent_uid, 0, sizeof(last_sent_uid));
+            delay = 0;
+            
             break;
         }
 
