@@ -2,7 +2,9 @@
 
 mkdir -p /var/tmp/
 
-macaddr=`hexdump -x  -s 8 /dev/mtd5  | head -n 1 | \
+mtd_dev=`cat /proc/mtd | sed -e 's/:.*"config"//' -e 't' -e 'd'`
+
+macaddr=`hexdump -x -s 8 /dev/$mtd_dev | head -n 1 | \
 	awk '{printf("%s:%s:%s:%s:%s:%s\n", substr($2,1,2), \
 	substr($2,3,2), substr($3, 1,2), substr($3,3,2), \
 	substr($4,1,2), substr($4,3,2));}'`
