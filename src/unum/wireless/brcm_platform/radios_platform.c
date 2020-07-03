@@ -51,7 +51,7 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     static char band_str[8];
     static char spec_str[CHANSPEC_STR_LEN];
     static unsigned long stats_time[WIRELESS_MAX_RADIOS];
-    static char counters_str[3072];
+    static char counters_str[WT_COUNTERS_SIZE];
     // Populate extras
     static JSON_OBJ_TPL_t extras_obj = { // stats must be first
       { "stats",   { .type = JSON_VAL_STR,  {.s  = NULL    }}},

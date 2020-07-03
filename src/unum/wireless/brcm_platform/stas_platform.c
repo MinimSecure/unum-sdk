@@ -1,4 +1,4 @@
-// (c) 2019 minim.co
+// (c) 2017-2020 minim.co
 // unum platform code for collecting wireless clients info
 // contains some definitions from Broadcom as follows:
 /*
@@ -137,24 +137,31 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     // Auth state, other state bitflags WL_STA_AUTHE, WL_STA_ASSOC
     authorized = (si.flags & WL_STA_AUTHO) ? 1 : 0;
 
-    // Only report authorized stations
+#ifndef WT_NO_CHECK_AUTHORIZED
+    // ToDo: This flag is a workaround. Need to takeit out when
+    // we findout why the driver does n't mark (on MT8733 for example)
+    // the clients as authorized. They are just marked as Associated
+    // and Authenticated.
+    // For now dont check Authorized status when this flag is enabled
+    // This is enabled for Zoom 8733 platform so far
+    // Only report authorized stations.
     if(!authorized) {
         log_dbg("%s: %s: skipping unauthorized STA "
                 MAC_PRINTF_FMT_TPL "\n",
                 __func__, ifname, MAC_PRINTF_ARG_TPL(mac));
         return 2;
     }
+#endif
 
-	// Make sure we have extended station info and stats
+    // Make sure we have extended station info and stats
     // (we require rssi and it is only available in the stats)
-	if(si.len < sizeof(sta_info_t)) {
+    if(si.len < sizeof(sta_info_t)) {
         log("%s: %s: no extended STA info for "
             MAC_PRINTF_FMT_TPL ", skipping\n",
             __func__, ifname, MAC_PRINTF_ARG_TPL(mac));
         return 3;
     }
-	if((si.flags & WL_STA_SCBSTATS) == 0)
-	{
+    if((si.flags & WL_STA_SCBSTATS) == 0) {
         log("%s: %s: no STA stats for "
             MAC_PRINTF_FMT_TPL ", skipping\n",
             __func__, ifname, MAC_PRINTF_ARG_TPL(mac));
