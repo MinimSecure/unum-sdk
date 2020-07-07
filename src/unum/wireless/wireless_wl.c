@@ -1,4 +1,4 @@
-// (c) 2018-2019 minim.co
+// (c) 2018-2020 minim.co
 // unum wl driver APIs, used only by platforms that are based on
 // on Broadcom wl drivers and can access APIs in BCM's libshared
 // Note: wt_wl_mk_if_list() must be called before the functions
@@ -71,13 +71,6 @@ static const uint8 wf_chspec_bw_mhz[] = {
 };
 #define WF_NUM_BW (sizeof(wf_chspec_bw_mhz)/sizeof(uint8))
 
-// 40MHz channels in 5GHz band
-static const uint8 wf_5g_40m_chans[] = {
-    38, 46, 54, 62, 102, 110, 118, 126, 134, 142, 151, 159
-};
-#define WF_NUM_5G_40M_CHANS \
-        (sizeof(wf_5g_40m_chans)/sizeof(uint8))
-
 // 80MHz channels in 5GHz band
 static const uint8 wf_5g_80m_chans[] = {
     42, 58, 106, 122, 138, 155
@@ -85,10 +78,6 @@ static const uint8 wf_5g_80m_chans[] = {
 #define WF_NUM_5G_80M_CHANS \
         (sizeof(wf_5g_80m_chans)/sizeof(uint8))
 
-// 160MHz channels in 5GHz band
-static const uint8 wf_5g_160m_chans[] = { 50, 114 };
-#define WF_NUM_5G_160M_CHANS \
-        (sizeof(wf_5g_160m_chans)/sizeof(uint8))
 
 
 #ifdef WIRELESS_WL_NO_LIBSHARED
@@ -596,13 +585,18 @@ int wl_get_stations(char *ifname, void *sta_info_buf)
 {
     int ret;
 
+    maclist_t *maclist = (struct maclist *)sta_info_buf;
+#if WT_ASSOC_ALT
+    // Alternate way to fetch the clients for some Broadcom platforms
+    maclist->count = htod32((WLC_IOCTL_MAXLEN - sizeof(int)) / ETHER_ADDR_LEN);
+#else
     strcpy(sta_info_buf, "assoclist");
+#endif
     ret = wl_ioctl(ifname, WLC_GET_ASSOCLIST, sta_info_buf, WLC_IOCTL_MAXLEN);
     if(ret < 0) {
         log("%s: WLC_GET_ASSOCLIST has failed for %s\n", __func__, ifname);
         return -1;
     }
-    maclist_t *maclist = (struct maclist *)sta_info_buf;
     if(maclist->count > (WLC_IOCTL_MAXLEN - UTIL_OFFSETOF(maclist_t, ea)) /
                         sizeof(struct ether_addr))
     {

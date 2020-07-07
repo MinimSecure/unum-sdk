@@ -347,7 +347,11 @@ int util_get_cmd_output(char *cmd, char *buf, int buf_len, int *pstatus)
     while(fgets(buf + len, buf_len - len, fp) != NULL)
     {
         len += strlen(buf + len);
-        if(len >= buf_len) {
+
+        // fgets always reads a max of size - 1
+        // So compare length with buf_len - 1.
+        // Otherwise, we will end-up in an infintie loop when len = buf_len - 1
+        if(len >= (buf_len - 1)) {
             // Run out of the buffer space
             while(fgetc(fp) != EOF);
             break;
