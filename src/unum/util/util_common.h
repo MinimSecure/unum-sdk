@@ -162,8 +162,7 @@ void __attribute__((weak)) util_get_auth_info_key(char *auth_info_key, int max_k
 int  __attribute__((weak)) util_get_mac_list(char *mac_list, int max_len);
 
 // Return uptime in specified fractions of the second (rounded to the low)
-// Note: it's not uptime or montonic for some platforms, NTP makes it jump
-//       at least when intially sets the time.
+// Note: it's typically (but not necessarily) the same as uptime
 unsigned long long util_time(unsigned int fraction);
 
 // Sleep the specified number of milliseconds

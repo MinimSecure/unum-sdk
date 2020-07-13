@@ -117,14 +117,23 @@ void util_get_auth_info_key(char *auth_info_key, int max_key_len)
 #endif // AUTH_INFO_GET_CMD
 
 // Return uptime in specified fractions of the second (rounded to the low)
-// Note: it's not uptime or montonic for some platforms, NTP makes it jump
-//       at least when intially sets the time.
+// Note: it's typically (but not necessarily) the same as uptime
 unsigned long long util_time(unsigned int fraction)
 {
     struct timespec t;
     unsigned long long l;
 
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    // We might not have the define for CLOCK_MONOTONIC_RAW, but have the kernel
+    // that supports it and given that we only compile for Linux the clock ID
+    // is going to be the same.
+    static int clock_id = 4; // CLOCK_MONOTONIC_RAW
+
+    // If platform does not support it switch to CLOCK_MONOTONIC
+    if(clock_gettime(clock_id, &t) < 0) {
+        clock_id = CLOCK_MONOTONIC;
+        clock_gettime(clock_id, &t);
+    }
+
     l = (unsigned long long)t.tv_sec * fraction;
     l += ((unsigned long)t.tv_nsec) / (1000000000UL / fraction);
 
