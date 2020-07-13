@@ -250,6 +250,7 @@ static void timer_test2(TIMER_PARAM_t *p)
 // Test timers functionality
 void test_timers(void)
 {
+    int i, err, ecode;
     TIMER_PARAM_t tp;
 
     // Init timers subsystem
@@ -260,6 +261,64 @@ void test_timers(void)
     }
 
     printf("%s: Starting\n", __func__);
+
+    printf("%s: Clock functions:\n", __func__);
+    printf("%s:   util_time(1) => %llu\n", __func__, util_time(1));
+    for(i = 0; i < 16; i++) {
+        struct timespec t;
+        char clock_name[128];
+        // Clock IDs up to Linux 3.14.x
+        switch(i) {
+            case CLOCK_REALTIME:
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_REALTIME");
+                break;
+            case CLOCK_MONOTONIC:
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_MONOTONIC");
+                break;
+            case CLOCK_PROCESS_CPUTIME_ID:
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_PROCESS_CPUTIME_ID");
+                break;
+            case CLOCK_THREAD_CPUTIME_ID:
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_THREAD_CPUTIME_ID");
+                break;
+            case 4: // CLOCK_MONOTONIC_RAW
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_MONOTONIC_RAW");
+                break;
+            case 5: // CLOCK_REALTIME_COARSE
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_REALTIME_COARSE");
+                break;
+            case 6: // CLOCK_MONOTONIC_COARSE
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_MONOTONIC_COARSE");
+                break;
+            case 7: // CLOCK_BOOTTIME
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_BOOTTIME");
+                break;
+            case 8: // CLOCK_REALTIME_ALARM
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_REALTIME_ALARM");
+                break;
+            case 9: // CLOCK_BOOTTIME_ALARM
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_BOOTTIME_ALARM");
+                break;
+            case 10: // CLOCK_SGI_CYCLE
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_SGI_CYCLE");
+                break;
+            case 11: // CLOCK_TAI
+                snprintf(clock_name, sizeof(clock_name), "CLOCK_TAI");
+                break;
+            default:
+                snprintf(clock_name, sizeof(clock_name), "%d", i);
+        }
+        err = clock_gettime(i, &t);
+        ecode = errno;
+        printf("%s:   clock_gettime(%.25s, ...) => %s",
+               __func__, clock_name, ((err == 0) ? "Ok" : "Error"));
+        if(err == 0) {
+            printf(" %lu:%lu\n", t.tv_sec, t.tv_nsec);
+        } else {
+            printf(" %s\n", strerror(ecode));
+        }
+    }
+
     printf("%s: Setup timer1 in 10, timer2 in 15sec, no new thread\n",
            __func__);
     util_timer_set(10000, "timer1", timer_test1, NULL, FALSE);
