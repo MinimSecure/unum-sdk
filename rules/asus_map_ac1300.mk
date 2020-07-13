@@ -61,12 +61,12 @@ TARGET_CPPFLAGS_unum := \
         -I$(TARGET_LIBS)/libssl/include \
         -I$(TARGET_LIBS)/libcurl/include
 
-TARGET_LDFLAGS_unum := -ldl -lm \
-	-L$(TARGET_LIBS)/libnvram/lib/ -l:libnvram.so \
-	-L$(TARGET_LIBS)/libshared/lib/ -l:libshared.so \
+TARGET_LDFLAGS_unum := -ldl -lm -lrt \
 	-L$(TARGET_LIBS)/libcurl/lib/ -l:libcurl.so \
 	-L$(TARGET_LIBS)/libssl/lib/ -l:libssl.so \
-	-L$(TARGET_LIBS)/libssl/lib/ -l:libcrypto.so
+	-L$(TARGET_LIBS)/libssl/lib/ -l:libcrypto.so \
+	-L$(TARGET_LIBS)/libnvram/lib/ -l:libnvram.so \
+	-L$(TARGET_LIBS)/libshared/lib/ -l:libshared.so
         
 ### GDB
 GDB_VERSION := gdb-7.11
