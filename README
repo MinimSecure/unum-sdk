@@ -48,10 +48,7 @@ you need to make a disk image that is formatted as "MacOS Extended
 Vagrant Workflow
  - vagrant up
  - vagrant ssh
- - ./build.sh MODEL=<model> # Defaults to archer_c2_v1
- - cd /repos/archer-c2-tp/  # Move to the archer_c2_v1 firmware build tool
- - ./build.sh --add /repos/unum-v2/out/archer_c2_v1/[fimename.tgz]
- - ./upgrade.sh 192.168.0.1 admin out/firmware_sysupgrade.bin
+ - ... (continue to building the agent and/or firmware)
 
 
 Source code:
@@ -111,7 +108,7 @@ I. Vendor SDK repository
    to build the firmware. Where to download the toolchains (we store some of
    them in AWS S3 storage).
 3. Change the SDK to allow adding unum tarball files to the firmware rootfs
-   (the unum tarball is built here in the unum-v2 repository)
+   (the unum tarball is built here in the unum-sdk repository)
 4. Add the standard build script:
    ./build.sh <HARDWARE_TYPE> [--no-changes | --add <PATH_TO_UNUM_TARBALL>]
    for building the firmware (if only one hardware type is supported then you
@@ -138,7 +135,7 @@ Note: when creating GIT repository for vendor SDK always create the first
       the new version.
 
 
-II. Adding the new hardware type to unum-v2 repo
+II. Adding the new hardware type to unum-sdk repo
 
 1. Use script for generating the new hardware type template files:
    ./mk_hwtype.sh [-l] <TARGET_TYPE> <SOURCE_TYPE>
