@@ -1,11 +1,10 @@
 // (c) 2018-2019 minim.co
 // unum platform code for collecting wireless radios info
 
-
+#include "unum.h"
 
 // Include declarations for mt76xx
 #include "mt76xx_wireless_platform.h"
-#include "unum.h"
 
 // Include declarations for platform driver specific code
 // provided by the platform.

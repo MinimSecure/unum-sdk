@@ -2,10 +2,10 @@
 // unum platform code for collecting wireless clients info
 // for Mediatek 76xx radios
 
+#include "unum.h"
+
 // Include declarations for mt76xx
 #include "mt76xx_wireless_platform.h"
-
-#include "unum.h"
 
 // Include declarations for platform driver specific code
 // we share locally.
