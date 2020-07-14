@@ -1,10 +1,10 @@
 // (c) 2018-2020 minim.co
 // unum platform code for collecting wireless clients info
 
-#include "unum.h"
-
 // Include declarations for mt76xx
 #include "mt76xx_wireless_platform.h"
+
+#include "unum.h"
 
 // Include declarations for platform driver specific code
 // provided by the platform.
@@ -116,7 +116,7 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         return -3;
     }
 
-#if WT_QUERY_STAS_FOR_EACH_VAP
+#ifdef WT_QUERY_STAS_FOR_EACH_VAP
     // If STA is not connected to the current VAP skip it
     if(prt->ApIdx != vap_id) {
         return 1; // just skip, no error

@@ -1,11 +1,11 @@
 // (c) 2018-2019 minim.co
 // unum platform code for collecting wireless radios info
 
-#include "unum.h"
 
 
 // Include declarations for mt76xx
 #include "mt76xx_wireless_platform.h"
+#include "unum.h"
 
 // Include declarations for platform driver specific code
 // provided by the platform.
@@ -21,8 +21,8 @@
 
 // List of platform radios indexed by the radio number
 static char *radio_list[] = {
-    WIFI_RADIO_24, // 2.4 GHz radio
-    WIFI_RADIO_5 // 5 GHz radio
+    WIFI_RADIO_24_PREFIX "0", // 2.4 GHz radio
+    WIFI_RADIO_5_PREFIX "0" // 5 GHz radio
 };
 
 // Return the name of the radio

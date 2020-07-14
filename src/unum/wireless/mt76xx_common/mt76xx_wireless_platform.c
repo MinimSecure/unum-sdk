@@ -2,13 +2,13 @@
 // unum platform wireless helper routines that do not fit into
 // a specific 'radios', 'STAs' and/or 'scan' category
 
+// Include declarations for mt76xx
+#include "mt76xx_wireless_platform.h"
+
 #include "unum.h"
 
 // Currently we only need this .h here for klogctl()
 #include <sys/klog.h>
-
-// Include declarations for mt76xx
-#include "mt76xx_wireless_platform.h"
 
 // Include declarations for platform driver specific code
 // we share locally.
