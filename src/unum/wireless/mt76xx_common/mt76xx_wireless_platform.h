@@ -14,6 +14,8 @@ typedef unsigned char UCHAR;
 typedef char CHAR;
 typedef unsigned int UINT32;
 
+#define WIFI_RADIO_24_PREFIX "ra"
+#define WIFI_RADIO_5_PREFIX "rai"
 
 // PHY modes
 #define MODE_CCK          0

@@ -106,9 +106,9 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
 
     // Check that the STA is connected to the VAP
     int vap_id = -1;
-    if(strncmp(vinfo->ifname, "rai", 3) == 0) {
+    if(strncmp(vinfo->ifname, WIFI_RADIO_5_PREFIX, 3) == 0) {
         vap_id = vinfo->ifname[3] - '0';
-    } else if(strncmp(vinfo->ifname, "ra", 2) == 0) {
+    } else if(strncmp(vinfo->ifname, WIFI_RADIO_24_PREFIX, 2) == 0) {
         vap_id = vinfo->ifname[2] - '0';
     }
     if(vap_id < 0 || vap_id > 3) {
@@ -116,10 +116,12 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         return -3;
     }
 
+#ifdef WT_QUERY_STAS_FOR_EACH_VAP
     // If STA is not connected to the current VAP skip it
     if(prt->ApIdx != vap_id) {
         return 1; // just skip, no error
     }
+#endif
 
     // Capture the common info
     sprintf(sinfo->mac, MAC_PRINTF_FMT_TPL, MAC_PRINTF_ARG_TPL(prt->Addr));
