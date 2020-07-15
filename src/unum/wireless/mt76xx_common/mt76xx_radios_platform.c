@@ -21,8 +21,8 @@
 
 // List of platform radios indexed by the radio number
 static char *radio_list[] = {
-    "ra0", // 2.4 GHz radio
-    "rai0" // 5 GHz radio
+    WIFI_RADIO_24_PREFIX "0", // 2.4 GHz radio
+    WIFI_RADIO_5_PREFIX "0" // 5 GHz radio
 };
 
 
@@ -43,12 +43,12 @@ int wt_get_ifname_radio_num(char *ifname)
     int ifradio = -1;
 
     // Try to match the 5GHz (longest name)
-    if(strncmp(ifname, "rai", 3) == 0 ||
+    if(strncmp(ifname, WIFI_RADIO_5_PREFIX, 3) == 0 ||
        strncmp(ifname, "apclii", 6) == 0)
     {
         ifradio = 1;
     } // Match the 2.4
-    else if(strncmp(ifname, "ra", 2) == 0 ||
+    else if(strncmp(ifname, WIFI_RADIO_24_PREFIX, 2) == 0 ||
             strncmp(ifname, "apcli", 5) == 0)
     {
         ifradio = 0;
@@ -158,7 +158,7 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     // We only use "ra*" and "apcli*" interfaces, besides that
     // fiter out those that are not UP
     client = (strncmp(ifname, "apcli", 5) == 0);
-    if((strncmp(ifname, "ra", 2) != 0 && !client) ||
+    if((strncmp(ifname, WIFI_RADIO_24_PREFIX, 2) != 0 && !client) ||
        !util_net_dev_is_up(ifname))
     {
         return 1;
