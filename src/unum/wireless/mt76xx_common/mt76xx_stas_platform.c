@@ -116,7 +116,7 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         return -3;
     }
 
-#ifdef WT_QUERY_STAS_FOR_EACH_VAP
+#ifndef WT_QUERY_STAS_FOR_EACH_VAP
     // If STA is not connected to the current VAP skip it
     if(prt->ApIdx != vap_id) {
         return 1; // just skip, no error
