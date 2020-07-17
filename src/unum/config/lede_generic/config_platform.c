@@ -175,20 +175,26 @@ static int platform_apply_config(void)
     err = stat(apply_cmd, &st);
     if(err == 0) {
         log("%s: applying config using %s\n", __func__, apply_cmd);
-        ret = util_system(apply_cmd, CMD_MAX_EXE_TIME, NULL);
-        log("%s: applied config using %s, return value: %d\n", __func__,
-            apply_cmd, ret);
+        ret = util_system(apply_cmd, APPLY_CONFIG_MAX_TIME, NULL);
         if(ret == 0) {
-            // all good
+            log("%s: successfully applied new config\n", __func__);
             return 0;
-        } else if(ret == -1) {
+        }
+        if(ret == -1) {
             log("%s: apply config failed: %s\n", __func__, strerror(errno));
         } else if(WIFEXITED(ret) && WEXITSTATUS(ret) == 1) {
             log("%s: operation mode changed, restarting agent...\n", __func__);
             util_restart(UNUM_START_REASON_MODE_CHANGE);
             // never gets here
+        } else if(WIFEXITED(ret)) {
+            log("%s: apply config command returned error %d\n", __func__,
+                WEXITSTATUS(ret));
+        } else if(WIFSIGNALED(ret)) {
+            log("%s: apply config command terminated by signal %d\n", __func__,
+                WTERMSIG(ret));
+        } else {
+            log("%s: apply config error, return value: %d\n", __func__, ret);
         }
-        // killed by signal, shell cannot start, util_restart failed, e.t.c.
         return ret;
     }
 
