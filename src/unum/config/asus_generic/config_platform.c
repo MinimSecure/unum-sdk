@@ -268,7 +268,7 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
     else
 #endif // DEBUG
     {
-        util_system(PRE_APPLY_CONFIG_CMD, CMD_MAX_EXE_TIME, NULL);
+        util_system(PRE_APPLY_CONFIG_CMD, APPLY_CONFIG_MAX_TIME, NULL);
         log("%s: preparing to apply new config by running <%s>\n",
             __func__, PRE_APPLY_CONFIG_CMD);
     }
@@ -376,15 +376,33 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
 #endif // DEBUG
 
     if(err == 0) {
-        log("%s: new config saved, applying...\n", __func__);
+        log("%s: new config saved\n", __func__);
     } else {
         log("%s: config failed, rebooting the device to revert\n", __func__);
     }
 #ifdef APPLY_CONFIG_CMD
     if(err == 0) {
-        util_system(APPLY_CONFIG_CMD, CMD_MAX_EXE_TIME, NULL);
-        log("%s: applied new config by running <%s>\n",
-            __func__, APPLY_CONFIG_CMD);
+        log("%s: applying config using %s\n", __func__, APPLY_CONFIG_CMD);
+        err = util_system(APPLY_CONFIG_CMD, APPLY_CONFIG_MAX_TIME, NULL);
+        if(err == 0) {
+            log("%s: successfully applied new config\n", __func__);
+            return 0;
+        }
+        if(err == -1) {
+            log("%s: apply config failed: %s\n", __func__, strerror(errno));
+        } else if(WIFEXITED(err) && WEXITSTATUS(err) == 1) {
+            log("%s: operation mode changed, restarting agent...\n", __func__);
+            util_restart(UNUM_START_REASON_MODE_CHANGE);
+            // never gets here
+        } else if(WIFEXITED(err)) {
+            log("%s: apply config command errurned error %d\n", __func__,
+                WEXITSTATUS(err));
+        } else if(WIFSIGNALED(err)) {
+            log("%s: apply config command terminated by signal %d\n", __func__,
+                WTERMSIG(err));
+        } else {
+            log("%s: apply config error, return value: %d\n", __func__, err);
+        }
         return err;
     }
 #endif // APPLY_CONFIG_CMD
