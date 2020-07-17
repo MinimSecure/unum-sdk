@@ -22,6 +22,12 @@
 // Stop HTTPD to make sure config is not getting messed up.
 #define PRE_APPLY_CONFIG_CMD "/sbin/rc rc_service stop_httpd"
 
+// Maximum time for the (pre)apply config commands to complete (in seconds).
+// If not complete within that time the wait is terminated and the shell
+// applying config is killed
+#define APPLY_CONFIG_MAX_TIME 60
+
+
 // Typedef for config UID on the platform (MD5 hash here).
 typedef char CONFIG_UID_t[16];
 
