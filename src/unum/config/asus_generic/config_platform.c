@@ -8,10 +8,11 @@
 #define LOG_DBG_DST LOG_DST_DROP
 
 
-// Skip temporary vars (add them all to the strig w/ \0 around each var, extra
+// Skip temporary vars (add them all to the string w/ \0 around each var, extra
 // \0 at the end), the vars are skipped when the config is read and also when
 // applied
 static char skip_vars[] = "wan0_expires\0login_timestamp\0client_info_tmp\0"
+                          "wanduck_start_detect\0"
                           "\0";
 
 // Check if string matches any var in skip_vars[] array
