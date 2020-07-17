@@ -28,6 +28,11 @@
 // without rebooting the router.
 #define APPLY_CONFIG_CMD "/usr/bin/restart_config.sh"
 
+// Maximum time for the apply config script to complete (in seconds).
+// If not complete within that time the wait is terminated, the shell
+// applying config is killed and the device reboot is triggered.
+#define APPLY_CONFIG_MAX_TIME 120
+
 
 // Typedef for config UID on the platform (MD5 hash here).
 typedef char CONFIG_UID_t[16];
