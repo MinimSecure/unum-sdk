@@ -62,7 +62,7 @@ static void print_tests_info()
            "- test fingerprinting info collection\n");
 
     printf(UTIL_STR(U_TEST_TIMERS)
-           "- test timers subsystem\n");
+           "- test timers subsystem and related functionality\n");
 
     printf(UTIL_STR(U_TEST_WL_RT)
            "- test radio telemetry info collection\n");

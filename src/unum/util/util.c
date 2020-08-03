@@ -286,16 +286,29 @@ void util_fix_crlf(char *str_in)
     return;
 }
 
-// In general it is similar to system() call, but tries to kill the
-// command being waited for if the timeout (in seconds) is reached
-// and does not change any signal handlers.
-// If pid_file is not NULL the function tries to store there the
-// PID of the running process while it is executing.
-int util_system(char *cmd, unsigned int timeout, char *pid_file)
+// In general it is similar to system() call, but it does not change any
+// signal handlers.
+// It also allows to specify callback "cb" and time period in sconds
+// after which to call that callback. Parameters:
+// cmd - the commapd line to pass to shell
+// cb_time - positive - specifies time in seconds till callback is called,
+//           0 - call unconditionally after fork() (if process is created),
+//           negative - the callback calling is disabled
+// cb - pointer to the callback function (see below), NULL - no call
+// cb_prm - parameter to pass to the callback function
+//
+// The UTIL_SYSTEM_CB_t callback is passed in the following parameters:
+// pid     - PID of the running process
+// elapsed - the time in seconds since the command started
+// cb_prm  - caller's parameter (void pointer)
+// The callback return value can be negative to disable future calling.
+// If the value is positive it specifies the number of seconds till the
+// next call to the callback (0 still means call in 1 second).
+int util_system_wcb(char *cmd, int cb_time, UTIL_SYSTEM_CB_t cb, void *cb_prm)
 {
     int ret, pid, status;
     unsigned int time_count = 0;
-    FILE *f = NULL;
+    int timeout = cb_time;
 
     if(!cmd) {
         return 1;
@@ -309,10 +322,9 @@ int util_system(char *cmd, unsigned int timeout, char *pid_file)
         _exit(127);
     }
 
-    if(pid_file && (f = fopen(pid_file, "w")) != NULL) {
-        fprintf(f, "%d", pid);
-        fclose(f);
-        f = NULL;
+    // See if we need to make the callack on startup call
+    if(cb != NULL && timeout == 0) {
+        timeout = cb(pid, time_count, cb_prm);
     }
 
     for(;;) {
@@ -324,16 +336,58 @@ int util_system(char *cmd, unsigned int timeout, char *pid_file)
         }
         sleep(1);
         ++time_count;
-        if(time_count >= timeout) {
-            kill(pid, SIGKILL);
+        if(cb != NULL && timeout >= 0 && time_count >= timeout) {
+            ret = cb(pid, time_count, cb_prm);
+            if(ret < 0) {
+                timeout = ret;
+            } else {
+                timeout = time_count + ret;
+            }
         }
     }
 
+    return -1;
+}
+
+// In general it is similar to system() call, but tries to kill the
+// command being waited for if the timeout (in seconds) is reached
+// and it does not change any signal handlers.
+// If pid_file is not NULL the function tries to store in that file
+// the PID of the running process while it is executing.
+static int util_system_cb(int pid, unsigned int elapsed, void *cb_ptr)
+{
+    void **params = cb_ptr;
+    unsigned int timeout = *((unsigned int *)(*params));
+    char *pid_file = (char *)(*(params + 1));
+    FILE *f = NULL;
+
+    // Handle the first call after creating the process
+    if(elapsed == 0) {
+        if(pid_file && (f = fopen(pid_file, "w")) != NULL)
+        {
+            fprintf(f, "%d", pid);
+            fclose(f);
+            f = NULL;
+        }
+        return (signed int)timeout;
+    }
+
+    // Handle the second call (could be only due to the timeout)
+    kill(pid, SIGKILL);
+    return -1;
+}
+int util_system(char *cmd, unsigned int timeout, char *pid_file)
+{
+    void *params[] = { &timeout, pid_file };
+
+    int ret = util_system_wcb(cmd, 0, util_system_cb, (void *)params);
+
+    // Get rid of the PID file
     if(pid_file) {
         unlink(pid_file);
     }
 
-    return -1;
+    return ret;
 }
 
 // Call cmd in shell and capture its stdout in a buffer.
