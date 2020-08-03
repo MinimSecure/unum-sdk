@@ -3,11 +3,54 @@
 
 #include "unum.h"
 
+// This callback keeps checking for the SUPPORT_CONNECT_FILE_NAME while
+// the session is running. If SUPPORT_CONNECT_FILE_NAME is detected it
+// kills the current (probably stalled) sesion so the new one can be
+// started.
+// It also watches for the session total time exceeding
+// SUPPORT_CONNECT_TIME_MAX and kills it as well if it happens.
+static int support_cmd_cb(int pid, unsigned int elapsed, void *params)
+{
+    char *pid_file = (char *)params;
+    FILE *f = NULL;
+    
+    // Handle the first call after creating the process
+    if(elapsed == 0) {
+        // Make it have its own process group
+        setpgid(pid, 0);
+        // Save PID
+        if(pid_file && (f = fopen(pid_file, "w")) != NULL)
+        {
+            fprintf(f, "%d", pid);
+            fclose(f);
+            f = NULL;
+        }
+        // Call us again in SUPPORT_SHORT_PERIOD seconds
+        return SUPPORT_SHORT_PERIOD;
+    }
 
+    // If session max time is reached, kill
+    if(elapsed >= SUPPORT_CONNECT_TIME_MAX) {
+        log("%s: session expired, killing PID %d\n", __func__, pid);
+        kill(-pid, SIGKILL);
+        return -1;
+    }
+
+    // If another request to start session is detected
+    if(util_path_exists(SUPPORT_CONNECT_FILE_NAME)) {
+        log("%s: new session rquest, killing PID %d\n", __func__, pid);
+        kill(-pid, SIGKILL);
+        return -1;
+    }
+
+    // Call us again in SUPPORT_SHORT_PERIOD seconds
+    return SUPPORT_SHORT_PERIOD;
+}
+
+// Man loop for support process
 static void support(void)
 {
     char *cmd = NULL;
-    struct stat st;
     unsigned int delay = 0;
     unsigned int short_delay_count = 0;
     char pid_file[256] = "";
@@ -47,20 +90,31 @@ static void support(void)
         char username[16]; // macXXXXXXXXXXXX
         char lan_ip[INET_ADDRSTRLEN];
         int cmd_max_len = SUPPORT_CONNECT_CMD_MAX_LEN;
+
         int do_not_try = (unum_config.support_long_period == 0) &&
                          (short_delay_count <= 0);
 
         // Wait for the pre-calculated delay, but keep checking for
         // the connection request file to terminate the loop earlier.
         for(ii = 0; do_not_try || ii < delay; ii++) {
-            if(stat(SUPPORT_CONNECT_FILE_NAME, &st) == 0) {
-                short_delay_count = SUPPORT_SHORT_PERIOD_TRIES;
-                unlink(SUPPORT_CONNECT_FILE_NAME);
+            if(util_path_exists(SUPPORT_CONNECT_FILE_NAME)) {
                 log("%s: connect request detected, terminating wait\n",
                     __func__);
                 break;
             }
             sleep(1);
+        }
+
+        // If detected conect request set the count and clear the file
+        // Note: we might skip the delay loop, so have to do it outside
+        if(util_path_exists(SUPPORT_CONNECT_FILE_NAME)) {
+            short_delay_count = SUPPORT_SHORT_PERIOD_TRIES;
+            unlink(SUPPORT_CONNECT_FILE_NAME);
+        }
+
+        // Decrement short delay count
+        if(short_delay_count > 0) {
+            --short_delay_count;
         }
 
         // Make a connection attempt
@@ -114,7 +168,8 @@ static void support(void)
 
             log("%s: command\n%s\n", __func__, cmd);
 
-            util_system(cmd, SUPPORT_CONNECT_TIME_MAX, pid_file);
+            util_system_wcb(cmd, 0, support_cmd_cb, (void *)pid_file);
+            unlink(pid_file);
             break;
         }
         con_time = util_time(1) - con_time;
@@ -127,7 +182,6 @@ static void support(void)
 
         // Use short delay if the fast tries counter is above 0
         if(short_delay_count > 0) {
-            --short_delay_count;
             delay = SUPPORT_SHORT_PERIOD;
         }
         else if(unum_config.support_long_period > 0) {
@@ -207,12 +261,8 @@ int support_main(void)
 void create_support_flag_file(void)
 {
 #ifdef ENABLE_DROPBEAR_CMD
-    char *enable_dropbear_cmd = ENABLE_DROPBEAR_CMD;
-    struct stat st;
-    int err = stat(enable_dropbear_cmd, &st);
-
-    if(err == 0) {
-        util_system(enable_dropbear_cmd, 3, NULL);
+    if(util_path_exists(ENABLE_DROPBEAR_CMD)) {
+        util_system(ENABLE_DROPBEAR_CMD, ENABLE_DROPBEAR_CMD_TIMEOUT, NULL);
     }
 #endif // ENABLE_DROPBEAR_CMD
     if(touch_file(SUPPORT_CONNECT_FILE_NAME, 0660) < 0)
