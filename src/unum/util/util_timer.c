@@ -247,7 +247,7 @@ static void timer_test2(TIMER_PARAM_t *p)
     }
 }
 
-// Test timers functionality
+// Test time and timers functionality
 void test_timers(void)
 {
     int i, err, ecode;
@@ -319,6 +319,21 @@ void test_timers(void)
         }
     }
 
+
+    printf("\n");
+    printf("%s: util_system() timing out test:\n", __func__);
+    unsigned long long cmd_start = util_time(1);
+    char pid_file[] = "/tmp/unum_test.pid";
+    char cmd[] = "sleep 5; echo -n PID:; cat /tmp/unum_test.pid; echo; sleep 10";
+    printf("%s:   executing util_system(\"%s\", 10, \"%s\")\n",
+           __func__, cmd, pid_file);
+    err = util_system(cmd, 10, pid_file);
+    printf("%s:   completed in %llusec with exit code %d (expected 9)\n",
+           __func__, util_time(1) - cmd_start, err);
+
+
+    printf("\n");
+    printf("%s: Timers test:\n", __func__);
     printf("%s: Setup timer1 in 10, timer2 in 15sec, no new thread\n",
            __func__);
     util_timer_set(10000, "timer1", timer_test1, NULL, FALSE);
@@ -345,4 +360,3 @@ void test_timers(void)
     printf("%s: Done\n", __func__);
 }
 #endif // DEBUG
-
