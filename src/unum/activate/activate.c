@@ -165,9 +165,6 @@ static char *router_activate_json(char *my_mac)
             start_reason = NULL;
     }
 
-    // Reset reason code
-    process_start_reason.code = UNUM_START_REASON_UNKNOWN;
-
     JSON_OBJ_TPL_t tpl_tbl_crash_info = {
       { "type",       {.type = JSON_VAL_STR, { .s = crash_type_ptr }}},
       { "location",   {.type = JSON_VAL_STR, { .s = crash_location_ptr }}},
