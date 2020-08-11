@@ -393,6 +393,13 @@ static int conncheck_troubleshoot_ipv4_dns(void)
         char buf[128];
         char *n = name;
 
+        // If support portal functionality is not enabled skip the first entry
+#ifndef SUPPORT_RUN_MODE
+        if(ii == 0) {
+            continue;
+        }
+#endif // !SUPPORT_RUN_MODE
+
         // DNS name in HTTP list entries is separated by ':' from the port & IPs
         char *sep = strchr(n, ':');
         if(sep != NULL) {
@@ -426,12 +433,12 @@ static int conncheck_troubleshoot_ipv4_dns(void)
             cc_st.dns_fails[sizeof(cc_st.dns_fails) - 1] = 0;
             dns_fails_ii += strlen(&cc_st.dns_fails[dns_fails_ii]);
             log_dbg("%s: DNS failed for <%s>\n", __func__, n);
-            res_init();
+            res_init(); // Note: not thread safe
         }
         else // increment fail count even if no space in cc_st.dns_fails
         {
             ++fail_count;
-            res_init();
+            res_init(); // Note: not thread safe
         }
 
         conncheck_update_state_event(CSTATE_CHECKING_DNS,
@@ -553,11 +560,12 @@ static int conncheck_troubleshoot_ipv4(void)
     }
 
     // Try a few times if seeing at least some successes
-    for(ii = 0; TRUE; ++ii) {
+    for(ii = 1; TRUE; ++ii) {
         err = conncheck_troubleshoot_ipv4_dns();
         if(err == 0) {
             break;
         } else if(err > 0 && ii < CONNCHECK_DNS_TRIES) {
+            log("%s: partial DNS failure, retrying...\n", __func__);
             continue;
         }
         cc_st.no_dns = TRUE;
@@ -695,7 +703,7 @@ static void conncheck(THRD_PARAM_t *p)
 #endif // CONNCHECK_START_DELAY > 0
 
     // Set watchdog to max time we may allow the agent to stay offline before
-    // launching connection checker, the checker itself should never block for
+    // launching connectivity checker, the checker itself should never block for
     // longer than that.
     util_wd_set_timeout(CONNCHECK_OFFLINE_RESTART);
 
