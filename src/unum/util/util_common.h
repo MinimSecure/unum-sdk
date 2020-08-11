@@ -57,6 +57,7 @@ enum unum_start_reason {
     UNUM_START_REASON_REBOOT_FAIL,  // failed to reboot
     UNUM_START_REASON_SERVER,       // restart command from server
     UNUM_START_REASON_FW_START_FAIL,// failed to start FW updater
+    UNUM_START_REASON_FW_CONN_FAIL, // failed to reach release server
     UNUM_START_REASON_KILL,         // terminated by kill (set by monitor)
 };
 
