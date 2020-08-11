@@ -52,6 +52,7 @@ static void force_fw_update_clear(void)
 
 static void fw_update(void)
 {
+    unsigned long no_rsp_t = 0;
     unsigned int delay;
     char *cur_fw_ver = util_fw_version();
     char *sptr;
@@ -87,7 +88,7 @@ static void fw_update(void)
             break;
         }
         log("%s: Cannot retrieve server endpoints\n", __func__);
-	// Wait before retrying
+        // Wait before retrying
         sleep(FORCE_FW_UPDATE_CHECK_PERIOD);
         continue;
     }
@@ -152,7 +153,25 @@ static void fw_update(void)
 
             // Retrieve the active firmware info for the device
             rsp = http_get(url, NULL);
-            if(rsp == NULL || (rsp->code / 100) != 2) {
+
+            if(rsp == NULL)
+            {
+                // If no response for over UPDATER_OFFLINE_RESTART time period
+                // try to restart updater process
+                if(no_rsp_t == 0) {
+                    no_rsp_t = util_time(1);
+                } else if(util_time(1) - no_rsp_t > UPDATER_OFFLINE_RESTART) {
+                    log("%s: no response for more than %d sec, restarting...\n",
+                        __func__, UPDATER_OFFLINE_RESTART);
+                    // In updater mode the agent runs under monitor and
+                    // util_restart() works
+                    util_restart(UNUM_START_REASON_FW_CONN_FAIL);
+                }
+                break;
+            }
+            no_rsp_t = 0;
+
+            if((rsp->code / 100) != 2) {
                 log("%s: failed to retrieve active firmware info for %s %s\n",
                     __func__, DEVICE_PRODUCT_NAME, my_mac);
                 break;
