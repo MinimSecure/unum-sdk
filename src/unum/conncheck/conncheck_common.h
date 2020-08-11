@@ -11,9 +11,9 @@
 // Add random startup delay up to CONNCHECK_START_DELAY seconds
 #define CONNCHECK_START_DELAY 0
 
-// How long to allow the cloud connectivity to fail before restarting
-// the comunication checker (for now just restart the agent), in sec.
-// This should is also used as the connection checker watchdog timeout.
+// How long to allow the cloud connectivity to fail before restarting the
+// connectivity checker (for now just restart the agent), in sec. This
+// constant is also used as the connectivity checker watchdog timeout.
 #define CONNCHECK_OFFLINE_RESTART 600
 
 // Max allowed time diff (in sec) before considering it an error and adjust
@@ -50,7 +50,9 @@
 #define CONNCHECK_NO_DNS_FILE "/var/unum_dns_error"
 
 // How many times to try DNS test (retrying only on prtial success)
-#define CONNCHECK_DNS_TRIES 3
+// Note: it doesn't help much to retry more than once, that one
+//       retry allows calling res_init() that helps in some cases
+#define CONNCHECK_DNS_TRIES 2
 
 
 // IDs for conncheck state (cstate)
