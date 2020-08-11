@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2018 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,12 +33,17 @@ typedef struct _UTIL_MUTEX {
 #define UTIL_MUTEX_INIT(_m)  \
     { pthread_mutexattr_t _attr; pthread_mutexattr_init(&_attr); \
       pthread_mutexattr_settype(&_attr, UTIL_MUTEX_RECURSIVE);   \
-      (_m)->init = TRUE; (_m)->g = PTHREAD_MUTEX_INITIALIZER;    \
+      (_m)->init = TRUE; pthread_mutex_init ( &((_m)->g), NULL);    \
       pthread_mutex_init((void *)(_m), &_attr); }
 
 // Mutex initializer (set up the helper mutex and init only)
 #define UTIL_MUTEX_INITIALIZER \
     { .g = PTHREAD_MUTEX_INITIALIZER, .init = FALSE }
+
+// Free dynamically initialized mutex
+#define UTIL_MUTEX_DEINIT(_m) \
+    { pthread_mutex_destroy(&((_m)->g));   \
+      pthread_mutex_destroy((void *)(_m)); }
 
 // Inline for taking mutex
 static __inline__ int util_mutex_take(UTIL_MUTEX_t *m) {

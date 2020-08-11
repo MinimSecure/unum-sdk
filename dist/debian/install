@@ -1,0 +1,4 @@
+build/linux_generic/rfs/bin /opt/unum/
+build/linux_generic/rfs/lib /opt/unum/
+build/linux_generic/rfs/extras /opt/unum/
+build/linux_generic/rfs/dist /opt/unum/
