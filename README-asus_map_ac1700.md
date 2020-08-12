@@ -6,7 +6,7 @@ https://github.com/violetatrium/asus/blob/asus_map_ac1700/README.md
 
 ## Build
 
- To start with,  please refer unum-v2's [Build][1].
+ To start with,  please refer unum-v2's [Integration document][1].
 
  Build is a two-step process for this platform.
  1. Build unum using the command:
@@ -26,4 +26,4 @@ https://github.com/violetatrium/asus/blob/asus_map_ac1700/README.md
   * Logs are written to `/var/log/unum.log`, `/var/log/http.log`, and 
     `/var/log/monitor.log`.
 
-[1]: Build.md
+[1]: README-integrators.md

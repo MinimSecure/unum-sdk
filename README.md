@@ -21,17 +21,13 @@ access point. Once installed, link your device with the [Minim cloud][3] to
 begin gaining insight into your network.
 
 - **Download [a pre-built release for your platform][8]** from the Releases page
-- **Build the SDK** yourself for these supported platforms:
+- Read the "**[Integration Document][16]** and **Build the SDK** yourself for these supported platforms:
   - **[OpenWRT:][7]** build Unum for LEDE / OpenWRT distributions
   - **[Asus MAP AC1300:][14]** build Unum for Asus MAP AC1300 Router
   - **[Asus MAP AC1700:][15]** build Unum for Asus MAP AC1700 Router
   - **[Linux:][6]** build Unum for Linux and Linux-like distributions
   - **[Docker:][5]** run a Linux router with Unum in a Docker container
 - For **guides and documentation**, check out the **[Unum SDK wiki][11]**.
-
-## Build and Test
-
-Build and Test instructions are captured in [Build][16].
 
 ## Contributing
 
@@ -62,4 +58,4 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [13]: LICENSE
 [14]: README-asus_map_ac1300.md
 [15]: README-asus_map_ac1700.md
-[16]: Build.md
+[16]: README-integrators.md
