@@ -21,9 +21,11 @@ same.
 Following platforms are supported so far.
  - TPLink Archer C7 v2/v4/v5
  - GL - Inet B1300
- - GL - Inet AR300M
- - Linksys WRT1900CS
  - TPLink - WDR3600 V1
+
+Following are also supported, but "support being phased out".
+ - Linksys WRT1900CS
+ - GL - Inet AR300M
 
 ## Build
 
@@ -33,10 +35,10 @@ Following platforms are supported so far.
  Make sure unum-sdk is accessisble from lede as ../unum-sdk.
 
  Build can be triggered with the following command from lede directory:
- ./build -d -e <platform name>
+ ./build -d <platform name>
  
  For example to build for TP Link Archer C7 v4,
- ./build -d -e archer_c7_v4
+ ./build -d archer_c7_v4
 
 
 ## Troubleshooting

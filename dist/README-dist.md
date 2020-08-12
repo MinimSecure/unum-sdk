@@ -3,16 +3,8 @@
 Maintainer notes for building and publishing various "finished product"
 produced by or with the Unum SDK.
 
-- [OpenWrt (.ipk and full images)][2]
 - [Debian, Ubuntu (.deb)][1]
 - [Unum for Docker][3]
-
-
-## OpenWrt images and .ipks
-
-OpenWrt binaries are built inside Docker containers using the 
-[MinimSecure/openwrt-builder][5] project.
-
 
 ## .deb for Debian-like
 
@@ -61,10 +53,8 @@ Related:
 - [GitHub integration][102]
 
 [1]: #deb-for-debian-like
-[2]: #openwrt-images-and-ipks
 [3]: #docker-images
 [4]: ../README-linux_generic.md#prerequisites
-[5]: https://github.com/MinimSecure/openwrt-builder
 [6]: make_dotdeb.sh
 [7]: https://hub.docker.com/u/minimsecure
 [8]: https://hub.docker.com/r/minimsecure/unum
