@@ -68,7 +68,7 @@ make UNUM_DEBUG=1
 
 #### Build Model
 
-Use `MODEL=<model_name>` to alter the build model. Defaults to `linux_generic`.
+Use `MODEL=&lt;model_name&gt;` to alter the build model. Defaults to `linux_generic`.
 
 ```bash
 make MODEL=linux_generic
@@ -318,7 +318,7 @@ Directory structure overview:
 |- files/linux_generic/     Build and installation default files and scripts
 |- libs/linux_generic/      Unused at time of writing
 |- src/
-|   - <module>/             Each module (such as iwinfo or unum)
+|   - &lt;module&gt;/             Each module (such as iwinfo or unum)
 |                           has a folder under `src/` with at least a
 |       - Makefile          module-specific Makefile.
 |       - [patches/]        Patches for the module, applied before building,
@@ -326,7 +326,7 @@ Directory structure overview:
 |- build/linux_generic      Build output directory.
 |   - obj/                  Staging directory containing sources as well as
 |                           build-time artifacts.
-|       - <module>/         Each module has a directory containing links to
+|       - &lt;module&gt;/         Each module has a directory containing links to
 |                           the module source code and necessary build files.
 |   - rfs/                  Directory containing the built files used to
 |                           generate the final tarball.

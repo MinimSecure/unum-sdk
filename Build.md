@@ -1,7 +1,7 @@
 Unum v2 agent build system
 
-Building:
----------
+## Building:
+
 In order to build the agent for a specific hardware which model
 (AKA hardware kind) is included into the open source repo run:
 ./build.sh MODEL=&lt;model&gt;
@@ -37,8 +37,7 @@ the precompiled toolchain will have some requirements. Some components
 might depend on the specific make or autotools version. The README files
 should list the requirements.
 
-MacOS Users:
-------------
+## MacOS Users:
 If running from a Mac through Vagrant, make sure this repo
 is sync'd to a case sensitive file system! This means that until
 High Sierra is released and we all live in the Eden of APFS-land,
@@ -51,8 +50,8 @@ Vagrant Workflow
  - ... (continue to building the agent and/or firmware)
 
 
-Source code:
-------------
+## Source code:
+
 Most of the content is located under
 ./&lt;content_type&gt;/&lt;model&gt;/
 folders. For example the libs for Asus AC1300 should be under
@@ -77,8 +76,8 @@ build - objects and agent (only the agent files) rootfs tree,
 out   - rootfs tarball for extraction into the target platform
         rootfs tree.
 
-Adding new hardware type:
--------------------------
+## Adding new hardware type:
+
 These instructions are for Minim engineers who have the necessary access
 to Minim cloud. The 3rd party integrators can use it as a reference.
 The officail support for 3rd party integrations is TBD. If you have
@@ -99,7 +98,7 @@ come up with the hardware type name following the existing naming conventions.
 Then follow the steps outlined below:
 
 
-I. Vendor SDK repository
+### Vendor SDK repository
 
 1. Create the vendor SDK repository for building the firmware;
 2. Add README file describing the hardware: CPU type, clock speed, RAM size
@@ -135,7 +134,7 @@ Note: when creating GIT repository for vendor SDK always create the first
       the new version.
 
 
-II. Adding the new hardware type to unum-sdk repo
+### Adding the new hardware type to unum-sdk repo
 
 1. Use script for generating the new hardware type template files:
    ./mk_hwtype.sh [-l] &lt;TARGET_TYPE&gt; &lt;SOURCE_TYPE&gt;
@@ -189,7 +188,7 @@ II. Adding the new hardware type to unum-sdk repo
    cfg_bef_auth_open.txt, cfg_aft_auth_open.txt ...).
 
 
-III. Firmware modifications
+### Firmware modifications
 
 1. Use the section "Firmware Changes Required for Integration" in the document
    https://docs.google.com/document/d/12AgcU3-53aqWTult7zeA1Iob2EMCH2r1G8eU5hQudXY
@@ -197,7 +196,7 @@ III. Firmware modifications
    sure everything is done.
 
 
-IV. Adding hardaware type to the cloud, part 1
+### Adding hardaware type to the cloud, part 1
 
 1. Go to https://my.minim.co/admin/hardware_kinds and do step 1 of adding the
    new hardware type as instructed on that web page.
@@ -210,7 +209,7 @@ IV. Adding hardaware type to the cloud, part 1
    and that device can connect and communicate with the cloud service.
 
 
-V. Build system
+### Build system
 
 1. Go to Jenkins build system and set up a build for the new hardware type.
    Keep the promotion (the firmware upload to cloud disabled for now).
@@ -218,14 +217,14 @@ V. Build system
 3. Enable the firmware promotion step and publish a build to the cloud.
 
 
-VI. Adding hardaware type to the cloud, part 2
+### Adding hardaware type to the cloud, part 2
 
 1. Go to https://my.minim.co/admin/hardware_kinds and do remaining (2 - ...)
    steps for adding the new hardware type support (i.e. add, if necessary, and
    assing to the new hardware kind a command set, e.t.c.).
 
 
-VII. Testing
+### Testing
 
 1. Thoroughly test that all the cloud features work.
 2. Make sure support portal works and that you can access web UI and shell

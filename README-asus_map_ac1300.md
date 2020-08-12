@@ -1,8 +1,7 @@
 This applies to Asus asus_map_ac1300 agent build
 (the agent for integration with the Asus asus_map_ac1300 firmware)
 
-Build environment setup:
-------------------------
+## Build environment setup:
 https://github.com/violetatrium/asus/blob/asus_map_ac1300/README.md
 
 ## Build
@@ -17,7 +16,7 @@ https://github.com/violetatrium/asus/blob/asus_map_ac1300/README.md
     https://github.com/violetatrium/asus/tree/asus_map_ac1300
     (Branch asus_map_ac1300)
     and trigger the build using the following command.
-    ./build.sh <--add <path_to_unum.tgz> asus_map_ac1300
+    ./build.sh --add &lt;path_to_unum.tgz&gt; asus_map_ac1300
     Firmware is copied into firmware/firmware_sysupgrade.bin
     if everything goes well with the build.
 

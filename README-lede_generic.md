@@ -1,4 +1,4 @@
-Readme for generic LEDE builds
+## Introduction
 
 The generic LEDE builds use only the "./src/unum" and "./files" subtrees of 
 the repository. The build and install are driven by the package Makefile 
@@ -35,7 +35,7 @@ Following are also supported, but "support being phased out".
  Make sure unum-sdk is accessisble from lede as ../unum-sdk.
 
  Build can be triggered with the following command from lede directory:
- ./build -d <platform name>
+ ./build -d &lt;platform name&gt;
  
  For example to build for TP Link Archer C7 v4,
  ./build -d archer_c7_v4
