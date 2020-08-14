@@ -33,8 +33,9 @@ void util_shutdown(int err)
 // reason - see enum unum_start_reason
 void util_restart(int reason)
 {
-    log("Terminating unum %s, restart requested\n", VERSION);
-    if(unum_config.unmonitored || unum_config.mode != NULL) {
+    log("Terminating unum %s, restart requested, reson %d\n", VERSION, reason);
+    if(is_process_unmonitored()) {
+        // ToDo: handle self restart
         log("The process is not monitored, restart manually\n");
     }
     agent_exit(reason);

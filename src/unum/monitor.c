@@ -8,6 +8,9 @@
 #undef log_dbg
 #define log_dbg(...) /* Nothing */
 
+// Variable for storing the monitor process PID
+// (set before monitored children are forked)
+static pid_t monitor_pid = 0;
 
 // Upload crash dump data from a buffer to S3 bucket
 // url_tpl - template for the upload URL (%s - LAN MAC)
@@ -244,6 +247,10 @@ void process_monitor(int log_dst, char *pid_suffix)
         return;
     }
 
+    // Set monitor process pid var (this will be passed in to the child
+    // and eventually used to detect if the child is being monitored)
+    monitor_pid = getpid();
+
     pid = -1;
     for(;;)
     {
@@ -401,4 +408,30 @@ void process_monitor(int log_dst, char *pid_suffix)
     }
 
     return;
+}
+
+// The function is intended to be called by the agent process that might be run
+// under the supervision of the process monitor. It returns TRUE if the
+// supervision is NOT detected, FALSE otherwise. It returns a negative value in
+// case of an error. It is able to detect if the monitor process was killed and
+// replaced with a debugger session.
+int is_process_unmonitored(void)
+{
+    char str[128];
+    if(monitor_pid == 0) {
+        return TRUE; 
+    }
+    FILE *f = fopen("/proc/self/status", "r");
+    if(NULL == f) {
+        return -1;
+    }
+    int tracer_pid = 0;
+    while(fgets(str, sizeof(str), f) != NULL) {
+        if(sscanf(str, "TracerPid: %d", &tracer_pid) == 1) {
+            break;
+        }
+    }
+    fclose(f);
+    // Note: return TRUE if NOT monitored
+    return (tracer_pid != monitor_pid);
 }
