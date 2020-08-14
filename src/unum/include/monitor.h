@@ -31,4 +31,11 @@
 // pid_suffix - suffix for the PID file of the monitoring process
 void process_monitor(int log_dst, char *pid_suffix);
 
+// The function is intended to be called by the agent process that might be run
+// under the supervision of the process monitor. It returns TRUE if the
+// supervision is NOT detected, FALSE otherwise. It returns a negative value in
+// case of an error. It is able to detect if the monitor process was killed and
+// replaced with a debugger session.
+int is_process_unmonitored(void);
+
 #endif // _MONITOR_H
