@@ -23,7 +23,7 @@
 #define REQ_CONNECT_TIMEOUT    20
 #define REQ_API_TIMEOUT        30
 #define REQ_API_TIMEOUT_SHORT  5
-#define REQ_FILE_TIMEOUT       480
+#define REQ_FILE_TIMEOUT       1200
 
 // Timeouts used in common code for setting up watchdog
 // MAX time for HTTP REST API operations
