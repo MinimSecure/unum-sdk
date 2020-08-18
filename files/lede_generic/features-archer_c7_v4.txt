@@ -1,3 +1,4 @@
 ap_mode
 activate_script
 mac_filter
+edns0_content_filter
