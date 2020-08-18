@@ -1,1 +1,5 @@
-../features-router.txt
+http-basic-auth-passwords
+telnet-passwords
+port_scanning
+rescan_devices
+edns0_content_filter
