@@ -18,3 +18,5 @@ See .../src/unum/Makefile for the list of features that affect the agent build.
 The release_properties.json is the JSON template for reporting the features
 to the server side when publishing the firmware.
 
+As of now features-router.txt does n't have any references, but it is needed
+for the external builds to refer to a typical router feature set
