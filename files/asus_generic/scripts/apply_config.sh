@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Restart services
+/sbin/rc rc_service stop_dnsmasq
+/sbin/rc rc_service start_dnsmasq
 /sbin/rc rc_service restart_firewall
 /sbin/rc rc_service restart_wireless
 
