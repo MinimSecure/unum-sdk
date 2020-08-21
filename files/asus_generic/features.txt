@@ -3,3 +3,4 @@ telnet-passwords
 port_scanning
 rescan_devices
 mac_filter
+edns0_content_filter
