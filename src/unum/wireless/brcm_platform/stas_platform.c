@@ -137,6 +137,7 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     // Auth state, other state bitflags WL_STA_AUTHE, WL_STA_ASSOC
     authorized = (si.flags & WL_STA_AUTHO) ? 1 : 0;
 
+    // Only report authorized stations.
     if(!authorized) {
         log_dbg("%s: %s: skipping unauthorized STA "
                 MAC_PRINTF_FMT_TPL "\n",
