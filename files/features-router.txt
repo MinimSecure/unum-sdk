@@ -2,3 +2,4 @@ http-basic-auth-passwords
 telnet-passwords
 port_scanning
 rescan_devices
+hardware_content_filtering

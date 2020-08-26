@@ -1,3 +1,4 @@
 lan_only
 ap_only
+mac_filter
 activate_script
