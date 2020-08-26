@@ -37,7 +37,6 @@ The Unum agent is designed to operate on a network gateway device or wireless
 access point. Once installed, link your device with the [Minim cloud][3] to 
 begin gaining insight into your network.
 
-- **Download [a pre-built release for your platform][8]** from the Releases page
 - Read the "**[Integration Document][16]** and **Build the SDK** yourself for these supported platforms:
   - **[OpenWRT:][7]** build Unum for LEDE / OpenWRT distributions
   - **[Asus MAP AC1300:][14]** build Unum for Asus MAP AC1300 Router
