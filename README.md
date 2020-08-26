@@ -16,7 +16,7 @@ Linux x86_64, i386, and armhf architectures.
 
 ## I am a...
 
-### router manufacturer and want to port the agent to my device.
+### ...router manufacturer and want to port the agent to my device.
 
 First, you should familiraize yourself with the requirements for the agent and the information you'll need to know to begin integrating the agent with your platform. You can review the following documents to understand the detailed requirements.
 
@@ -28,7 +28,7 @@ After confirming that you have everything you need and that the device meets all
 Once familiar with the source layout and with the platform specific functions that are required, you can follow the [Integration Guide][16] that Minim developers use to support new platforms.
 
 
-### hobbyist and want to setup minim on my own my device
+### ...hobbyist and want to setup minim on my own my device
 
 > Running the Unum agent requires a Minim Labs developer account. 
 > [Sign up for an account][3] on the Minim website.
@@ -47,7 +47,7 @@ begin gaining insight into your network.
 - For **guides and documentation**, check out the **[Unum SDK wiki][11]**.
 
 
-### developer at Minim. 
+### ...developer at Minim. 
 
 For the step by step instructions for adding new hardware kinds, running unit tests, details on how to add the new hardware kind to the cloud as well as detailsa bout how to setup new automated builds, take a look at the instructions here:
 
