@@ -20,8 +20,8 @@ Linux x86_64, i386, and armhf architectures.
 
 First, you should familiarize yourself with the requirements for the agent and the information you'll need to know to begin integrating the agent with your platform. You can review the following documents to understand the detailed requirements.
 
-[System and Hardware Requirements][18]
-[Integrator Information Checklist][17]
+* [System and Hardware Requirements][18]
+* [Integrator Information Checklist][17]
 
 After confirming that you have everything you need and that the device meets all requirements, clone the agent code and review one of the reference implementations (such as Asus AC1300).
 
