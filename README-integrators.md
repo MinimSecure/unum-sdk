@@ -7,20 +7,20 @@ In order to build the agent for a specific hardware which model
 ./build.sh MODEL=&lt;model&gt;
 
 You can also use:
-make - build all for the default model (read from ~/unum-v2-default-model)
-make unum - compile only unum component for the default model
-make unum.clean - clean unum component build files
-Note: instead of unum it can be any other component available for the
+* make - build all for the default model (read from ~/unum-v2-default-model)
+* make unum - compile only unum component for the default model
+* make unum.clean - clean unum component build files
+* Note: instead of unum it can be any other component available for the
       selected device model (for example "make MODEL=&lt;model&gt; curl")
 
-Additinal variables that can be specified on the command line:
-AGENT_VERSION=#.#.#.# - version string (by default all the dev builds have
+Additional variables that can be specified on the command line:
+* AGENT_VERSION=#.#.#.# - version string (by default all the dev builds have
                         the last version segment set to 0)
-UNUM_DEBUG=1 - build debug version of the agent, by default a release
+* UNUM_DEBUG=1 - build debug version of the agent, by default a release
                version is built, the release captures no log_dbg() output
                and runs process monitor restarting the main process in
                case of unhandled failures.
-ADD_TARGET=&lt;path&gt; - use this if the hardware kind files are not stored in
+* ADD_TARGET=&lt;path&gt; - use this if the hardware kind files are not stored in
                     the open source repository (see below).
 
 The hardware kind/model files can be stored within the open source repository
@@ -58,22 +58,22 @@ folders. For example the libs for Asus AC1300 should be under
 ./libs/asus_map_ac1300/
 
 Source tree folders:
-kernel - kernel files necessary for building the agent components
-libs   - libraries the agent and its components depend on
-rules  - rules for building for the supported targets/models,
+* kernel - kernel files necessary for building the agent components
+* libs   - libraries the agent and its components depend on
+* rules  - rules for building for the supported targets/models,
          naming conventions ./rules/&lt;model&gt;.mk
-src    - sources for the agent components (rules can specify what
+* src    - sources for the agent components (rules can specify what
          components to include to the specific model build),
          naming conventions ./src/&lt;component_name&gt;
-toolchains - toolchains for building the agent and its components
-files  - various non-buildable files (scripts, configuration, etc)
-extras - supplemental info, tools etc for the platforms
+* toolchains - toolchains for building the agent and its components
+* files  - various non-buildable files (scripts, configuration, etc)
+* extras - supplemental info, tools etc for the platforms
 
 Generated folders:
-build - objects and agent (only the agent files) rootfs tree,
+* build - objects and agent (only the agent files) rootfs tree,
         object folders naming: ./build/&lt;model&gt;/obj/&lt;component&gt;
         agent's rootfs tree: ./build/&lt;model&gt;/rfs
-out   - rootfs tarball for extraction into the target platform
+* out   - rootfs tarball for extraction into the target platform
         rootfs tree.
 
 ## Adding new hardware type:
