@@ -1,4 +1,6 @@
 # Unum SDK
+[![CircleCI Build Status](https://img.shields.io/circleci/project/github/MinimSecure/unum-sdk.svg?style=flat-square)][9]
+[![Latest Release](https://img.shields.io/github/release/MinimSecure/unum-sdk.svg?style=flat-square)][8]
 
 Minim is an AI-driven smart home WiFi managment and security platform that offers IoT fingerprinting, security, managment, as well as operator and subscriber APIs that can be leveraged to build custom services. All of this is enabled by the Unum Agent which runs on the home gateway.
 
@@ -7,12 +9,10 @@ This repository contains the open source distribution of
 
 # Technical Background
 
-Unum is a cross-platform program and can be built and installed on
+Unum is a cross-platform C program designed for Linux and can be built and installed on
 OpenWrt-compatible devices, Asus MAP AC1300, Asus MAP AC1700 as well as
 Linux x86_64, i386, and armhf architectures.
 
-[![CircleCI Build Status](https://img.shields.io/circleci/project/github/MinimSecure/unum-sdk.svg?style=flat-square)][9]
-[![Latest Release](https://img.shields.io/github/release/MinimSecure/unum-sdk.svg?style=flat-square)][8]
 
 ## I am a...
 
