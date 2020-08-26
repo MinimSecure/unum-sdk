@@ -18,7 +18,7 @@ Linux x86_64, i386, and armhf architectures.
 
 ### ...router manufacturer and want to port the agent to my device.
 
-First, you should familiraize yourself with the requirements for the agent and the information you'll need to know to begin integrating the agent with your platform. You can review the following documents to understand the detailed requirements.
+First, you should familiarize yourself with the requirements for the agent and the information you'll need to know to begin integrating the agent with your platform. You can review the following documents to understand the detailed requirements.
 
 [System and Hardware Requirements][18]
 [Integrator Information Checklist][17]
@@ -49,7 +49,7 @@ begin gaining insight into your network.
 
 ### ...developer at Minim. 
 
-For the step by step instructions for adding new hardware kinds, running unit tests, details on how to add the new hardware kind to the cloud as well as detailsa bout how to setup new automated builds, take a look at the instructions here:
+For the step by step instructions for adding new hardware kinds, running unit tests, details on how to add the new hardware kind to the cloud as well as details about how to setup new automated builds, take a look at the instructions here:
 
 [Minim Developer Gude][16]
 
