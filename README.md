@@ -1,10 +1,11 @@
 # Unum SDK
 
-This repository contains the open source distribution of
-[Minim][1]'s Unum agent and related, cumulatively known as the Unum SDK.
+Minim is an AI-driven smart home WiFi managment and security platform that offers IoT fingerprinting, security, managment, as well as operator and subscriber APIs that can be leveraged to build custom services. All of this is enabled by the Unum Agent which runs on the home gateway.
 
-> Running the Unum agent requires a Minim Labs developer account. 
-> [Sign up for an account][3] on the Minim website.
+This repository contains the open source distribution of
+[Minim][1]'s Unum agent and related libraries as well as build scripts and reference code, cumulatively known as the Unum SDK.
+
+# Technical Background
 
 Unum is a cross-platform program and can be built and installed on
 OpenWrt-compatible devices, Asus MAP AC1300, Asus MAP AC1700 as well as
@@ -13,8 +14,24 @@ Linux x86_64, i386, and armhf architectures.
 [![CircleCI Build Status](https://img.shields.io/circleci/project/github/MinimSecure/unum-sdk.svg?style=flat-square)][9]
 [![Latest Release](https://img.shields.io/github/release/MinimSecure/unum-sdk.svg?style=flat-square)][8]
 
+## I am a...
 
-## Getting started
+### router manufacturer and want to port the agent to my device.
+
+First, you should familiraize yourself with the requirements for the agent and the information you'll need to know to begin integrating the agent with your platform. You can review the following documents to understand the detailed requirements.
+
+[System and Hardware Requirements][18]
+[Integrator Information Checklist][17]
+
+After confirming that you have everything you need and that the device meets all requirements, clone the agent code and review one of the reference implementations (such as Asus AC1300).
+
+Once familiar with the source layout and with the platform specific functions that are required, you can follow the [Integration Guide][16] that Minim developers use to support new platforms.
+
+
+### hobbyist and want to setup minim on my own my device
+
+> Running the Unum agent requires a Minim Labs developer account. 
+> [Sign up for an account][3] on the Minim website.
 
 The Unum agent is designed to operate on a network gateway device or wireless
 access point. Once installed, link your device with the [Minim cloud][3] to 
@@ -28,6 +45,13 @@ begin gaining insight into your network.
   - **[Linux:][6]** build Unum for Linux and Linux-like distributions
   - **[Docker:][5]** run a Linux router with Unum in a Docker container
 - For **guides and documentation**, check out the **[Unum SDK wiki][11]**.
+
+
+### developer at Minim. 
+
+For the step by step instructions for adding new hardware kinds, running unit tests, details on how to add the new hardware kind to the cloud as well as detailsa bout how to setup new automated builds, take a look at the instructions here:
+
+[Minim Developer Gude][16]
 
 ## Contributing
 
@@ -59,3 +83,5 @@ The Minim team is always happy to chat. Send us a mail at [labs@minim.co][2] or
 [14]: README-asus_map_ac1300.md
 [15]: README-asus_map_ac1700.md
 [16]: README-integrators.md
+[17]: https://docs.google.com/document/d/12AgcU3-53aqWTult7zeA1Iob2EMCH2r1G8eU5hQudXY
+[18]: https://docs.google.com/document/d/1BUxOs0HjPbo2NGN--1TioqslomtKrvLTNm_CBdIbSQ8
