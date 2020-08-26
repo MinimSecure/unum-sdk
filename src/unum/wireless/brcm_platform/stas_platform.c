@@ -137,19 +137,12 @@ int wt_tpl_fill_sta_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     // Auth state, other state bitflags WL_STA_AUTHE, WL_STA_ASSOC
     authorized = (si.flags & WL_STA_AUTHO) ? 1 : 0;
 
-#ifndef WT_NO_CHECK_AUTHORIZED
-    // ToDo: This flag is a workaround. Need to takeit out when
-    // we findout why the driver does n't mark the clients as authorized.
-    // They are just marked as Associated and Authenticated.
-    // For now dont check Authorized status when this flag is enabled.
-    // Only report authorized stations.
     if(!authorized) {
         log_dbg("%s: %s: skipping unauthorized STA "
                 MAC_PRINTF_FMT_TPL "\n",
                 __func__, ifname, MAC_PRINTF_ARG_TPL(mac));
         return 2;
     }
-#endif
 
     // Make sure we have extended station info and stats
     // (we require rssi and it is only available in the stats)
