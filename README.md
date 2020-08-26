@@ -28,7 +28,7 @@ After confirming that you have everything you need and that the device meets all
 Once familiar with the source layout and with the platform specific functions that are required, you can follow the [Integration Guide][16] that Minim developers use to support new platforms.
 
 
-### ...hobbyist and want to setup minim on my own my device
+### ...hobbyist and want to setup minim on my own my device.
 
 > Running the Unum agent requires a Minim Labs developer account. 
 > [Sign up for an account][3] on the Minim website.
