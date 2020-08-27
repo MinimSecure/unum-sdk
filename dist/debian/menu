@@ -1,0 +1,4 @@
+?package(unum-aio):needs="text" section="Applications/System/Monitoring"\
+  title="unum" command="/opt/unum/bin/unum"
+?package(unum-aio):needs="text" section="Applications/System/Monitoring"\
+  title="iwinfo" command="/opt/unum/bin/iwinfo"

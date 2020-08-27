@@ -1,0 +1,33 @@
+Source: unum-aio
+Section: libdevel
+Priority: optional
+Maintainer: Minim Inc <labs@minim.co>
+Build-Depends: debhelper (>= 10),
+ build-essential,
+ libcurl4-openssl-dev,
+ libjansson-dev,
+ libnl-3-dev,
+ libnl-genl-3-dev
+Standards-Version: 4.1.2
+Homepage: https://github.com/MinimSecure/unum-sdk
+Vcs-Git: https://github.com/MinimSecure/unum-sdk.git
+Vcs-Browser: https://github.com/MinimSecure/unum-sdk
+
+Package: unum-aio
+Section: net
+Architecture: any
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ dnsmasq,
+ gawk,
+ hostapd,
+ ifupdown,
+ iproute2,
+ iptables,
+ libcurl3|libcurl4,
+ libnl-3-200,
+ libnl-genl-3-200,
+ libjansson4
+Description: unum all-in-one
+ Manages and monitors wired and wireless networks with automatic
+ configuration for hostapd and dnsmasq.

@@ -1,0 +1,26 @@
+unum-aio ($AGENT_VERSION) UNRELEASED; urgency=medium
+
+  * Add support for Minim cloud config sending/receiving/applying
+  * Add crash_me command for debug builds
+  * Fix useless yield in speedtest intermediate result sending
+  * Fix iptables sequence number incrementing
+  * Remove dependency on net-tools, in favor of iproute2
+  * Fix broken network configuration when disabling WLAN
+
+ -- Tyler Sommer <tyler@minim.co>  Wed, 22 Jan 2019 12:26:34 -0700
+
+
+unum-aio (2019.1.0) unstable; urgency=medium
+
+  * Improvements to iptables telemetry capturing
+  * Disable unimplemented crashinfo tracer
+  * Replace originals in unum-aio .deb uninstall
+
+ -- Tyler Sommer <tyler@minim.co>  Tue, 1 Jan 2019 1:40:00 -0700
+
+
+unum-aio (2018.1.0) unstable; urgency=medium
+
+  * Initial release
+
+ -- Tyler Sommer <tyler@minim.co>  Mon, 3 Dec 2018 15:37:26 -0700

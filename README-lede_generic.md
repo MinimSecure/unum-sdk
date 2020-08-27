@@ -1,4 +1,4 @@
-Readme for generic LEDE builds
+## Introduction
 
 The generic LEDE builds use only the "./src/unum" and "./files" subtrees of 
 the repository. The build and install are driven by the package Makefile 
@@ -15,3 +15,34 @@ The agent has its own version that is generated if it is built separately
 from the firmware (only happens during development, it is based on time).
 For the release builds the agent version and the firmware version are the
 same.
+
+## Platforms
+
+Following platforms are supported so far.
+ - TPLink Archer C7 v2/v4/v5
+ - GL - Inet B1300
+ - TPLink - WDR3600 V1
+
+Following are also supported, but "support being phased out".
+ - Linksys WRT1900CS
+ - GL - Inet AR300M
+
+## Build
+
+ LEDE code with unum-specifc build config files is here:
+ https://github.com/violetatrium/lede
+
+ Make sure unum-sdk is accessisble from lede as ../unum-sdk.
+
+ Build can be triggered with the following command from lede directory:
+ ./build -d &lt;platform name&gt;
+ 
+ For example to build for TP Link Archer C7 v4,
+ ./build -d archer_c7_v4
+
+
+## Troubleshooting
+
+* Where can I find log files for Unum?
+  * Logs are written to `/var/log/unum.log`, `/var/log/http.log`, and 
+    `/var/log/monitor.log`.
