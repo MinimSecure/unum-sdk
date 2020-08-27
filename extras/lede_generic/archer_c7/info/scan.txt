@@ -1,0 +1,267 @@
+{
+  "radios": [
+    {
+      "name": "phy1",
+      "scanlist": [
+        {
+          "bssid": "f2:da:f9:a3:36:f8",
+          "ssid": "",
+          "chan": 1,
+          "rssi": -67,
+          "extras": {
+            "quality": 43,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 802.1x (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "ec:08:6b:ae:55:c2",
+          "ssid": "4c264c20576972656c657373",
+          "chan": 1,
+          "rssi": -78,
+          "extras": {
+            "quality": 32,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "d2:da:f9:a3:36:f8",
+          "ssid": "",
+          "chan": 1,
+          "rssi": -68,
+          "extras": {
+            "quality": 42,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "00:26:18:72:a1:79",
+          "ssid": "6e7562696e6574",
+          "chan": 1,
+          "rssi": -85,
+          "extras": {
+            "quality": 25,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "b0:da:f9:a3:36:f8",
+          "ssid": "4b696e67736c6579",
+          "chan": 1,
+          "rssi": -68,
+          "extras": {
+            "quality": 42,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "c2:da:f9:a3:36:f8",
+          "ssid": "7866696e69747977696669",
+          "chan": 1,
+          "rssi": -71,
+          "extras": {
+            "quality": 39,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "none"
+          }
+        },
+        {
+          "bssid": "04:92:26:8b:dd:c0",
+          "ssid": "537072794e6574",
+          "chan": 1,
+          "rssi": -54,
+          "extras": {
+            "quality": 56,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "74:4d:28:0e:23:09",
+          "ssid": "537072794e6574",
+          "chan": 3,
+          "rssi": -62,
+          "extras": {
+            "quality": 48,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "92:cd:b6:13:ff:17",
+          "ssid": "4449524543542d31372d4850204d323532204c617365724a6574",
+          "chan": 3,
+          "rssi": -74,
+          "extras": {
+            "quality": 36,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "f4:f2:6d:fc:2a:32",
+          "ssid": "6e7562696e65742d646f7269",
+          "chan": 6,
+          "rssi": -73,
+          "extras": {
+            "quality": 37,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "ee:5d:df:a3:96:d8",
+          "ssid": "",
+          "chan": 6,
+          "rssi": -81,
+          "extras": {
+            "quality": 29,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "e2:5d:df:a3:96:d8",
+          "ssid": "",
+          "chan": 6,
+          "rssi": -82,
+          "extras": {
+            "quality": 28,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "d4:5d:df:a3:96:d8",
+          "ssid": "6b656c6c796e6574",
+          "chan": 6,
+          "rssi": -81,
+          "extras": {
+            "quality": 29,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "ea:5d:df:a3:96:d8",
+          "ssid": "",
+          "chan": 6,
+          "rssi": -81,
+          "extras": {
+            "quality": 29,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa/wpa2 802.1x (tkip,ccmp)"
+          }
+        },
+        {
+          "bssid": "50:c7:bf:de:80:62",
+          "ssid": "537072794e6574",
+          "chan": 11,
+          "rssi": -68,
+          "extras": {
+            "quality": 42,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "phy0",
+      "scanlist": [
+        {
+          "bssid": "50:c7:bf:de:80:61",
+          "ssid": "537072794e6574",
+          "chan": 36,
+          "rssi": -79,
+          "extras": {
+            "quality": 31,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "74:4d:28:50:02:fb",
+          "ssid": "537072794e6574",
+          "chan": 36,
+          "rssi": -71,
+          "extras": {
+            "quality": 39,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "04:92:26:8b:dd:c4",
+          "ssid": "537072794e6574",
+          "chan": 36,
+          "rssi": -71,
+          "extras": {
+            "quality": 39,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "f4:f2:6d:fc:2a:31",
+          "ssid": "6e7562696e65742d646f7269",
+          "chan": 52,
+          "rssi": -86,
+          "extras": {
+            "quality": 24,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wpa2 psk (ccmp)"
+          }
+        },
+        {
+          "bssid": "c2:da:f9:a3:36:f9",
+          "ssid": "7866696e69747977696669",
+          "chan": 149,
+          "rssi": -73,
+          "extras": {
+            "quality": 37,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "none"
+          }
+        },
+        {
+          "bssid": "62:45:b0:c6:30:71",
+          "ssid": "",
+          "chan": 153,
+          "rssi": -58,
+          "extras": {
+            "quality": 52,
+            "max_quality": 70,
+            "mode": "master",
+            "encryption": "wep-40,wep-104"
+          }
+        }
+      ]
+    }
+  ]
+}
+
