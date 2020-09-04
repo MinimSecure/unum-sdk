@@ -620,43 +620,6 @@ int util_set_opmode(char *opmode)
     return 0;
 }
 
-// Build URL
-//
-// eg: build_url(RESOURCE_PROTO_HTTPS, RESOURCEE_TYPE_API, string, 256,
-//               "/v3/endpoint/%s", "abcdefg")
-//     string = "https://api.minim.co/v3/endpoint/abcdefg"
-//
-// proto    - url protocol string HTTPS, HTTP, etc
-// type     - resource type from RESOURCE_TYPE_* enums above
-// url      - pointer to string
-// length   - length of string to avoid overrun
-// template - string format, will be appended after scheme, host, etc
-// ...      - args for template
-void util_build_url(char *proto, int type, char *url, unsigned int length,
-                    const char *template, ...)
-{
-    int count = 0;
-
-    if(unum_config.url_prefix) {
-        // Unum Config Contains Custom URL Prefix
-        count = snprintf(url, length, "%s", unum_config.url_prefix);
-    } else if(servers[type]) {
-        // Use URL Mapping
-        count = snprintf(url, length, "%s://%s", proto, servers[type]);
-    } else {
-        // This is an error
-        log("%s: unable to build url for type %d\n", __FUNCTION__, type);
-        return;
-    }
-
-    // Append Requested Format and Args to URL
-    va_list args;
-    va_start(args, template);
-    vsnprintf(&url[count], length - count, template, args);
-    url[length - 1] = '\0';
-    va_end(args);
-}
-
 // Subsystem init function
 int util_init(int level)
 {

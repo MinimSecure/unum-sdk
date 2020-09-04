@@ -4,6 +4,10 @@
 #ifndef _UTIL_COMMON_H
 #define _UTIL_COMMON_H
 
+// Pull in DNS utils header (it's platform independent)
+#include "util_dns.h"
+
+
 // Get number of elements in an array
 #define UTIL_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]) \
      + sizeof(typeof(int[1 - 2 * !!__builtin_types_compatible_p(typeof(a), \
@@ -287,16 +291,6 @@ int util_init(int level);
 #define RESOURCE_TYPE_PROVISION     3
 #define RESOURCE_TYPE_PROVISION_STR "provision"
 
-#define RESOURCE_TYPE_MAX       4
-#define RESOURCE_URL_LEN       64
-
-extern char servers[RESOURCE_TYPE_MAX][RESOURCE_URL_LEN];
-
-#define DNS_ENTRIES_MAX 16
-#define DNS_ENTRY_MAX_LENGTH 64
-
-extern char dns_entries[DNS_ENTRIES_MAX + 1][DNS_ENTRY_MAX_LENGTH];
-
 // Build URL
 //
 // eg: build_url(RESOURCE_PROTO_HTTPS, RESOURCEE_TYPE_API, string, 256,
@@ -311,21 +305,6 @@ extern char dns_entries[DNS_ENTRIES_MAX + 1][DNS_ENTRY_MAX_LENGTH];
 // ...      - args for template
 void util_build_url(char *proto, int type, char *url, unsigned int length,
                     const char *template, ...);
-
-// Get Server List from DNS and Populate DNS and Server Mapping
-// use_defaults - if TRUE fills the list with static defaults
-// Returns: 0 - success, negative value - error
-int util_get_servers(int use_defaults);
-
-#ifndef API_SERVER_WHITELIST
-#define API_SERVER_WHITELIST {\
-        "minim.co",\
-        "minim.xyz",\
-        NULL\
-};
-#endif
-
-#define DNS_TIMEOUT               10 //seconds
 
 // This function performs a RELEASE / RENEW of DHCP lease on the WAN
 // interface if the WAN interface is set for DHCP. If the platform
