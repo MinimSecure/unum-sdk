@@ -82,11 +82,12 @@ static void fw_update(void)
 
     // Get TXT Record from DNS to determine which servers to connect to
     for(;;) {
-        util_wd_set_timeout(unum_config.dns_timeout * 10);
+        util_wd_set_timeout(unum_config.dns_timeout * util_num_oob_dns() * 2);
         if(util_get_servers(FALSE) == 0) {
             util_wd_set_timeout(0);
             break;
         }
+        util_wd_set_timeout(0);
         log("%s: Cannot retrieve server endpoints\n", __func__);
         // Wait before retrying
         sleep(FORCE_FW_UPDATE_CHECK_PERIOD);
@@ -97,6 +98,31 @@ static void fw_update(void)
     util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_RELEASES, url,
                    sizeof(url), FIRMWARE_RELEASE_INFO_PATH, my_mac,
                    DEVICE_PRODUCT_NAME);
+
+    // Get s3.amazonaws.com address from public DNS to use in case the
+    // normal name resolution fails.
+    char *fw_storage_host = "s3.amazonaws.com";
+    char fw_storage_addr[INET_ADDRSTRLEN];
+    int have_fw_storage_addr = FALSE;
+
+    log("%s: getting address for %s\n", __func__, fw_storage_host);
+    util_wd_set_timeout(unum_config.dns_timeout * util_num_oob_dns() * 2);
+    if(util_nodns_get_ipv4(fw_storage_host, fw_storage_addr) != 0) {
+        log("%s: error, proceeding without backup address for %s\n",
+            __func__, fw_storage_host);
+    } else {
+        log("%s: using backup address %s for %s\n",
+            __func__, fw_storage_addr, fw_storage_host);
+        char str[256];
+        snprintf(str, sizeof(str), "%s:443:%s",
+                 fw_storage_host, fw_storage_addr);
+        if(util_add_nodns_entry(str) < 0) {
+            log("%s: error adding entry to DNS fallback list\n", __func__);
+        } else {
+            have_fw_storage_addr = TRUE;
+        }
+    }
+    util_wd_set_timeout(0);
 
     log("%s: starting firmware updater, check period %d\n", __func__,
         unum_config.fw_update_check_period);
@@ -153,7 +179,6 @@ static void fw_update(void)
 
             // Retrieve the active firmware info for the device
             rsp = http_get(url, NULL);
-
             if(rsp == NULL)
             {
                 // If no response for over UPDATER_OFFLINE_RESTART time period
@@ -227,6 +252,17 @@ static void fw_update(void)
                 __func__, new_fw_ver, download_url);
             if(http_get_file(download_url, NULL, UPGRADE_FILE_NAME) != 0) {
                 log("%s: failed to download the new firmware\n", __func__);
+                // If we do not have backup address for the firmware storage
+                // host and there is an ongoing DNS outage, restart to try
+                // retrieving it again.
+                if(!have_fw_storage_addr && conncheck_no_dns())
+                {
+                    log("%s: no IP for %s during DNS outage, restarting...\n",
+                        __func__);
+                    // In updater mode the agent runs under monitor and
+                    // util_restart() works
+                    util_restart(UNUM_START_REASON_FW_CONN_FAIL);
+                }
                 break;
             }
 
