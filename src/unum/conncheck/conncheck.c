@@ -716,6 +716,8 @@ static void conncheck(THRD_PARAM_t *p)
     unsigned long wake_up_t = util_time(1);
     // Calculate uptime when to start troubleshooting
     unsigned long start_tb_t = wake_up_t + CONNCHECK_START_GRACE_TIME;
+    // Assume the server list is not populated
+    int server_list_ready = FALSE;
 
     // Try to connect for up to CONNCHECK_START_GRACE_TIME, then troubleshoot
     // and attempt to recover (if still cannot connect)
@@ -731,17 +733,38 @@ static void conncheck(THRD_PARAM_t *p)
             continue;
         }
 
-        // Get TXT Record from DNS to determine which servers to connect to
-        conncheck_update_state_event(CSTATE_GET_URLS, 0);
-        if(util_get_servers(FALSE) != 0) {
-            log("%s: Cannot retrieve server endpoints\n", __func__);
-            cc_st.no_servers = 1;
+        if(cur_t < start_tb_t && !server_list_ready)
+        {
+            // Get TXT Record from DNS to determine which servers to connect to
+            conncheck_update_state_event(CSTATE_GET_URLS,
+                                         ((cur_t - wake_up_t) * 100) /
+                                         (start_tb_t - wake_up_t));
+            int res = util_get_servers(FALSE);
+            if(res < 0) {
+                log("%s: Cannot reach DNS to get server endpoints\n", __func__);
+                cc_st.no_servers = 1;
+                // Note: if the agent can't get the server list due to timeout
+                //       error it keeps trying until public DNS servers respond.
+                //       This might prevent the agent from working in some
+                //       corner cases (public DNS servers are down or blocked).
+                continue;
+            }
+            if(res > 0) {
+                log("%s: No server endpoints, using defaults\n", __func__);
+                cc_st.no_servers = 1;
+                // Note: this happens due to any error, but response timeing out
+                //       and since the defults are loaded at init the code just
+                //       proceeds.
+            } else {
+                cc_st.no_servers = 0;
+            }
+            server_list_ready = TRUE;
         }
 
         // If we are within the startup grace period and we have retrieved
         // server URLs from minim DNS try to connect and check against
         // the server time
-        if(cur_t < start_tb_t && !cc_st.no_servers)
+        if(cur_t < start_tb_t && server_list_ready)
         {
             conncheck_update_state_event(CSTATE_GRACE_PERIOD,
                                          ((cur_t - wake_up_t) * 100) /

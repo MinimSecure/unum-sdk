@@ -3,6 +3,14 @@
 #include "unum.h"
 #include "dns.h"
 
+/* Temporary, log to console from here */
+//#undef LOG_DST
+//#undef LOG_DBG_DST
+//#define LOG_DST LOG_DST_CONSOLE
+//#define LOG_DBG_DST LOG_DST_CONSOLE
+#undef LOG_DBG_DST
+#define LOG_DBG_DST LOG_DST_DROP
+
 // Internal Constants
 #define EXPECTED_TOKENS_PER_ENTRY 4
 #define MAX_TXT_RECORD_LENGTH     1024
@@ -20,10 +28,15 @@
 #define DNS_UTIL_ERR_LIB          -6
 #define DNS_UTIL_ERR_TIMEOUT      -7
 
-char servers[RESOURCE_TYPE_MAX][RESOURCE_URL_LEN];
+// Size of the servers[] array
+#define RESOURCE_TYPE_MAX       4
+#define RESOURCE_URL_LEN       64
+
+// Array of critical name-port-address mappings for http subsystem
+// to use when the platform name resolution doesn't work
 char dns_entries[DNS_ENTRIES_MAX + 1][DNS_ENTRY_MAX_LENGTH];
 
-// List of DNS Servers To Query
+// List of public DNS servers to query when not relying on the platform
 static char *dns_servers[] = { "8.8.8.8", "1.1.1.1", NULL };
 
 // If DNS Queries Fail, Use this Hardcoded TXT Record
@@ -38,6 +51,9 @@ static void util_get_txt_record_static(char *txt, int len)
             len);
     txt[len - 1] = '\0';
 }
+
+
+static char servers[RESOURCE_TYPE_MAX][RESOURCE_URL_LEN];
 
 // Server Whitelist from Header
 static char *api_server_whitelist[] = API_SERVER_WHITELIST;
@@ -177,35 +193,38 @@ static char* get_device_id_hash()
 }
 
 /***
- * Get DNS TXT Record From DNS Packet
+ * Get DNS Info From DNS Packet
  *
  * @param pkt - filled packet returned from dns library
- * @param buf - buffer to put TXT record contents into
+ * @param t   - type of the information to extract (DNS_T_TXT, DNS_T_A, ...)
+ * @param buf - buffer to put the extracted info into
  * @param buf_len - length of buffer to prevent overrun
+ * @Return
  */
-static void dns_get_txt(struct dns_packet *pkt, char *buf, int buf_len)
+static int dns_get_info(struct dns_packet *pkt, int t, char *buf, int buf_len)
 {
-
     enum dns_section section;
     struct dns_rr rr;
-    int error;
+    int error, ret;
     struct dns_rr_i *I = dns_rr_i_new(pkt, .section = 0);
     union dns_any any;
 
+    ret = -1;
     section = 0;
     while(dns_rr_grep(&rr, 1, I, pkt, &error))
     {
-        if(section != rr.section && rr.section == DNS_S_AN
-                && rr.type == DNS_T_TXT)
+        if(section != rr.section && rr.section == DNS_S_AN &&
+           rr.type == t)
         {
             dns_any_parse(dns_any_init(&any, sizeof any), &rr, pkt);
             dns_any_print(buf, buf_len, &any, rr.type);
+            ret = 0;
             break;
         }
         section = rr.section;
     }
-    memmove(buf, &buf[1], strlen(buf));
-    buf[strlen(buf) - 1] = '\0';
+
+    return ret;
 }
 
 /***
@@ -213,11 +232,12 @@ static void dns_get_txt(struct dns_packet *pkt, char *buf, int buf_len)
  *
  * @param ns - IP Address (string) of nameserver to query
  * @param domain_name - The domain name to send in the query
- * @param txt - The buffer to put TXT record into
- * @param txt_len - The length of the buffer
+ * @param info_t - Type of the information to get (DNS_T_TXT, DNS_T_A, ...)
+ * @param info - The buffer to put information into
+ * @param info_len - The length of the buffer
  */
-static int send_query(const char *ns, const char *domain_name, char *txt,
-        int txt_len)
+static int send_query(const char *ns, const char *domain_name,
+                      int info_t, char *info, int info_len)
 {
 
     struct dns_packet *A, *Q = dns_p_new(512);
@@ -236,7 +256,7 @@ static int send_query(const char *ns, const char *domain_name, char *txt,
     ss.sin_port = htons(dns_port);
 
     if((error = dns_p_push(Q, DNS_S_QD, domain_name, strlen(domain_name),
-            DNS_T_TXT, DNS_C_IN, 0, 0)))
+                           info_t, DNS_C_IN, 0, 0)))
     {
         log("%s: Failed to push DNS request, error=%d\n", __FUNCTION__, error);
         return DNS_UTIL_ERR_PUSH;
@@ -273,8 +293,11 @@ static int send_query(const char *ns, const char *domain_name, char *txt,
         dns_so_poll(so, 1);
     }
 
-    // Get TXT Record From Response
-    dns_get_txt(A, txt, txt_len);
+    // Get Record From Response
+    if(dns_get_info(A, info_t, info, info_len) < 0) {
+        dns_so_close(so);
+        return DNS_UTIL_ERR_LIB;
+    }
 
     dns_so_close(so);
 
@@ -286,51 +309,99 @@ static int send_query(const char *ns, const char *domain_name, char *txt,
  *
  * @param txt - Character buffer to fill in with TXT data
  * @param buflen - Length of character buffer to prevent overrun
- * @return  Zero on success, -1 on error.
+ * @return  Zero on success, -1 on error due to networc connectivity,
+ *          1 on any other error
+ *
+ * Note: this function strips a character from the beginning and the
+ *       end of the TXT record data
  */
 static int util_get_txt_record(char *txt, int buflen)
 {
     char domain[128];
     int i;
-    int conn_err = 1;
+    int conn_err = 0;
 
     // Get Domain Name To Lookup
     char *device_id = get_device_id_hash();
     snprintf(domain, sizeof(domain), MINIM_NS_URL_FMT, device_id);
 
-    while(conn_err != 0)
+    // Iterate Over DNS Servers
+    for(i = 0; dns_servers[i] != NULL; i++)
     {
-        // Iterate Over Names
-        conn_err = 0;
-        for(i = 0; dns_servers[i] != NULL; i++)
+        log_dbg("%s: Sending TXT record query to %s\n", __FUNCTION__, dns_servers[i]);
+        int status = send_query(dns_servers[i], domain, DNS_T_TXT, txt, buflen);
+        if(DNS_UTIL_ERR_TIMEOUT == status) {
+            conn_err++;
+        }
+        if(DNS_UTIL_SUCCESS != status) {
+            continue;
+        }
+        log_dbg("%s: Received response from server, validating...\n", __FUNCTION__);
+        if(strlen(txt) < 2) {
+            log("%s: TXT record <%s> from %s is too short\n",
+                __FUNCTION__, txt, dns_servers[i]);
+            continue;
+        }
+        // Strip one char from both sides
+        memmove(txt, &txt[1], strlen(txt));
+        txt[strlen(txt) - 1] = 0;
+        // Run the checks
+        if(DNS_UTIL_SUCCESS == util_txt_record_is_valid(txt))
         {
-            log_dbg("%s: Sending TXT record query to %s\n", __FUNCTION__, dns_servers[i]);
-            int status = send_query(dns_servers[i], domain, txt, buflen);
-            if(DNS_UTIL_SUCCESS == status)
-            {
-                log_dbg("%s: Received response from server, validating...\n", __FUNCTION__);
-                if(DNS_UTIL_SUCCESS == util_txt_record_is_valid(txt))
-                {
-                    log("%s: TXT record from %s is valid. DONE.\n",
-                            __FUNCTION__, dns_servers[i]);
-                    return 0;
-                }
-            } else {
-                conn_err++;
-            }
-            util_wd_poll();
+            log("%s: TXT record from %s is valid. DONE.\n",
+                    __FUNCTION__, dns_servers[i]);
+            return 0;
         }
-
-        if(conn_err) {
-            return -1;
-        }
+        // Received TXT record failed the checks, trying next server
     }
 
-    // If we made it here, then our lookups failed
-    // use hardcoded TXT record
-    log("%s: Falling back to static TXT record. DONE\n", __FUNCTION__);
-    util_get_txt_record_static(txt, buflen);
-    return 0;
+    // If no servers responded return error
+    if(conn_err == util_num_oob_dns()) {
+        return -1;
+    }
+
+    // Failed, but not due the inability to reach the servers
+    return 1;
+}
+
+/***
+ * Add entry to the list of DNS etries we use when name resolution
+ * doesn't work.
+ * See util_dns.c for the format (i.e. "minim.co:80:34.207.26.129")
+ * If entry already exists its number is returned and no duplicate
+ * is added.
+ *
+ * @param entry - string for adding to dns_entries[]
+ * @return - entry number or negative if error
+ */
+int util_add_nodns_entry(char *entry)
+{
+    int entry_index;
+
+    if(entry == NULL || *entry == 0) {
+        return -1;
+    }
+    for(entry_index = 0; entry_index < DNS_ENTRIES_MAX; ++entry_index) {
+        if(dns_entries[entry_index][0] == 0) {
+            break;
+        }
+        if(strcmp(dns_entries[entry_index], entry) == 0) {
+            break;
+        }
+    }
+    // not found and run out of space in the array
+    if(entry_index >= DNS_ENTRIES_MAX) {
+        return -1;
+    }
+    // entry already exists
+    if(dns_entries[entry_index][0] != 0) {
+        return entry_index;
+    }
+    // add new entry
+    strncpy(dns_entries[entry_index], entry, DNS_ENTRY_MAX_LENGTH);
+    dns_entries[entry_index][DNS_ENTRY_MAX_LENGTH - 1] = '\0';
+    dns_entries[entry_index + 1][0] = '\0';
+    return entry_index;
 }
 
 /***
@@ -356,23 +427,21 @@ void update_dns_mappings_from_txt_record(char *txt)
     {
         //  Find First : In Record
         char *dns_entry = strchr(record, ':');
+        if(dns_entry == NULL) {
+            break;
+        }
         dns_entry++;
 
         // Copy Everything After First : To dns_entries
-        strncpy(dns_entries[entry_index], dns_entry, DNS_ENTRY_MAX_LENGTH);
-        dns_entries[entry_index][DNS_ENTRY_MAX_LENGTH - 1] = '\0';
-        ++entry_index;
+        entry_index = util_add_nodns_entry(dns_entry);
 
         // Advance to Next Record
         record = strtok_r(NULL, TXT_RECORD_SEPARATOR, &next_record);
     }
 
-    // Mark End of List
-    dns_entries[entry_index][0] = '\0';
-
     // Print out dns_entries
     int i;
-    for(i = 0; i < entry_index; i++) {
+    for(i = 0; dns_entries[i][0] != 0; i++) {
         log("%s: dns entry %d = %s\n", __FUNCTION__, i, dns_entries[i]);
     }
 
@@ -464,7 +533,8 @@ void update_api_url_map_from_txt_record(char *txt)
 // into a server map for subsequent usage in HTTP requests.
 //
 // use_defaults - if TRUE fills the list with static defaults
-// Returns: 0 - success, negative value - error
+// Returns: 0 - success, negative value - network error,
+//          positive value - internal or data processing error
 int util_get_servers(int use_defaults)
 {
     int result;
@@ -483,7 +553,7 @@ int util_get_servers(int use_defaults)
 
     if(result) {
         log("%s: failed to get dns!\n", __func__);
-        return -1;
+        return result;
     }
 
     // Parse TXT record and update URL Mappings
@@ -498,6 +568,96 @@ int util_get_servers(int use_defaults)
 
     return 0;
 }
+
+// Resolve DNS name to IPv4 address when normal DNS APIs don't work
+// This function queries the same public DNS servers we use to get TXT record.
+// name - (in) name to resolve
+// addr_str - (out) a buffer for IPv4 string (at least INET_ADDRSTRLEN bytes)
+//            it can be NULL to just check if a name resolves
+// Returns: 0 - success, negative value - error
+int util_nodns_get_ipv4(char *name, char *addr_str)
+{
+    int i, status, conn_err = -1;
+    char str[INET_ADDRSTRLEN] = "";
+
+    for(i = 0; dns_servers[i] != NULL; i++)
+    {
+        status = send_query(dns_servers[i], name,
+                            DNS_T_A, str, sizeof(str));
+        if(DNS_UTIL_SUCCESS != status)
+        {
+            log_dbg("%s: error %d from send_query() to %s\n",
+                    __FUNCTION__, status, dns_servers[i]);
+        }
+        else if(inet_addr(str) == INADDR_NONE)
+        {
+            log_dbg("%s: invlid address %s from send_query() to %s\n",
+                    __FUNCTION__, str, dns_servers[i]);
+        }
+        else
+        {
+            log_dbg("%s: success from send_query() to %s\n",
+                    __FUNCTION__, dns_servers[i]);
+            if(addr_str != NULL) {
+                memcpy(addr_str, str, INET_ADDRSTRLEN);
+            }
+            conn_err = 0;
+            break;
+        }
+    }
+
+    return conn_err;
+}
+
+// Get number of public servers in the DNS server list for out-of-band queries.
+// This allows to gauge the timeout for calls to util_nodns_get_ipv4() and
+// util_get_servers()
+// Returns: number of the servers 
+int util_num_oob_dns(void)
+{
+    return UTIL_ARRAY_SIZE(dns_servers) - 1;
+}
+
+// Build URL
+//
+// eg: build_url(RESOURCE_PROTO_HTTPS, RESOURCEE_TYPE_API, string, 256,
+//               "/v3/endpoint/%s", "abcdefg")
+//     string = "https://api.minim.co/v3/endpoint/abcdefg"
+//
+// proto    - url protocol string HTTPS, HTTP, etc
+// type     - resource type from RESOURCE_TYPE_* enums above
+// url      - pointer to string
+// length   - length of string to avoid overrun
+// template - string format, will be appended after scheme, host, etc
+// ...      - args for template
+void util_build_url(char *proto, int type, char *url, unsigned int length,
+                    const char *template, ...)
+{
+    int count = 0;
+
+    if(unum_config.url_prefix) {
+        // Unum Config Contains Custom URL Prefix
+        count = snprintf(url, length, "%s", unum_config.url_prefix);
+    } else if(servers[type]) {
+        // Use URL Mapping
+        count = snprintf(url, length, "%s://%s", proto, servers[type]);
+    } else {
+        // This is an error
+        log("%s: unable to build url for type %d\n", __FUNCTION__, type);
+        return;
+    }
+
+    // Append Requested Format and Args to URL
+    va_list args;
+    va_start(args, template);
+    vsnprintf(&url[count], length - count, template, args);
+    url[length - 1] = '\0';
+    va_end(args);
+}
+
+
+// =========================================================
+
 
 #ifdef DEBUG
 
@@ -639,7 +799,8 @@ static void test_txt_get()
 
     // Get TXT Record via DNS Query and Display
     printf("Testing TXT Record Retrieval Function...\n\n");
-    util_get_txt_record(string, sizeof(string));
+    int res = util_get_txt_record(string, sizeof(string));
+    printf("Rerurn value: %d\n", res);
     printf("TXT Record:\n");
     printf("%s\n", string);
 
@@ -762,11 +923,9 @@ static void test_update_dns()
     for(ii = 0; dns_entries[ii][0] != '\0'; ++ii);
     printf("Entry count: %d\n", ii);
 
-    char *name;
-    for(ii = 0, name = "support.minim.co"; name[0] != '\0';
-        name = dns_entries[ii++])
+    for(ii = 0; dns_entries[ii][0] != '\0'; ii++)
     {
-        printf("Name is: %s\n", name);
+        printf("Name is: %s\n", dns_entries[ii]);
     }
 
 
@@ -831,6 +990,31 @@ static void util_test_atomic()
 }
 
 /***
+ * Test IPv4 Get
+ *
+ * Query for A Record Via DNS
+ *
+ */
+static void util_test_nodns_get_ipv4()
+{
+    int ret;
+    char string[INET_ADDRSTRLEN] = "";
+
+    printf("Testing A Record Retrieval Function...\n");
+    ret = util_nodns_get_ipv4("www.google.com", string);
+    printf("  ret: %d, www.google.com: %s\n",
+           ret, ((ret == 0) ? string : "error"));
+    ret = util_nodns_get_ipv4("okob.net", string);
+    printf("  ret: %d, okob.net: %s\n",
+           ret, ((ret == 0) ? string : "error"));
+    ret = util_nodns_get_ipv4("s3.amazonaws.com", string);
+    printf("  ret: %d, s3.amazonaws.com: %s\n",
+           ret, ((ret == 0) ? string : "error"));
+
+    return;
+}
+
+/***
  * Test DNS Subsystem
  *
  * This is the entry point for DNS subsystem tests.
@@ -849,6 +1033,7 @@ int test_dns()
         printf("\te) Use default TXT record to update API map\n");
         printf("\tf) Get DNS Servers (main entry pt)\n");
         printf("\tg) Test Atomic Increment / Decrement Functions\n");
+        printf("\th) Test buit-in IPv4 address resolver\n");
         printf("\tx) EXIT\n");
         printf("Choice:\n");
 
@@ -876,6 +1061,9 @@ int test_dns()
             break;
         case 'g':
             util_test_atomic();
+            break;
+        case 'h':
+            util_test_nodns_get_ipv4();
             break;
         case 'x':
             return 0;
