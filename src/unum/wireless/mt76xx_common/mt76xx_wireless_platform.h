@@ -11,7 +11,7 @@
 // Add types realtek uses
 typedef unsigned short USHORT;
 typedef unsigned char UCHAR;
-typedef char CHAR;
+typedef signed char CHAR;
 typedef unsigned int UINT32;
 
 #define WIFI_RADIO_24_PREFIX "ra"
