@@ -3,3 +3,4 @@ ap_mode
 mac_filter
 mesh_batman
 edns0_content_filter
+mac80211_libnl

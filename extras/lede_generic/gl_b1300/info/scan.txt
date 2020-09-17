@@ -5,147 +5,165 @@ wireless_do_scan_report: JSON for <https://api.minim.co/v3/unums/e4:95:6e:45:15:
       "name": "phy1",
       "scanlist": [
         {
-          "bssid": "e2:95:6e:45:15:63",
-          "ssid": "4d696e696d477565737472",
-          "chan": 149,
-          "rssi": -72,
-          "extras": {
-            "quality": 38,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
-          }
-        },
-        {
           "bssid": "94:fb:a7:6a:ba:2c",
           "ssid": "53616970726979615f3547",
           "chan": 36,
-          "rssi": -85,
+          "rssi": -87,
           "extras": {
-            "quality": 25,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "e4:95:6e:45:15:63",
-          "ssid": "4d696e696d2d623061653365356139393161303764623262316561323232",
-          "chan": 149,
-          "rssi": -72,
+          "bssid": "96:fb:a7:5a:ba:2c",
+          "ssid": "",
+          "chan": 36,
+          "rssi": -89,
           "extras": {
-            "quality": 38,
-            "max_quality": 70,
-            "mode": "mesh point",
-            "encryption": "wpa-unknown auth-unknown (ccmp)"
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
           "bssid": "e6:95:6e:45:15:63",
           "ssid": "56656e6b61746135",
-          "chan": 149,
-          "rssi": -72,
+          "chan": 36,
+          "rssi": -38,
           "extras": {
-            "quality": 38,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "ec:ad:e0:df:50:21",
-          "ssid": "4b736c765f4a696f35475265706561746572",
-          "chan": 149,
-          "rssi": -93,
+          "bssid": "62:d5:6e:ec:5d:78",
+          "ssid": "4d4f544f2d6775657374",
+          "chan": 40,
+          "rssi": -39,
           "extras": {
-            "quality": 17,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "58:d5:6e:ec:5d:78",
+          "ssid": "4d4f544f35443737",
+          "chan": 40,
+          "rssi": -40,
+          "extras": {
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:TKIP Pairwise:CCMP/TKIP Auth:PSK"
           }
         },
         {
           "bssid": "78:17:35:bf:ea:4d",
           "ssid": "56656e6b6174614169725f3547487a",
-          "chan": 48,
-          "rssi": -5,
+          "chan": 44,
+          "rssi": -14,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+            "chanspec": "42",
+            "ch_width": "80",
+            "encryption": "Group:TKIP Pairwise:TKIP/CCMP Auth:PSK"
           }
         },
         {
           "bssid": "1c:49:7b:d6:7c:18",
           "ssid": "7665656b736869636865727279",
-          "chan": 64,
-          "rssi": -17,
+          "chan": 56,
+          "rssi": -28,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
           "bssid": "1c:49:7b:d6:7c:19",
-          "ssid": "47727970686f6e477565737436326433",
-          "chan": 64,
-          "rssi": -17,
+          "ssid": "47727970686f6e477565737437633133",
+          "chan": 56,
+          "rssi": -27,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "1c:49:7b:d6:7c:1b",
-          "ssid": "",
-          "chan": 153,
-          "rssi": -15,
+          "bssid": "1c:49:7b:d6:7c:1a",
+          "ssid": "56656e6b61746154657374",
+          "chan": 56,
+          "rssi": -24,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
-          }
-        },
-        {
-          "bssid": "80:02:9c:35:9b:6c",
-          "ssid": "47727970686f6e486f6d65396236335f3547",
-          "chan": 157,
-          "rssi": -83,
-          "extras": {
-            "quality": 27,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:WEP Pairwise:WEP Auth:Open/Shared"
           }
         },
         {
           "bssid": "60:38:e0:11:a1:c3",
           "ssid": "4c4e352e30",
-          "chan": 157,
-          "rssi": -85,
+          "chan": 153,
+          "rssi": -81,
           "extras": {
-            "quality": 25,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:TKIP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "80:02:9c:35:9b:6b",
+          "bssid": "80:02:9c:34:bb:aa",
+          "ssid": "47727970686f6e477565737437633133",
+          "chan": 157,
+          "rssi": -73,
+          "extras": {
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "1c:49:7b:d6:7c:1b",
           "ssid": "",
           "chan": 157,
-          "rssi": -83,
+          "rssi": -11,
           "extras": {
-            "quality": 27,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "80:02:9c:34:bb:a8",
+          "ssid": "",
+          "chan": 157,
+          "rssi": -73,
+          "extras": {
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "80:02:9c:34:bb:a9",
+          "ssid": "7665656b736869636865727279",
+          "chan": 157,
+          "rssi": -73,
+          "extras": {
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "5e:d5:6e:ec:5d:79",
+          "ssid": "",
+          "chan": 161,
+          "rssi": -46,
+          "extras": {
+            "chanspec": "155",
+            "ch_width": "80",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         }
       ]
@@ -154,171 +172,193 @@ wireless_do_scan_report: JSON for <https://api.minim.co/v3/unums/e4:95:6e:45:15:
       "name": "phy0",
       "scanlist": [
         {
-          "bssid": "78:17:35:bf:ea:49",
-          "ssid": "56656e6b617461416972",
-          "chan": 6,
-          "rssi": -20,
-          "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
-          }
-        },
-        {
           "bssid": "1c:49:7b:d6:7c:14",
-          "ssid": "47727970686f6e477565737436326433",
-          "chan": 1,
-          "rssi": -21,
+          "ssid": "47727970686f6e477565737437633133",
+          "chan": 6,
+          "rssi": -27,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "1c:49:7b:d6:7c:13",
-          "ssid": "7665656b736869636865727279",
-          "chan": 1,
-          "rssi": -22,
+          "bssid": "80:02:9c:34:bb:a4",
+          "ssid": "47727970686f6e477565737437633133",
+          "chan": 6,
+          "rssi": -78,
           "extras": {
-            "quality": 70,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "c4:e9:0a:dd:c9:c2",
-          "ssid": "6b736c766e6577",
+          "bssid": "4c:1b:86:98:14:84",
+          "ssid": "76656e6b6174614a696f",
           "chan": 1,
-          "rssi": -77,
+          "rssi": -24,
           "extras": {
-            "quality": 33,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
-          }
-        },
-        {
-          "bssid": "60:63:4c:b2:4e:30",
-          "ssid": "6b736c766e65775265706561746572",
-          "chan": 1,
-          "rssi": -81,
-          "extras": {
-            "quality": 29,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (ccmp)"
-          }
-        },
-        {
-          "bssid": "78:17:35:be:e6:59",
-          "ssid": "76616c616a613737",
-          "chan": 4,
-          "rssi": -83,
-          "extras": {
-            "quality": 27,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
           "bssid": "e4:95:6e:45:15:62",
           "ssid": "56656e6b617461323232323237",
+          "chan": 1,
+          "rssi": -46,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "4c:93:a6:80:7e:02",
+          "ssid": "42616368616d4a696f",
+          "chan": 1,
+          "rssi": -90,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "4e:93:a6:90:7e:02",
+          "ssid": "",
+          "chan": 1,
+          "rssi": -91,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "1c:49:7b:d6:7c:15",
+          "ssid": "47727970686f6e496f54376331335f3247",
           "chan": 6,
-          "rssi": -74,
+          "rssi": -26,
           "extras": {
-            "quality": 36,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:Open Pairwise:Open Auth:Open"
           }
         },
         {
-          "bssid": "ec:ad:e0:df:50:20",
-          "ssid": "4b736c765f4a696f5265706561746572",
-          "chan": 7,
-          "rssi": -66,
-          "extras": {
-            "quality": 44,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
-          }
-        },
-        {
-          "bssid": "e6:95:6e:45:15:62",
-          "ssid": "4d696e696d4775657374",
+          "bssid": "c4:e9:0a:dd:c9:c2",
+          "ssid": "6b736c766e6577",
           "chan": 6,
-          "rssi": -65,
+          "rssi": -84,
           "extras": {
-            "quality": 45,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "40l",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "44:82:e5:12:41:78",
-          "ssid": "72657661746869",
-          "chan": 10,
-          "rssi": -88,
+          "bssid": "80:02:9c:34:bb:a3",
+          "ssid": "7665656b736869636865727279",
+          "chan": 6,
+          "rssi": -78,
           "extras": {
-            "quality": 22,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa/wpa2 psk (tkip,ccmp)"
-          }
-        },
-        {
-          "bssid": "94:fb:a7:6a:ba:2b",
-          "ssid": "53616970726979612d322e3447",
-          "chan": 11,
-          "rssi": -70,
-          "extras": {
-            "quality": 40,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
           "bssid": "60:38:e0:11:a1:c2",
           "ssid": "4c4e322e34",
-          "chan": 11,
-          "rssi": -76,
+          "chan": 6,
+          "rssi": -73,
           "extras": {
-            "quality": 34,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "40l",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
-          "bssid": "94:fb:a7:60:4e:ec",
-          "ssid": "4b736c765f4a696f",
+          "bssid": "5e:d5:6e:ec:5d:77",
+          "ssid": "",
           "chan": 11,
-          "rssi": -67,
+          "rssi": -44,
           "extras": {
-            "quality": 43,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "58:d5:6e:ec:5d:77",
+          "ssid": "4d4f544f35443737",
+          "chan": 11,
+          "rssi": -46,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:TKIP Pairwise:CCMP/TKIP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "1c:49:7b:d6:7c:13",
+          "ssid": "7665656b736869636865727279",
+          "chan": 6,
+          "rssi": -29,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         },
         {
           "bssid": "96:fb:a7:50:4e:ec",
           "ssid": "",
-          "chan": 11,
-          "rssi": -68,
+          "chan": 4,
+          "rssi": -84,
           "extras": {
-            "quality": 42,
-            "max_quality": 70,
-            "mode": "master",
-            "encryption": "wpa2 psk (ccmp)"
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "1c:5f:2b:4c:b5:0e",
+          "ssid": "6b736c7642",
+          "chan": 10,
+          "rssi": -75,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:TKIP Pairwise:TKIP/CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "94:fb:a7:6a:ba:2b",
+          "ssid": "53616970726979612d322e3447",
+          "chan": 10,
+          "rssi": -84,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "96:fb:a7:5a:ba:2b",
+          "ssid": "",
+          "chan": 10,
+          "rssi": -84,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "ec:ad:e0:df:50:20",
+          "ssid": "6b736c766e65773246",
+          "chan": 11,
+          "rssi": -91,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:TKIP Pairwise:TKIP/CCMP Auth:PSK"
+          }
+        },
+        {
+          "bssid": "62:d5:6e:ec:5d:77",
+          "ssid": "4d4f544f2d6775657374",
+          "chan": 11,
+          "rssi": -45,
+          "extras": {
+            "ch_width": "20",
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
           }
         }
       ]

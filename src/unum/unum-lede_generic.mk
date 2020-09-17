@@ -22,5 +22,8 @@ LDFLAGS += -luci
 # Woreless
 LDFLAGS += -liwinfo
 
+# Netlink Library
+LDFLAGS += -lnl-tiny
+
 # Add hardware ID this LEDE build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
