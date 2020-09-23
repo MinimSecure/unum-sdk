@@ -187,7 +187,13 @@ int touch_file (char *file, mode_t crmode);
 // crmode - permissions for creating new files (see man 2 open)
 int util_buf_to_file(char *file, void *buf, int len, mode_t crmode);
 
-// Read data from file and dump to buf
+// Read data from file to a buffer
+// file - name of the file
+// buf - buffer to save the data to
+// buf_size - maximum size of the buffer
+// Returns: negative - error, use errno to get the error code
+//          positive - number of bytes read or the file size if
+//                     buf_size was not large enough to read all
 size_t util_file_to_buf(char *file, char *buf, size_t buf_size);
 
 // Compare two files.
