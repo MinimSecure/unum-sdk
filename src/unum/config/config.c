@@ -26,6 +26,20 @@ CONFIG_UID_t new_uid;
 // Set if cloud pull_router_config command is received
 static UTIL_EVENT_t download_cfg = UTIL_EVENT_INITIALIZER;
 
+#ifdef CONFIG_TRACING_DIR
+// Session file name
+#define CONFIG_TRACING_SFN CONFIG_TRACING_DIR "/session"
+
+// Session number for config tracing
+static char session_num_chr = '0' - 1;
+
+// Sequence number for config tracing
+static int sequence_num = 0;
+
+// Buffer for the trace file pathname
+char trace_file_pname[256];
+#endif // CONFIG_TRACING_DIR
+
 
 #ifdef CONFIG_DOWNLOAD_IN_AGENT
 // Called by command processing job when pull_router_config command is received
@@ -52,10 +66,13 @@ static void config(THRD_PARAM_t *p)
 
     log("%s: started\n", __func__);
 
+#ifdef CONFIG_TRACING_DIR
+    log("%s: tracing session: %c\n", __func__, session_num_chr);
+#endif // CONFIG_TRACING_DIR
+
     log("%s: waiting for activate to complete\n", __func__);
     wait_for_activate();
     log("%s: done waiting for activate\n", __func__);
-
 
     // Check that we have MAC address
     if(!my_mac) {
@@ -114,6 +131,21 @@ static void config(THRD_PARAM_t *p)
             }
 
             log("%s: config has changed, sending...\n", __func__);
+
+#ifdef CONFIG_TRACING_DIR
+            char trace_file_pname[256];
+            snprintf(trace_file_pname, sizeof(trace_file_pname),
+                     CONFIG_TRACING_DIR "/s%c_%02d.bin",
+                     session_num_chr, sequence_num);
+            sequence_num = (sequence_num + 1) % 100;
+            if(util_buf_to_file(trace_file_pname, cstr, cstr_len, 00666) < 0) {
+                log("%s: failed to store sent config %s\n",
+                    __func__, trace_file_pname);
+            } else {
+                log("%s: stored sent config %s\n",
+                    __func__, trace_file_pname);
+            }
+#endif // CONFIG_TRACING_DIR
 
             // Send the config info
             rsp = http_post(url,
@@ -178,6 +210,22 @@ static void config(THRD_PARAM_t *p)
             }
             log("%s: downloaded config from cloud\n", __func__);
 
+#ifdef CONFIG_TRACING_DIR
+            snprintf(trace_file_pname, sizeof(trace_file_pname),
+                     CONFIG_TRACING_DIR "/r%c_%02d.bin",
+                     session_num_chr, sequence_num);
+            sequence_num = (sequence_num + 1) % 100;
+            if(util_buf_to_file(trace_file_pname,
+                                rsp->data, rsp->len, 00666) < 0)
+            {
+                log("%s: failed to store received config %s\n",
+                    __func__, trace_file_pname);
+            } else {
+                log("%s: stored received config %s\n",
+                    __func__, trace_file_pname);
+            }
+#endif // CONFIG_TRACING_DIR
+
             // Try to apply the config
             if(platform_apply_cloud_cfg(rsp->data, rsp->len) != 0) {
                 log("%s: unable to apply cloud config\n", __func__);
@@ -214,6 +262,15 @@ int config_init(int level)
         if(platform_cfg_init() != 0) {
             return -1;
         }
+#ifdef CONFIG_TRACING_DIR
+        // Read config tracing session #
+        if(util_file_to_buf(CONFIG_TRACING_SFN, &session_num_chr, 1) <= 0 ||
+           ++session_num_chr > '9' || session_num_chr < '0')
+        {
+            session_num_chr = '0';
+        }
+        util_buf_to_file(CONFIG_TRACING_SFN, &session_num_chr, 1, 00666);
+#endif // CONFIG_TRACING_DIR
         // Start the config management job
         ret = util_start_thrd("config", config, NULL, NULL);
     }
