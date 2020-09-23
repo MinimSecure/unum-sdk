@@ -159,6 +159,7 @@ int touch_file (char *file, mode_t crmode)
 }
 
 // Save data from memory to a file, returns -1 if fails.
+// crmode - permissions for creating new files (see man 2 open)
 int util_buf_to_file(char *file, void *buf, int len, mode_t crmode)
 {
     int fd = open(file, O_CREAT|O_WRONLY|O_TRUNC, crmode);
@@ -181,16 +182,14 @@ int util_buf_to_file(char *file, void *buf, int len, mode_t crmode)
 // file - Name of the file
 // buf - Buffer to save the data to
 // buf_size - Maximum size of the buffer
-// Returns total number of bytes saved to the buffer if the file size is
-// greater than buf_size.
-// A maximum of buf_size bytes are returned if there is an overflow.
-// Returns negative value if there is an error,
-// The caller can use errno to get error code.
+// Returns: negative - error, use errno to get the error code
+//          positive - number of bytes read or the file size if
+//                     buf_size was not large enough to read all
 size_t util_file_to_buf(char *file, char *buf, size_t buf_size)
 {
-    int len = 0;
+    size_t len = 0;
     int fd = open(file, O_RDONLY);
-    if (fd < 0) {
+    if(fd < 0) {
         return -1;
     }
     len = read(fd, buf, buf_size);
@@ -200,6 +199,10 @@ size_t util_file_to_buf(char *file, char *buf, size_t buf_size)
         close(fd);
         errno = err;
         return -2;
+    }
+    struct stat st;
+    if(fstat(fd, &st) == 0 && len < (size_t)st.st_size) {
+        len = st.st_size;
     }
     close(fd);
     return len;
