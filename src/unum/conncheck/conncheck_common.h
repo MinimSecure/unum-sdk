@@ -91,6 +91,7 @@ typedef struct _CONNCHECK_ST {
     unsigned long cloud_utc;       // UTC time in sec from the cloud
     unsigned long connect_uptime;  // uptime when connected
     unsigned long tb_start_uptime; // uptime when troubleshooting started
+    int server_list_ready;         // server list can be used
     char ifname[IFNAMSIZ];         // interface name to troubleshoot
     DEV_IP_CFG_t ipcfg;            // interface IP configuration
     IPV4_ADDR_t ipv4gw;            // IPv4 default gateway address
