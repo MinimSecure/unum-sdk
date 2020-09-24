@@ -78,6 +78,45 @@ void wait_for_conncheck(void)
     UTIL_EVENT_WAIT(&conncheck_complete);
 }
 
+// Return state name
+static char *cstate_name(int cstate)
+{
+    char *cstate_str = NULL;
+
+    switch(cstate)
+    {
+        case CSTATE_GET_URLS:
+            cstate_str = "getting_server_urls";
+            break;
+        case CSTATE_GRACE_PERIOD:
+            cstate_str = "grace_period";
+            break;
+        case CSTATE_RECOVERY:
+            cstate_str = "recovery";
+            break;
+        case CSTATE_CHECKING_IPV4:
+            cstate_str = "checking_ipv4";
+            break;
+        case CSTATE_CHECKING_DNS:
+            cstate_str = "checking_dns";
+            break;
+        case CSTATE_CHECKING_HTTPS:
+            cstate_str = "checking_https";
+            break;
+        case CSTATE_CHECKING_COUNTERS:
+            cstate_str = "checking_counters";
+            break;
+        case CSTATE_DONE:
+            cstate_str = "done";
+            break;
+        default:
+            cstate_str = "unknown";
+            break;
+    }
+
+    return cstate_str;
+}
+
 #ifdef LAN_INFO_FOR_MOBILE_APP
 // Create/update the mobile app info file
 static void conncheck_mk_info_file(void)
@@ -118,37 +157,11 @@ static void conncheck_mk_info_file(void)
     if(cc_cstate_progress > 0) {
         p_cstate_progress = &cc_cstate_progress;
     }
-    switch(cc_cstate)
+    cstate_str = cstate_name(cc_cstate);
+    if(cc_cstate == CSTATE_DONE ||
+       cc_cstate <= CSTATE_UNINITIALIZED || cc_cstate >= CSTATE_MAX)
     {
-        case CSTATE_GET_URLS:
-            cstate_str = "getting_server_urls";
-            break;
-        case CSTATE_GRACE_PERIOD:
-            cstate_str = "grace_period";
-            break;
-        case CSTATE_RECOVERY:
-            cstate_str = "recovery";
-            break;
-        case CSTATE_CHECKING_IPV4:
-            cstate_str = "checking_ipv4";
-            break;
-        case CSTATE_CHECKING_DNS:
-            cstate_str = "checking_dns";
-            break;
-        case CSTATE_CHECKING_HTTPS:
-            cstate_str = "checking_https";
-            break;
-        case CSTATE_CHECKING_COUNTERS:
-            cstate_str = "checking_counters";
-            break;
-        case CSTATE_DONE:
-            cstate_str = "done";
-            p_cstate_progress = NULL;
-            break;
-        default:
-            cstate_str = "unknown";
-            p_cstate_progress = NULL;
-            break;
+        p_cstate_progress = NULL;
     }
 
     // Collect the info for building JSON
@@ -294,8 +307,8 @@ static void conncheck_update_state_event(int new_state, int progress)
     // Update state
     if(update_state)
     {
-        log("%s: state transition %d -> %d, progress %d\n",
-            __func__, cc_cstate, new_state, progress);
+        log("%s: state transition %s -> %s, progress %d\n",
+            __func__, cstate_name(cc_cstate), cstate_name(new_state), progress);
         cc_cstate = new_state;
         cc_cstate_progress = progress;
     }
@@ -541,14 +554,18 @@ static int conncheck_troubleshoot_ipv4(void)
         return ret;
     }
 
-    // Check if the name resolution works for the DNS names we need.
-
-    // If we don't have the list of server URLs then the DNS test will
-    // not work proplerly
-    if (cc_st.no_servers) {
-        log("%s: Servers not available skipping DNS test\n", __func__);
-        return ret;
+    // Since we got here without detecting any IP connectivity error
+    // assume that maybe the issue is with getting the server list
+    // from the public DNS and attempt to recover by allowing to
+    // bypass and proceed with the defaults.
+    if(!cc_st.server_list_ready) {
+        log("%s: Attempting to recover, default server list is allowed\n",
+            __func__);
+        cc_st.server_list_ready = TRUE;
+        return 1;
     }
+
+    // Check if the name resolution works for the DNS names we need.
 
     // If we already determined that DNS is not working and retrying
     // the troubleshooting for potentially fixing something else, skip
@@ -585,7 +602,7 @@ static int conncheck_troubleshoot_ipv4(void)
 // Connectivity troubleshooter, tries to determine what's wrong
 // with the connection.
 // Returns: TRUE if it was able to attempt a recovery and the
-//          connectivity test should be rerun without changing the
+//          connectivity test should be rerun without the
 //          cc_st data structure reset, otherwise it is FALSE.
 // Note: Amazon has no IPv6 support yet, so no checking it here.
 static int conncheck_troubleshooter(void)
@@ -655,7 +672,7 @@ static int conncheck_troubleshooter(void)
     }
     err = util_get_dev_stats(cc_st.ifname, &st);
     if(err != 0) {
-        log("%s: failed to get the base counters for %s\n",
+        log("%s: failed to get the updated counters for %s\n",
             __func__, cc_st.ifname);
         cc_st.no_interface = TRUE;
         return ret;
@@ -716,8 +733,8 @@ static void conncheck(THRD_PARAM_t *p)
     unsigned long wake_up_t = util_time(1);
     // Calculate uptime when to start troubleshooting
     unsigned long start_tb_t = wake_up_t + CONNCHECK_START_GRACE_TIME;
-    // Assume the server list is not populated
-    int server_list_ready = FALSE;
+    // The default server list is not from DNS
+    int server_list_from_dns = FALSE;
 
     // Try to connect for up to CONNCHECK_START_GRACE_TIME, then troubleshoot
     // and attempt to recover (if still cannot connect)
@@ -733,9 +750,14 @@ static void conncheck(THRD_PARAM_t *p)
             continue;
         }
 
-        if(cur_t < start_tb_t && !server_list_ready)
+        // During the grace period try getting the servers list from DNS
+        // unless succeeded before.
+        if(cur_t < start_tb_t && !server_list_from_dns)
         {
-            // Get TXT Record from DNS to determine which servers to connect to
+            // Get TXT Record from DNS to determine which servers to connect to.
+            // We have no servers, so set the flag before changing the state
+            // and getting the JSON info file populated.
+            cc_st.no_servers = 1;
             conncheck_update_state_event(CSTATE_GET_URLS,
                                          ((cur_t - wake_up_t) * 100) /
                                          (start_tb_t - wake_up_t));
@@ -743,28 +765,44 @@ static void conncheck(THRD_PARAM_t *p)
             if(res < 0) {
                 log("%s: Cannot reach DNS to get server endpoints\n", __func__);
                 cc_st.no_servers = 1;
-                // Note: if the agent can't get the server list due to timeout
-                //       error it keeps trying until public DNS servers respond.
-                //       This might prevent the agent from working in some
-                //       corner cases (public DNS servers are down or blocked).
-                continue;
+                // Note: the agent can't get the server list due to a network
+                //       error, keep trying until public DNS servers respond.
+                //       If no luck after the grace period the troubleshooter
+                //       decides if the cc_st.server_list_ready flag should be
+                //       set (when it is set no retrying, proceed w/ defaults)
+                if(!cc_st.server_list_ready) {
+                    continue;
+                }
             }
-            if(res > 0) {
+            else if(res > 0)
+            {
                 log("%s: No server endpoints, using defaults\n", __func__);
                 cc_st.no_servers = 1;
-                // Note: this happens due to any error, but response timeing out
-                //       and since the defults are loaded at init the code just
-                //       proceeds.
-            } else {
-                cc_st.no_servers = 0;
+                // Note: can't get servers due to error unrelated to the network
+                //       state and since the defults are loaded at init the code
+                //       can just proceeds and use the defaults
             }
-            server_list_ready = TRUE;
+            else
+            {
+                cc_st.no_servers = 0;
+                // All good, set server_list_from_dns to bypass all this
+                // from now on
+                server_list_from_dns = TRUE;
+            }
+            // We either got the list or detected that it can't be received, so
+            // no longer need to keep retrying and the rest of the code can use
+            // whatever list we have.
+            cc_st.server_list_ready = TRUE;
+        }
+        else if(server_list_from_dns) {
+            // Make sure we have the ready flag set if bypassing the above code
+            cc_st.server_list_ready = TRUE;
         }
 
         // If we are within the startup grace period and we have retrieved
         // server URLs from minim DNS try to connect and check against
         // the server time
-        if(cur_t < start_tb_t && server_list_ready)
+        if(cur_t < start_tb_t && cc_st.server_list_ready)
         {
             conncheck_update_state_event(CSTATE_GRACE_PERIOD,
                                          ((cur_t - wake_up_t) * 100) /
@@ -856,14 +894,14 @@ static void conncheck(THRD_PARAM_t *p)
         if(recover_attempt) {
             wake_up_t = util_time(1);
             start_tb_t = wake_up_t + CONNCHECK_RECOVER_GRACE_TIME;
-            log("%s: cannot connect to cloud, attempting recover\n", __func__);
+            log("%s: cannot connect to cloud, attempting recovery\n", __func__);
             continue;
         }
 
         // Set new wake up and troubleshoot times (the connectivity check
         // will start again after the quiet time period)
         wake_up_t = util_time(1) + quiet_period;
-        // Troubleshoot at CONNCHECK_START_GRACE_TIME after the wakeup is still
+        // Troubleshoot at CONNCHECK_START_GRACE_TIME after the wakeup if still
         // not connected
         start_tb_t = wake_up_t + CONNCHECK_RETRY_GRACE_TIME;
 

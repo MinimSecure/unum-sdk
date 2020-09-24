@@ -27,6 +27,7 @@
 #define DNS_UTIL_ERR_SOCKET       -5
 #define DNS_UTIL_ERR_LIB          -6
 #define DNS_UTIL_ERR_TIMEOUT      -7
+#define DNS_UTIL_ERR_NET          -8
 
 // Size of the servers[] array
 #define RESOURCE_TYPE_MAX       4
@@ -280,6 +281,15 @@ static int send_query(const char *ns, const char *domain_name,
             log("%s: Error while polling for response, error=%d\n",
                 __FUNCTION__, error);
             dns_so_close(so);
+            // Make the best guess to id network errors that are temporary
+            // in their nature (especially due to system starting up)
+            if(error == ENETUNREACH || error == ENETDOWN ||
+               error == ENETRESET || error == ECONNRESET ||
+               error == ECONNABORTED)
+            {
+                return DNS_UTIL_ERR_NET;
+            }
+            // Return for something that is likely a permanent error state
             return DNS_UTIL_ERR_LIB;
         }
         if(dns_so_elapsed(so) > unum_config.dns_timeout)
@@ -330,7 +340,7 @@ static int util_get_txt_record(char *txt, int buflen)
     {
         log_dbg("%s: Sending TXT record query to %s\n", __FUNCTION__, dns_servers[i]);
         int status = send_query(dns_servers[i], domain, DNS_T_TXT, txt, buflen);
-        if(DNS_UTIL_ERR_TIMEOUT == status) {
+        if(DNS_UTIL_ERR_TIMEOUT == status || DNS_UTIL_ERR_NET == status) {
             conn_err++;
         }
         if(DNS_UTIL_SUCCESS != status) {
