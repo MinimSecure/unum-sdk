@@ -85,11 +85,8 @@ static char *cstate_name(int cstate)
 
     switch(cstate)
     {
-        case CSTATE_GET_URLS:
-            cstate_str = "getting_server_urls";
-            break;
-        case CSTATE_GRACE_PERIOD:
-            cstate_str = "grace_period";
+        case CSTATE_CONNECTING:
+            cstate_str = "connecting";
             break;
         case CSTATE_RECOVERY:
             cstate_str = "recovery";
@@ -137,6 +134,7 @@ static void conncheck_mk_info_file(void)
     char *bad_ipv4_gw = cc_st.bad_ipv4_gw ? "1" : NULL;
     char *no_dns = cc_st.no_dns ? "1" : NULL;
     char *no_servers = cc_st.no_servers ? "1" : NULL;
+    char *slist_ready = cc_st.slist_ready ? "1" : NULL;
 
     unsigned long *p_connect_uptime = NULL;
     unsigned long *p_cloud_utc = NULL;
@@ -215,6 +213,7 @@ static void conncheck_mk_info_file(void)
       { "bad_ipv4_gw",    {.type = JSON_VAL_STR, {.s = bad_ipv4_gw}}},
       { "no_dns",         {.type = JSON_VAL_STR, {.s = no_dns}}},
       { "no_servers",     {.type = JSON_VAL_STR, {.s = no_servers}}},
+      { "slist_ready",    {.type = JSON_VAL_STR, {.s = slist_ready}}},
       // data
       { "connect_uptime", {.type = JSON_VAL_PUL, {.pul = p_connect_uptime}}},
       { "cloud_utc",      {.type = JSON_VAL_PUL, {.pul = p_cloud_utc}}},
@@ -285,11 +284,10 @@ static void conncheck_update_state_event(int new_state, int progress)
             break;
         }
 
-        // The RECOVERY state the same as CSTATE_GRACE_PERIOD, but
+        // The RECOVERY state the same as CSTATE_CONNECTING, but
         // during the attempt to reconnect after fixing some of the
         // recoverable networking issues.
-        if(CSTATE_RECOVERY == cc_cstate &&
-           CSTATE_GRACE_PERIOD == new_state)
+        if(CSTATE_RECOVERY == cc_cstate && CSTATE_CONNECTING == new_state)
         {
             new_state = CSTATE_RECOVERY;
             break;
@@ -307,8 +305,13 @@ static void conncheck_update_state_event(int new_state, int progress)
     // Update state
     if(update_state)
     {
-        log("%s: state transition %s -> %s, progress %d\n",
-            __func__, cstate_name(cc_cstate), cstate_name(new_state), progress);
+        if(cc_cstate == new_state) {
+            log("%s: state <%s>, progress %d%%\n", __func__,
+                cstate_name(new_state), progress);
+        } else {
+            log("%s: state transition <%s> -> <%s>, progress %d%%\n", __func__,
+                cstate_name(cc_cstate), cstate_name(new_state), progress);
+        }
         cc_cstate = new_state;
         cc_cstate_progress = progress;
     }
@@ -316,8 +319,12 @@ static void conncheck_update_state_event(int new_state, int progress)
     // Update the mobile info file
     if(update_file) {
 #ifdef LAN_INFO_FOR_MOBILE_APP
-        log("%s: updating %s, state %d, progress %d\n",
-            __func__, LAN_INFO_FOR_MOBILE_APP, cc_cstate, progress);
+        if(update_state) {
+            log("%s: updating %s\n", __func__, LAN_INFO_FOR_MOBILE_APP);
+        } else {
+            log("%s: updating %s, state <%s>, progress %d%%\n", __func__,
+                LAN_INFO_FOR_MOBILE_APP, cstate_name(cc_cstate), progress);
+        }
         conncheck_mk_info_file();
 #endif // LAN_INFO_FOR_MOBILE_APP
     }
@@ -558,10 +565,10 @@ static int conncheck_troubleshoot_ipv4(void)
     // assume that maybe the issue is with getting the server list
     // from the public DNS and attempt to recover by allowing to
     // bypass and proceed with the defaults.
-    if(!cc_st.server_list_ready) {
+    if(!cc_st.slist_ready) {
         log("%s: Attempting to recover, default server list is allowed\n",
             __func__);
-        cc_st.server_list_ready = TRUE;
+        cc_st.slist_ready = TRUE;
         return 1;
     }
 
@@ -758,7 +765,7 @@ static void conncheck(THRD_PARAM_t *p)
             // We have no servers, so set the flag before changing the state
             // and getting the JSON info file populated.
             cc_st.no_servers = 1;
-            conncheck_update_state_event(CSTATE_GET_URLS,
+            conncheck_update_state_event(CSTATE_CONNECTING,
                                          ((cur_t - wake_up_t) * 100) /
                                          (start_tb_t - wake_up_t));
             int res = util_get_servers(FALSE);
@@ -768,9 +775,9 @@ static void conncheck(THRD_PARAM_t *p)
                 // Note: the agent can't get the server list due to a network
                 //       error, keep trying until public DNS servers respond.
                 //       If no luck after the grace period the troubleshooter
-                //       decides if the cc_st.server_list_ready flag should be
-                //       set (when it is set no retrying, proceed w/ defaults)
-                if(!cc_st.server_list_ready) {
+                //       decides if the cc_st.slist_ready flag should be set
+                //       (when it is set no retrying, proceed w/ defaults)
+                if(!cc_st.slist_ready) {
                     continue;
                 }
             }
@@ -792,19 +799,20 @@ static void conncheck(THRD_PARAM_t *p)
             // We either got the list or detected that it can't be received, so
             // no longer need to keep retrying and the rest of the code can use
             // whatever list we have.
-            cc_st.server_list_ready = TRUE;
+            cc_st.slist_ready = TRUE;
         }
         else if(server_list_from_dns) {
-            // Make sure we have the ready flag set if bypassing the above code
-            cc_st.server_list_ready = TRUE;
+            // Make sure we have the ready flag set if bypassing the above code.
+            // It's necessary since cc_st is reset after the quiet period.
+            cc_st.slist_ready = TRUE;
         }
 
         // If we are within the startup grace period and we have retrieved
         // server URLs from minim DNS try to connect and check against
         // the server time
-        if(cur_t < start_tb_t && cc_st.server_list_ready)
+        if(cur_t < start_tb_t && cc_st.slist_ready)
         {
-            conncheck_update_state_event(CSTATE_GRACE_PERIOD,
+            conncheck_update_state_event(CSTATE_CONNECTING,
                                          ((cur_t - wake_up_t) * 100) /
                                          (start_tb_t - wake_up_t));
             http_rsp *rsp = http_get_no_retry(CONNCHECK_HTTPS_URL, NULL);
