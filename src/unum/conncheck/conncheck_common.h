@@ -22,8 +22,8 @@
 // Time (in sec) to stay quiet before starting over if unable to connect
 // and/or recover. The time is increased at each failure till it becomes
 // greater or equal to the max.
-#define CONNCHECK_QUIET_TIME_START  60
-#define CONNCHECK_QUIET_TIME_INC    30
+#define CONNCHECK_QUIET_TIME_START  30
+#define CONNCHECK_QUIET_TIME_INC     5
 #define CONNCHECK_QUIET_TIME_MAX   120
 
 // Max time (in sec) to keep tryinig connectivity test before assuming
