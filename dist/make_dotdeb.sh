@@ -26,6 +26,7 @@ VERSION_BASE="2019.2.0"
 VERSION_STABILITY="stable"
 VERSION=${1:-"${VERSION_BASE}-snapshot"}
 
+export MODEL=linux_generic
 export AGENT_VERSION="$VERSION"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$BUILD_ROOT/build/linux_generic/rfs/lib"
 
