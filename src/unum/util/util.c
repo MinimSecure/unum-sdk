@@ -394,6 +394,57 @@ int util_system(char *cmd, unsigned int timeout, char *pid_file)
     return ret;
 }
 
+// Function to check if a directory exists
+// dir - Name of the directory
+// Returns true if dir exists and also a directory
+// False otherwise
+int util_directory_exists(char *dir)
+{
+    struct stat st;
+    if (stat(dir, &st) == 0 && S_ISDIR(st.st_mode)) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+// Function to check if a file exists
+// fname - Name of the file
+// Returns true if filename exists
+// False otherwise
+int util_file_exists(char *fname)
+{
+    struct stat st;
+    if (stat(fname, &st) == 0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+// Create a directory and all the subdirectories on the way
+// dirname - Full path of the directory
+// mode - mode
+void util_mkdir_rec(const char *dirname, mode_t mode)
+{
+    char *tmp;
+    char subdir[256];
+    int len = strlen(dirname);
+
+    tmp = strchr(dirname, '/');
+    while(tmp != NULL) {
+        memset(subdir, 0, sizeof(subdir));
+        strncpy(subdir, dirname, tmp - dirname);
+        mkdir(subdir, mode);
+        if (tmp > dirname + len - 1) {
+            //Check the boundaries
+            break;
+        }
+        tmp = strchr(tmp + 1, '/');
+    }
+    mkdir(dirname, mode);
+}
+
 // Call cmd in shell and capture its stdout in a buffer.
 // Returns: negative if fails to start cmd (see errno for the error code), the
 //          length of the captured info (excluding terminating 0) if success.

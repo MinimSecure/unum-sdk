@@ -49,6 +49,7 @@
 #include <signal.h>
 #include <jansson.h>
 #include <getopt.h>
+#include <libgen.h>
 
 #ifdef USE_OPEN_SSL
 #  include <openssl/crypto.h>

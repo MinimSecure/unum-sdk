@@ -240,6 +240,15 @@ int util_system_wcb(char *cmd,
 // the PID of the running process while it is executing.
 int util_system(char *cmd, unsigned int timeout, char *pid_file);
 
+// Function to check if a directory exists
+int util_directory_exists(char *dir);
+
+// Function to check if a file exists
+int util_file_exists(char *fname);
+
+// Create directories recursively
+void util_mkdir_rec(const char *dirname, mode_t mode);
+
 // Call cmd in shell and capture its stdout in a buffer.
 // Returns: negative if fails to start cmd (see errno for the error code), the
 //          length of the captured info (excluding terminating 0) if success.
