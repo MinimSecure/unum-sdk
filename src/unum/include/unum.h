@@ -127,7 +127,13 @@
 // Default agent config path, platforms can override in platform.h.
 #ifndef UNUM_CONFIG_PATH
 #  define UNUM_CONFIG_PATH "/tmp/unum.conf"
-#endif
+#endif // UNUM_CONFIG_PATH
+
+// Default agent logs path, platforms can override in platform.h.
+// The path should be slash-terminated.
+#ifndef UNUM_LOG_PATH
+#  define UNUM_CONFIG_PATH "/var/log/"
+#endif // UNUM_LOG_PATH
 
 // Main configuration context (for global startup options and paramters)
 typedef struct {
@@ -169,6 +175,7 @@ typedef struct {
     int sysinfo_period;            // sysinfo reporting time period
     int ipt_period;                // iptables reporting time period
     char *config_path;             // path to config file
+    char *log_path;                // path to logs directory
     int dns_timeout;               // dns timeout value in seconds
     char wan_ifname[IFNAMSIZ];     // specify a custom wan interface name
     char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];

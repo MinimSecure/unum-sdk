@@ -11,6 +11,8 @@ char *init_str_list[] = { INITSTRLIST, NULL };
 // The init level that we have executed all the init routines for
 int init_level_completed = 0;
 
+// Buffer to storing default log files dir path
+static char logs_dir[MAX_LOG_PATH];
 
 // Unum configuration context global structure
 UNUM_CONFIG_t unum_config = {
@@ -24,6 +26,7 @@ UNUM_CONFIG_t unum_config = {
     .sysinfo_period            = SYSINFO_TELEMETRY_PERIOD,
     .ipt_period                = IPT_TELEMETRY_PERIOD,
     .config_path               = UNUM_CONFIG_PATH,
+    .logs_dir                  = UNUM_LOG_PATH,
     .dns_timeout               = DNS_TIMEOUT,
 #if defined(FEATURE_MANAGED_DEVICE)
     .opmode                    = UNUM_OPMS_MD,
@@ -84,6 +87,7 @@ static struct option long_options[] =
     {"sysinfo-period\0ia", required_argument, NULL, 'C'},
     {"tpcap-nice\0ia",     required_argument, NULL, 'N'},
     {"dns-timeout\0ia",    required_argument, NULL, 'D'},
+    {"log-dir\0co",        required_argument, NULL, 'L'},
     {0, 0, 0, 0}
 };
 // The short options string for the above
@@ -409,6 +413,10 @@ static void print_usage(int argc, char *argv[])
            SUPPORT_SHORT_PERIOD);
     printf("                                interval for \"-m support\"\n");
     printf("                                0: disable periodic retries\n");
+    printf(" --log-dir <pathname>         - set default logs directory\n");
+    printf("                                the pathname must exist\n");
+    printf("                                it's read from " PREFIX_FILE_LOCATION "\n");
+    printf("                                if the file exists\n");
 #endif //SUPPORT_RUN_MODE
 }
 
@@ -631,6 +639,12 @@ static int do_config_char(char opt_long, char *optarg)
                 status -= 10;
                 break;
             }
+            break;
+        case 'L':
+            if(util_pname_exists(optarg) != 0) {
+                status = -11;
+            }
+            unum_config.log_dir = optarg;
             break;
         default:
             status = -3;
@@ -954,6 +968,21 @@ int main(int argc, char *argv[])
     if(parse_cmdline(TRUE) != 0) {
         print_usage(arg_count, arg_vector);
         exit(EXIT_FAILURE);
+    }
+
+    // Try to read log dir from LOG_FILES_DIR_CONSTANT
+    if(util_file_to_buf(LOG_FILES_DIR_CONSTANT, logs_dir, sizeof(logs_dir) - 2) == 0)
+    {
+        if(*log_dir != 0 && util_path_exists(logs_dir)) {
+            int len = strlen(logs_dir);
+            if(log_dir[len - 1] != '/') {
+                log_dir[len - 1] = '/';
+            }
+            unum_config.log_dir = log_dir;
+        } else {
+            printf("Warning, invalid logs dir path <%s>, using defaults!",
+                   log_dir);
+        }
     }
 
     // Load from the config file

@@ -86,7 +86,9 @@ static int init_log_entry(LOG_DST_t dst)
             for(ii = lc->max + 1; ii <= LOG_ROTATE_CLEANUP_MAX; ii++)
             {
                 char fn[LOG_MAX_PATH + 4];
-                snprintf(fn, sizeof(fn), "%s.%d", lc->name, ii);
+                snprintf(fn, sizeof(fn), "%s%s.%d",
+                         ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                         lc->name, ii);
                 fn[sizeof(fn) - 1] = 0;
                 unlink(fn);
             }
@@ -101,18 +103,24 @@ static int init_log_entry(LOG_DST_t dst)
 
         if(!lc->f && (lc->flags & mask) != 0)
         {
-            if(strlen(lc->name) > LOG_MAX_PATH) {
+            char fn[LOG_MAX_PATH + 1];
+            int fn_len = 
+                snprintf(fn, sizeof(fn), "%s%s",
+                     ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                     lc->name;
+            
+            if(fn_len > LOG_MAX_PATH) {
                 printf("%s: The log file name <%s> is too long",
                        __func__, lc->name);
                 ret = -1;
                 break;
             }
-            lc->f = fopen(lc->name, "a+");
+            lc->f = fopen(fn, "a+");
             if(lc->f) {
                 lc->flags |= LOG_FLAG_INIT_DONE;
             } else {
                 printf("%s: failed to open/create <%s>, log init error:\n%s",
-                       __func__, lc->name, strerror(errno));
+                       __func__, fn, strerror(errno));
                 lc->flags |= LOG_FLAG_INIT_FAIL;
             }
         }
@@ -237,13 +245,20 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                     char to[LOG_MAX_PATH + 4];
                     char *from;
 
-                    from = lc->name;
+                    snprintf(buf_from, sizeof(buf_from), "%s%s",
+                            ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                            lc->name, ii - 1);
+                    from = buf_from; // redundant
                     if(ii - 1 > 0) {
-                        snprintf(buf_from, sizeof(buf_from), "%s.%d", lc->name, ii - 1);
+                        snprintf(buf_from, sizeof(buf_from), "%s%s.%d",
+                                 ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                                 lc->name, ii - 1);
                         buf_from[sizeof(buf_from) - 1] = 0;
-                        from = buf_from;
+                        from = buf_from; // redundant
                     }
-                    snprintf(to, sizeof(to), "%s.%d", lc->name, ii);
+                    snprintf(to, sizeof(to), "%s%s.%d", 
+                             ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                             lc->name, ii);
                     to[sizeof(to) - 1] = 0;
                     rename(from, to);
                 }
@@ -252,8 +267,10 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                 if(lc->f) {
                     lc->flags |= LOG_FLAG_INIT_DONE;
                 } else {
-                    printf("%s: failed to create <%s> after rotation, error:\n%s",
-                           __func__, lc->name, strerror(errno));
+                    printf("%s: failed to create <%s%s> after rotation, error:\n%s",
+                           __func__,
+                           ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                           strerror(errno));
                     lc->flags |= LOG_FLAG_INIT_FAIL;
                 }
             }
