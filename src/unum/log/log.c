@@ -45,63 +45,43 @@ void set_disabled_log_dst_mask(unsigned long mask)
     disabled_mask = mask;
 }
 
-// Flush and reset log file pointers.
-// Called when the log file changed from persistent to non-persistent
-// and viceversa.
-static void reset_log_file(LOG_CONFIG_t *lc)
-{
-    // flush the log file and set the file pointer to NULL
-    if (lc->f != NULL) {
-        fflush(lc->f);
-        fclose(lc->f);
-        lc->flags &= ~(LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL);
-        lc->f = NULL;
-        // Mark that the log file changed
-        // To distinguish from init
-        lc->flags |= LOG_FLAG_LOG_CHANGED;
-    }
-}
-
-// Get Log filename.
+// Get Full path for log file name
 // Prepend persistent directory (if configured so) path
 // to lc->name (if exists) and copy to log_file.
-static void get_log_file_name(LOG_CONFIG_t *lc)
+// If there are any issues with prepending the persistent path,
+// log_file will be populated with default path
+static int get_log_file_name(LOG_CONFIG_t *lc, char *log_file)
 {
     char prefix[LOG_MAX_PATH];
     char log_file_copy[LOG_MAX_PATH]; // We need this while using dirname
     char *newline;
     char *dir;
 
-    memset(lc->log_file, 0, LOG_MAX_PATH);
+    memset(log_file, 0, LOG_MAX_PATH);
     if (lc->name == NULL) {
         // No logfile needed
         // Eg. STDOUT
-        return;
+        return 1;
     }
-    strncpy(lc->log_file, lc->name, LOG_MAX_PATH);
+    strncpy(log_file, lc->name, LOG_MAX_PATH);
 
     if (lc->flags & LOG_FLAG_TTY) {
         // For console
-        return;
+        return 2;
     }
-#ifndef LOG_PREFIX_FILE
-    // Nothing defined for this platform
-    return;
-#endif
     // Check if the prefix file exists
-    if (!util_file_exists(LOG_PREFIX_FILE)) {
-        if (lc->flags & LOG_FLAG_INIT_PER) {
-            // To Non-persistent
-            reset_log_file(lc);
-            lc->flags &= ~LOG_FLAG_INIT_PER;
-        }
-        return;
+    if (!util_path_exists(LOG_PREFIX_FILE)) {
+        // Prefix file does n't exist. Use defaults.
+        strncpy(log_file, lc->name, LOG_MAX_PATH - 1);
+        return 0;
     }
     // Read the Prefix file content and if everything goes well, this needs
     // to be prepeneded to log file names.
     if (util_file_to_buf(LOG_PREFIX_FILE, prefix, LOG_MAX_PATH) < 0) {
         // Error while reading prefix file
-        return;
+        // Use defaults
+        strncpy(log_file, lc->name, LOG_MAX_PATH - 1);
+        return -1;
     }
 
     // util_file_to_buf seems to be appending \n at the end .
@@ -114,8 +94,7 @@ static void get_log_file_name(LOG_CONFIG_t *lc)
     // Copy the prefix and then the file path into log_file.
     if ((strlen(lc->name) + strlen(prefix) + 1) <
                     LOG_MAX_PATH) {
-        strncpy(lc->log_file, prefix, LOG_MAX_PATH);
-        strncat(lc->log_file, lc->name, LOG_MAX_PATH - strlen(lc->log_file));
+        snprintf(log_file, LOG_MAX_PATH - 1, "%s/%s", prefix, lc->name);
     }
 
     // Use dirname to get the full direcotry path.
@@ -123,24 +102,25 @@ static void get_log_file_name(LOG_CONFIG_t *lc)
     // dirname seems to be manipulating the argument.
     // So make a copy and use it.
     memset(log_file_copy, 0, LOG_MAX_PATH);
-    strncpy(log_file_copy, lc->log_file, LOG_MAX_PATH);
+    strncpy(log_file_copy, log_file, LOG_MAX_PATH);
     dir = dirname(log_file_copy);
     if (dir == NULL) {
-        return;
+        // Some error. Use default path for logging
+        strncpy(log_file, lc->name, LOG_MAX_PATH - 1);
+        return -2;
     }
 
     // If the directories for the log_file (say /unum/var/log/unum.log)
     // do not exist, create them.
-    if (!util_directory_exists(dir)) {
-        util_mkdir_rec(dir, 0700);
+    if (!util_path_exists(dir)) {
+        if (util_mkdir_rec(dir, 0700) < 0) {
+            // Error while creating recursive directories
+            // Use defaults
+            strncpy(log_file, lc->name, LOG_MAX_PATH - 1);
+        }
     }
 
-    // Check if we need to move to peristent if we are not already in.
-    if (!(lc->flags & LOG_FLAG_INIT_PER)) {
-        // To persistent
-        reset_log_file(lc);
-        lc->flags |= LOG_FLAG_INIT_PER;
-    }
+    return 0;
 }
 
 // Initializes individual log config & control entry
@@ -150,6 +130,7 @@ static int init_log_entry(LOG_DST_t dst)
     int mask = 0;
     int mutex_taken = FALSE;
     LOG_CONFIG_t *lc = NULL;
+    char log_file[LOG_MAX_PATH];
 
     if((disabled_mask & (1 << dst)) != 0 || dst == LOG_DST_DROP) {
         return 0;
@@ -158,10 +139,6 @@ static int init_log_entry(LOG_DST_t dst)
     if(dst >= LOG_DST_STDOUT && dst < LOG_DST_MAX) {
         lc = &(log_cfg[dst]);
     }
-
-    // Get the log file name. The log filenames defined in log_cfg
-    // are to be overwritten in case peristent logs are opted for.
-    get_log_file_name(lc);
 
     // Quick check if we should even try to take mutex
     if((lc->flags & (LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL)) != 0) {
@@ -188,7 +165,7 @@ static int init_log_entry(LOG_DST_t dst)
             for(ii = lc->max + 1; ii <= LOG_ROTATE_CLEANUP_MAX; ii++)
             {
                 char fn[LOG_MAX_PATH + 4];
-                snprintf(fn, sizeof(fn), "%s.%d", lc->log_file, ii);
+                snprintf(fn, sizeof(fn), "%s.%d", lc->name, ii);
                 fn[sizeof(fn) - 1] = 0;
                 unlink(fn);
             }
@@ -203,18 +180,19 @@ static int init_log_entry(LOG_DST_t dst)
 
         if(!lc->f && (lc->flags & mask) != 0)
         {
-            if(strlen(lc->log_file) > LOG_MAX_PATH) {
+            if(strlen(lc->name) > LOG_MAX_PATH) {
                 printf("%s: The log file name <%s> is too long",
-                       __func__, lc->log_file);
+                       __func__, lc->name);
                 ret = -1;
                 break;
             }
-            lc->f = fopen(lc->log_file, "a+");
+            get_log_file_name(lc, log_file);
+            lc->f = fopen(log_file, "a+");
             if(lc->f) {
                 lc->flags |= LOG_FLAG_INIT_DONE;
             } else {
                 printf("%s: failed to open/create <%s>, log init error:\n%s",
-                       __func__, lc->log_file, strerror(errno));
+                       __func__, log_file, strerror(errno));
                 lc->flags |= LOG_FLAG_INIT_FAIL;
             }
         }
@@ -229,8 +207,7 @@ static int init_log_entry(LOG_DST_t dst)
 
         // Log startup message
         if((lc->flags & LOG_FLAG_INIT_MSG) != 0 &&
-           (lc->flags & LOG_FLAG_INIT_DONE) != 0 &&
-           (lc->flags & LOG_FLAG_LOG_CHANGED) == 0)
+           (lc->flags & LOG_FLAG_INIT_DONE) != 0)
         {
             // Make sure this call is made only if the init function
             // is already done.
@@ -239,7 +216,6 @@ static int init_log_entry(LOG_DST_t dst)
                      unum_config.mode ? unum_config.mode : "");
         }
 
-        lc->flags &= ~(LOG_FLAG_LOG_CHANGED);
         break;
     }
 
@@ -257,6 +233,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
     int mutex_taken = FALSE;
     long fpos;
     va_list ap;
+    char log_file[LOG_MAX_PATH];
 
     va_start(ap, str);
 
@@ -294,7 +271,6 @@ void unum_log(LOG_DST_t dst, char *str, ...)
         UTIL_MUTEX_TAKE(&(lc->m));
         mutex_taken = TRUE;
     }
-
 
     for(;;)
     {
@@ -342,23 +318,24 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                     char to[LOG_MAX_PATH + 4];
                     char *from;
 
-                    from = lc->log_file;
+                    from = lc->name;
                     if(ii - 1 > 0) {
-                        snprintf(buf_from, sizeof(buf_from), "%s.%d", lc->log_file, ii - 1);
+                        snprintf(buf_from, sizeof(buf_from), "%s.%d", lc->name, ii - 1);
                         buf_from[sizeof(buf_from) - 1] = 0;
                         from = buf_from;
                     }
-                    snprintf(to, sizeof(to), "%s.%d", lc->log_file, ii);
+                    snprintf(to, sizeof(to), "%s.%d", lc->name, ii);
                     to[sizeof(to) - 1] = 0;
                     rename(from, to);
                 }
                 lc->flags &= ~(LOG_FLAG_INIT_FAIL | LOG_FLAG_INIT_DONE);
-                lc->f = fopen(lc->log_file, "a+");
+                get_log_file_name(lc, log_file);
+                lc->f = fopen(log_file, "a+");
                 if(lc->f) {
                     lc->flags |= LOG_FLAG_INIT_DONE;
                 } else {
                     printf("%s: failed to create <%s> after rotation, error:\n%s",
-                           __func__, lc->log_file, strerror(errno));
+                           __func__, log_file, strerror(errno));
                     lc->flags |= LOG_FLAG_INIT_FAIL;
                 }
             }

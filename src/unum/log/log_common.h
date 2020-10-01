@@ -58,15 +58,15 @@ typedef enum {
 // log names from Y to LOG_ROTATE_CLEANUP_MAX)
 #define LOG_ROTATE_CLEANUP_MAX 9
 
+#define LOG_FILE_PREFIX "/var/log/"
+
 // The 16 lower bits are common flags. The upper 16bits are
 // platform specific flags (LOG_FLAG_FILE, LOG_FLAG_STDOUT...
 // see log_platform.h).
-#define LOG_FLAG_INIT_DONE    0x0001 // The entry has been initialized
-#define LOG_FLAG_INIT_FAIL    0x0002 // The log entry init has failed
-#define LOG_FLAG_MUTEX        0x0004 // The entry requre mutex protextion
-#define LOG_FLAG_INIT_MSG     0x0008 // Log the agent startup info at init
-#define LOG_FLAG_INIT_PER     0x0010 // Log the agent on persistent storage
-#define LOG_FLAG_LOG_CHANGED  0x0020 // Log file changed.
+#define LOG_FLAG_INIT_DONE 0x0001 // The entry has been initialized
+#define LOG_FLAG_INIT_FAIL 0x0002 // The log entry init has failed
+#define LOG_FLAG_MUTEX     0x0004 // The entry requre mutex protextion
+#define LOG_FLAG_INIT_MSG  0x0008 // Log the agent startup info at init
 
 // Logging control & configurtion structure (defines the elements of
 // the logging config array of LOG_DST_MAX size).
@@ -78,7 +78,6 @@ typedef struct {
     size_t cut_size;   // cut to the size (in case exceeding max_size too much)
     unsigned int max;  // files to keep when rotating (in addition to the log)
     FILE *f;           // current log file pointer
-    char log_file[LOG_MAX_PATH];
 } LOG_CONFIG_t;
 
 // Logging configuration and control structure (see log_platform.c)

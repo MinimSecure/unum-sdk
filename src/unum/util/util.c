@@ -208,6 +208,42 @@ size_t util_file_to_buf(char *file, char *buf, size_t buf_size)
     return len;
 }
 
+// Create a directory and all the subdirectories on the way
+// dirname - Full path of the directory
+// mode - mode
+int util_mkdir_rec(const char *dirname, mode_t mode)
+{
+    char *tmp;
+    int len = strlen(dirname);
+    int ret = 0;
+    char subdir[len];
+
+    tmp = strchr(dirname, '/');
+    while(tmp != NULL) {
+        memset(subdir, 0, sizeof(subdir));
+        strncpy(subdir, dirname, tmp - dirname);
+        // To handle first / and also double /'s in the middle,
+        // compare if subdir name is empty.
+        if (strlen(subdir) != 0) {
+            // Create subdir if it does n't already exist
+            if (!util_path_exists(subdir)) {
+                ret = mkdir(subdir, mode);
+                if (ret < 0 && errno != EEXIST) {
+                    // Some error
+                    return -1;
+                }
+                if (tmp > dirname + len - 1) {
+                    //Check the boundaries
+                    return -2;
+                }
+            }
+        }
+        tmp = strchr(tmp + 1, '/');
+    }
+    ret = mkdir(dirname, mode);
+    return ret;
+}
+
 // Compare two files.
 // Parameters: 
 // file1, file2 - pathnames of the files to compare
@@ -392,57 +428,6 @@ int util_system(char *cmd, unsigned int timeout, char *pid_file)
     }
 
     return ret;
-}
-
-// Function to check if a directory exists
-// dir - Name of the directory
-// Returns true if dir exists and also a directory
-// False otherwise
-int util_directory_exists(char *dir)
-{
-    struct stat st;
-    if (stat(dir, &st) == 0 && S_ISDIR(st.st_mode)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-// Function to check if a file exists
-// fname - Name of the file
-// Returns true if filename exists
-// False otherwise
-int util_file_exists(char *fname)
-{
-    struct stat st;
-    if (stat(fname, &st) == 0) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-// Create a directory and all the subdirectories on the way
-// dirname - Full path of the directory
-// mode - mode
-void util_mkdir_rec(const char *dirname, mode_t mode)
-{
-    char *tmp;
-    char subdir[256];
-    int len = strlen(dirname);
-
-    tmp = strchr(dirname, '/');
-    while(tmp != NULL) {
-        memset(subdir, 0, sizeof(subdir));
-        strncpy(subdir, dirname, tmp - dirname);
-        mkdir(subdir, mode);
-        if (tmp > dirname + len - 1) {
-            //Check the boundaries
-            break;
-        }
-        tmp = strchr(tmp + 1, '/');
-    }
-    mkdir(dirname, mode);
 }
 
 // Call cmd in shell and capture its stdout in a buffer.
