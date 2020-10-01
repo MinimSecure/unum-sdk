@@ -58,17 +58,6 @@ static int get_log_file_name(LOG_CONFIG_t *lc, char *log_file)
     char *dir;
 
     memset(log_file, 0, LOG_MAX_PATH);
-    if (lc->name == NULL) {
-        // No logfile needed
-        // Eg. STDOUT
-        return 1;
-    }
-    strncpy(log_file, lc->name, LOG_MAX_PATH);
-
-    if (lc->flags & LOG_FLAG_TTY) {
-        // For console
-        return 2;
-    }
     // Check if the prefix file exists
     if (!util_path_exists(LOG_PREFIX_FILE)) {
         // Prefix file does n't exist. Use defaults.
