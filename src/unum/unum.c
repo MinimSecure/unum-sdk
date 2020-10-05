@@ -12,7 +12,7 @@ char *init_str_list[] = { INITSTRLIST, NULL };
 int init_level_completed = 0;
 
 // Buffer to storing default log files dir path
-static char logs_dir[MAX_LOG_PATH];
+static char logs_dir[LOG_MAX_PATH];
 
 // Unum configuration context global structure
 UNUM_CONFIG_t unum_config = {
@@ -91,7 +91,7 @@ static struct option long_options[] =
     {0, 0, 0, 0}
 };
 // The short options string for the above
-static char *optstring = "hvzf:dunps:i:c:m:o:w:l:";
+static char *optstring = "hvzf:dunps:i:c:m:o:w:l:L:";
     
 // Global variables for storing command line args
 int arg_count;
@@ -415,7 +415,7 @@ static void print_usage(int argc, char *argv[])
     printf("                                0: disable periodic retries\n");
     printf(" --log-dir <pathname>         - set default logs directory\n");
     printf("                                the pathname must exist\n");
-    printf("                                it's read from " PREFIX_FILE_LOCATION "\n");
+    printf("                                it's read from " LOGS_PREFIX_FILE "\n");
     printf("                                if the file exists\n");
 #endif //SUPPORT_RUN_MODE
 }
@@ -636,15 +636,15 @@ static int do_config_char(char opt_long, char *optarg)
             status = util_set_opmode(optarg);
             if(status < 0) {
                 // Give status offset to avoid overlap with other errors here
-                status -= 10;
+                status = -10;
                 break;
             }
             break;
         case 'L':
-            if(util_pname_exists(optarg) != 0) {
+            if(!util_path_exists(optarg)) {
                 status = -11;
             }
-            unum_config.log_dir = optarg;
+            unum_config.logs_dir = optarg;
             break;
         default:
             status = -3;
@@ -923,6 +923,7 @@ static int parse_cmdline(int pick_cfg_file_name)
 
             // options which require a char* arg
             case 'c':
+            case 'L':
                 if(do_config_char(opt_long, optarg) != 0) {
                     log("%s: invalid option \"%s\" value \"%s\"\n",
                         __func__, option_name, optarg);
@@ -959,7 +960,7 @@ int main(int argc, char *argv[])
 {
     // store argc argv in the global variables
     arg_count = argc;
-    arg_vector = argv;    
+    arg_vector = argv;
 
     // Override all logging to go to stdout during initial startup stages
     set_proc_log_dst(LOG_DST_STDOUT);
@@ -970,18 +971,24 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Try to read log dir from LOG_FILES_DIR_CONSTANT
-    if(util_file_to_buf(LOG_FILES_DIR_CONSTANT, logs_dir, sizeof(logs_dir) - 2) == 0)
+    // Try to read logs dir from LOG_FILES_DIR_CONSTANT
+    if(util_file_to_buf(LOGS_PREFIX_FILE, logs_dir, sizeof(logs_dir) - 2) > 0)
     {
-        if(*log_dir != 0 && util_path_exists(logs_dir)) {
+        // util_fil_to_buf seems to be appending \n at the end .
+        // Remove it
+        char *newline = strchr(logs_dir, '\n');
+        if (newline != NULL) {
+            logs_dir[newline - logs_dir] = 0;
+        }
+        if(*logs_dir != 0 && util_path_exists(logs_dir)) {
             int len = strlen(logs_dir);
-            if(log_dir[len - 1] != '/') {
-                log_dir[len - 1] = '/';
+            if(logs_dir[len - 1] != '/') {
+                logs_dir[len - 1] = '/';
             }
-            unum_config.log_dir = log_dir;
+            unum_config.logs_dir = logs_dir;
         } else {
             printf("Warning, invalid logs dir path <%s>, using defaults!",
-                   log_dir);
+                   logs_dir);
         }
     }
 

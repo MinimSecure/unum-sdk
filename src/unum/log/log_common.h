@@ -21,6 +21,13 @@
 // Max log file pathsname length the code will deal with
 #define LOG_MAX_PATH 128
 
+// A file containing the Prefix(directory)
+// All log files (For example unum.log)
+// will be prefixed with the content in this filename
+#ifdef PERSISTENT_FS_DIR_PATH
+#define LOGS_PREFIX_FILE PERSISTENT_FS_DIR_PATH"/unum_prefix_file.txt"
+#endif
+
 // Enum of available log output destinations
 typedef enum {
     LOG_DST_STDOUT,  // logging to stdout (should be first)
