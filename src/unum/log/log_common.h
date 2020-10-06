@@ -26,6 +26,8 @@
 // will be prefixed with the content in this filename
 #ifdef PERSISTENT_FS_DIR_PATH
 #define LOGS_PREFIX_FILE PERSISTENT_FS_DIR_PATH"/unum_prefix_file.txt"
+#else
+#define LOGS_PREFIX_FILE "/etc/" // Default
 #endif
 
 // Enum of available log output destinations

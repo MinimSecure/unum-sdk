@@ -972,7 +972,7 @@ int main(int argc, char *argv[])
     }
 
     // Try to read logs dir from LOG_FILES_DIR_CONSTANT
-    if(util_file_to_buf(LOGS_PREFIX_FILE, logs_dir, sizeof(logs_dir) - 2) > 0)
+    if(((int) util_file_to_buf(LOGS_PREFIX_FILE, logs_dir, sizeof(logs_dir) - 2)) > 0)
     {
         // util_fil_to_buf seems to be appending \n at the end .
         // Remove it
