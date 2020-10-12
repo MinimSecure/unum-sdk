@@ -6,7 +6,8 @@
 CPPFLAGS += -I$(UNUM_PATH)/log/$(MODEL)
 
 # Add logging code file(s)
-OBJECTS += ./log/log.o
+OBJECTS += ./log/log.o \
+           ./log/$(MODEL)/log_platform.o
 
 # Add logging subsystem initializer function
 INITLIST += log_init

@@ -40,18 +40,4 @@
 #define LOG_FLAG_TTY    0x00040000  // logging to tty device
 //#define LOG_FLAG_SYSLOG 0x00040000 // logging to sysylog
 
-#define UNUM_LOG_CONSOLE_NAME        "/dev/console"
-#define UNUM_LOG_UNUM_MAX_SIZE       128 // KB
-#define UNUM_LOG_UNUM_CUT_SIZE       140 // KB
-#define UNUM_LOG_UNUM_MAX_FILES      2
-#define UNUM_LOG_HTTP_MAX_SIZE       128 // KB
-#define UNUM_LOG_HTTP_CUT_SIZE       140 // KB
-#define UNUM_LOG_HTTP_MAX_FILES      2
-#define UNUM_LOG_MONI_MAX_SIZE       32  // KB
-#define UNUM_LOG_MONI_CUT_SIZE       48  // KB
-#define UNUM_LOG_MONI_MAX_FILES      1
-#define UNUM_LOG_DBG_MAX_SIZE        64  // KB
-#define UNUM_LOG_DBG_CUT_SIZE        76  // KB
-#define UNUM_LOG_DBG_MAX_FILES       1
-
 #endif // _LOG_H

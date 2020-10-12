@@ -29,6 +29,10 @@
 #else
 #define LOGS_PREFIX_FILE "/etc/" // Default
 #endif
+#define UNUM_LOG_CONSOLE_NAME        "/dev/console"
+#define UNUM_LOG_SCALE_FACTOR 4
+#define UNUM_LOG_EXTRA_ROTATIONS 2
+#define UNUM_LOG_CUT_FRACTION 10
 
 // Enum of available log output destinations
 typedef enum {
