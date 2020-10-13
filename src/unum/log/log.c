@@ -3,6 +3,74 @@
 
 #include "unum.h"
 
+// The log control & configuration for the platform
+// This is the default log subsystem.
+// The constants UNUM_LOG_SCALE_FACTOR, UNUM_LOG_CUT_FRACTION and 
+// UNUM_LOG_EXTRA_ROTATIONS are defined in log_common.h
+// Please refer log_common.h for the explanation of these constants
+// This structure can be overwritten in platform specific code
+// ie log_platform.c
+// Similarly the contstants also can be overwritten in platform specific
+// log.h file without redefining the whole structure
+LOG_CONFIG_t __attribute__((weak)) log_cfg[] = {
+[LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
+[LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     UNUM_LOG_CONSOLE_NAME},
+[LOG_DST_UNUM   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "unum.log",
+                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+                            / UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
+[LOG_DST_HTTP   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "http.log",
+                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
+[LOG_DST_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "monitor.log",
+                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
+#ifdef FW_UPDATER_RUN_MODE
+[LOG_DST_UPDATE ] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "updater.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
+[LOG_DST_UPDATE_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "updater_monitor.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
+#endif // FW_UPDATER_RUN_MODE
+#ifdef SUPPORT_RUN_MODE
+[LOG_DST_SUPPORT] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "support.log", 32*1024, 48*1024, 1},
+#endif // SUPPORT_RUN_MODE
+#ifdef DEBUG
+[LOG_DST_DEBUG  ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
+                     UTIL_MUTEX_INITIALIZER,
+                     "debug.log",
+                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
+#endif // DEBUG
+[LOG_DST_DROP   ] = {} // for consistency, does not really need an entry
+};
+
 // Default log destination for the process
 static int proc_log_dst_id = -1;
 
@@ -86,7 +154,9 @@ static int init_log_entry(LOG_DST_t dst)
             for(ii = lc->max + 1; ii <= LOG_ROTATE_CLEANUP_MAX; ii++)
             {
                 char fn[LOG_MAX_PATH + 4];
-                snprintf(fn, sizeof(fn), "%s.%d", lc->name, ii);
+                snprintf(fn, sizeof(fn), "%s%s.%d",
+                         ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                         lc->name, ii);
                 fn[sizeof(fn) - 1] = 0;
                 unlink(fn);
             }
@@ -101,18 +171,24 @@ static int init_log_entry(LOG_DST_t dst)
 
         if(!lc->f && (lc->flags & mask) != 0)
         {
-            if(strlen(lc->name) > LOG_MAX_PATH) {
+            char fn[LOG_MAX_PATH + 1];
+            int fn_len = 
+                snprintf(fn, sizeof(fn), "%s%s",
+                     ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                     lc->name);
+            
+            if(fn_len > LOG_MAX_PATH) {
                 printf("%s: The log file name <%s> is too long",
                        __func__, lc->name);
                 ret = -1;
                 break;
             }
-            lc->f = fopen(lc->name, "a+");
+            lc->f = fopen(fn, "a+");
             if(lc->f) {
                 lc->flags |= LOG_FLAG_INIT_DONE;
             } else {
                 printf("%s: failed to open/create <%s>, log init error:\n%s",
-                       __func__, lc->name, strerror(errno));
+                       __func__, fn, strerror(errno));
                 lc->flags |= LOG_FLAG_INIT_FAIL;
             }
         }
@@ -237,23 +313,44 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                     char to[LOG_MAX_PATH + 4];
                     char *from;
 
-                    from = lc->name;
+                    snprintf(buf_from, sizeof(buf_from), "%s%s",
+                            ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                            lc->name);
+                    from = buf_from; // redundant
                     if(ii - 1 > 0) {
-                        snprintf(buf_from, sizeof(buf_from), "%s.%d", lc->name, ii - 1);
+                        snprintf(buf_from, sizeof(buf_from), "%s%s.%d",
+                                 ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                                 lc->name, ii - 1);
                         buf_from[sizeof(buf_from) - 1] = 0;
-                        from = buf_from;
+                        from = buf_from; // redundant
                     }
-                    snprintf(to, sizeof(to), "%s.%d", lc->name, ii);
+                    snprintf(to, sizeof(to), "%s%s.%d", 
+                             ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                             lc->name, ii);
                     to[sizeof(to) - 1] = 0;
                     rename(from, to);
                 }
                 lc->flags &= ~(LOG_FLAG_INIT_FAIL | LOG_FLAG_INIT_DONE);
-                lc->f = fopen(lc->name, "a+");
+                char fn[LOG_MAX_PATH + 1];
+                int fn_len =
+                    snprintf(fn, sizeof(fn), "%s%s",
+                         ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                         lc->name);
+
+                if(fn_len > LOG_MAX_PATH) {
+                    printf("%s: The log file name <%s> is too long",
+                       __func__, lc->name);
+                    break;
+                }
+                lc->f = fopen(fn, "a+");
                 if(lc->f) {
                     lc->flags |= LOG_FLAG_INIT_DONE;
                 } else {
-                    printf("%s: failed to create <%s> after rotation, error:\n%s",
-                           __func__, lc->name, strerror(errno));
+                    printf("%s: failed to create <%s%s> after rotation,"
+                           "error:%s\n",
+                           __func__,
+                           ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
+                           lc->name, strerror(errno));
                     lc->flags |= LOG_FLAG_INIT_FAIL;
                 }
             }

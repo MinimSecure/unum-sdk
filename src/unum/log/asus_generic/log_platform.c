@@ -1,4 +1,4 @@
-// (c) 2019 minim.co
+// (c) 2017-2020 minim.co
 // Platfrom specific unum logging subsystem code
 
 #include "unum.h"
@@ -8,33 +8,61 @@ LOG_CONFIG_t log_cfg[] = {
 [LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
 [LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/dev/console"},
+                     UNUM_LOG_CONSOLE_NAME},
 [LOG_DST_UNUM   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/unum.log", 64*1024, 76*1024, 2},
+                     "unum.log",
+                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
+                            / UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
 [LOG_DST_HTTP   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/http.log", 128*1024, 140*1024, 1},
+                     "http.log",
+                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 [LOG_DST_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/monitor.log", 32*1024, 48*1024, 1},
+                     "monitor.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     0 + UNUM_LOG_EXTRA_ROTATIONS},
 #ifdef FW_UPDATER_RUN_MODE
 [LOG_DST_UPDATE ] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/updater.log", 32*1024, 48*1024, 1},
+                     "updater.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 [LOG_DST_UPDATE_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/updater_monitor.log", 32*1024, 48*1024, 1},
+                     "updater_monitor.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 #endif // FW_UPDATER_RUN_MODE
 #ifdef SUPPORT_RUN_MODE
 [LOG_DST_SUPPORT] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/support.log", 32*1024, 48*1024, 1},
+                     "support.log", 
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 #endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
 [LOG_DST_DEBUG  ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/var/log/debug.log", 64*1024, 76*1024, 1},
+                     "debug.log",
+                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 #endif // DEBUG
-[LOG_DST_DROP   ] = {} // for consistency, does not really need an entry
+[LOG_DST_MAX    ] = {} // for consistency, does not really need an entry
 };

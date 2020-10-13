@@ -1,4 +1,4 @@
-// Copyright 2018 Minim Inc
+// Copyright 2018 - 2020 Minim Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,20 +22,36 @@ LOG_CONFIG_t log_cfg[] = {
 [LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
 [LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "/dev/stdout"},
+                     UNUM_LOG_CONSOLE_NAME},
 [LOG_DST_UNUM   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     LOG_PATH_PREFIX "/unum.log", 128*1024, 140*1024, 2},
+                     "unum.log",
+                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+                            / UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
 [LOG_DST_HTTP   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     LOG_PATH_PREFIX "/http.log", 128*1024, 140*1024, 2},
+                     "http.log",
+                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     UNUM_LOG_EXTRA_ROTATIONS},
 [LOG_DST_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     LOG_PATH_PREFIX "/monitor.log", 32*1024, 48*1024, 1},
+                     "monitor.log",
+                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 #ifdef DEBUG
 [LOG_DST_DEBUG  ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     LOG_PATH_PREFIX "/debug.log", 64*1024, 76*1024, 1},
+                     "debug.log",
+                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
+                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
+			/ UNUM_LOG_CUT_FRACTION) * 1024,
+                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
 #endif // DEBUG
 [LOG_DST_MAX    ] = {} // for consistency, does not really need an entry
 };
