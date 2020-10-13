@@ -44,7 +44,7 @@
 // Default number Number of files to backup when max size of a file is reached
 #define UNUM_LOG_EXTRA_ROTATIONS 2
 // Maximum extra space for the log file to grow is
-// log_size / UNUM_LOG_CUT_FRACTION>
+// log_size / UNUM_LOG_CUT_FRACTION
 #define UNUM_LOG_CUT_FRACTION 10
 // The above three constants can be overwritten in platform specific log.h file
 // Example, with #undef UNUM_LOG_SCALE_FACTOR and #define UNUM_LOG_SCALE_FACTOR
