@@ -632,22 +632,22 @@ static int do_config_char(char opt_long, char *optarg)
             unum_config.wan_ifname[sizeof(unum_config.wan_ifname) - 1] = 0;
             unum_config.wan_ifcount = 1;
             break;                
+        case 'L':
+            if(!util_path_exists(optarg)) {
+                status = -3;
+            }
+            unum_config.logs_dir = optarg;
+            break;
         case 'o':
             status = util_set_opmode(optarg);
             if(status < 0) {
                 // Give status offset to avoid overlap with other errors here
-                status = -10;
+                status -= 10;
                 break;
             }
             break;
-        case 'L':
-            if(!util_path_exists(optarg)) {
-                status = -11;
-            }
-            unum_config.logs_dir = optarg;
-            break;
         default:
-            status = -3;
+            status = -4;
             break;
     }
 
@@ -923,7 +923,6 @@ static int parse_cmdline(int pick_cfg_file_name)
 
             // options which require a char* arg
             case 'c':
-            case 'L':
                 if(do_config_char(opt_long, optarg) != 0) {
                     log("%s: invalid option \"%s\" value \"%s\"\n",
                         __func__, option_name, optarg);

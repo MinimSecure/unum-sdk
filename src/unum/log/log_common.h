@@ -26,13 +26,28 @@
 // will be prefixed with the content in this filename
 #ifdef PERSISTENT_FS_DIR_PATH
 #define LOGS_PREFIX_FILE PERSISTENT_FS_DIR_PATH"/unum_prefix_file.txt"
-#else
-#define LOGS_PREFIX_FILE "/etc/" // Default
-#endif
+#endif // PERSISTENT_FS_DIR_PATH
+
+// Console device
 #define UNUM_LOG_CONSOLE_NAME        "/dev/console"
+
+// Below is an example of how the following constants are used in 
+// generic log destinations file or any platform specific files
+// UNUM_LOG_SCALE_FACTOR * 32 * 1024,
+// (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
+//                            / UNUM_LOG_CUT_FRACTION) * 1024,
+//                     UNUM_LOG_EXTRA_ROTATIONS}, 
+// The factor by which the log file size has to be increased / decreased
+// For a 128KB file the size is defined as
+// UNUM_LOG_SCALE_FACTOR * 32 * 1024
 #define UNUM_LOG_SCALE_FACTOR 4
+// Default number Number of files to backup when max size of a file is reached
 #define UNUM_LOG_EXTRA_ROTATIONS 2
+// Maximum extra space for the log file to grow is
+// log_size / UNUM_LOG_CUT_FRACTION>
 #define UNUM_LOG_CUT_FRACTION 10
+// The above three constants can be overwritten in platform specific log.h file
+// Example, with #undef UNUM_LOG_SCALE_FACTOR and #define UNUM_LOG_SCALE_FACTOR
 
 // Enum of available log output destinations
 typedef enum {

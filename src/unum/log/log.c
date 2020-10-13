@@ -4,6 +4,14 @@
 #include "unum.h"
 
 // The log control & configuration for the platform
+// This is the default log subsystem.
+// The constants UNUM_LOG_SCALE_FACTOR, UNUM_LOG_CUT_FRACTION and 
+// UNUM_LOG_EXTRA_ROTATIONS are defined in log_common.h
+// Please refer log_common.h for the explanation of these constants
+// This structure can be overwritten in platform specific code
+// ie log_platform.c
+// Similarly the contstants also can be overwritten in platform specific
+// log.h file without redefining the whole structure
 LOG_CONFIG_t __attribute__((weak)) log_cfg[] = {
 [LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
 [LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
