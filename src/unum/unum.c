@@ -12,7 +12,9 @@ char *init_str_list[] = { INITSTRLIST, NULL };
 int init_level_completed = 0;
 
 // Buffer to storing default log files dir path
+#ifdef LOGS_PREFIX_FILE
 static char logs_dir[LOG_MAX_PATH];
+#endif //LOGS_PREFIX_FILE
 
 // Unum configuration context global structure
 UNUM_CONFIG_t unum_config = {
@@ -413,10 +415,12 @@ static void print_usage(int argc, char *argv[])
            SUPPORT_SHORT_PERIOD);
     printf("                                interval for \"-m support\"\n");
     printf("                                0: disable periodic retries\n");
+#ifdef LOGS_PREFIX_FILE
     printf(" --log-dir <pathname>         - set default logs directory\n");
     printf("                                the pathname must exist\n");
     printf("                                it's read from " LOGS_PREFIX_FILE "\n");
     printf("                                if the file exists\n");
+#endif //LOGS_PREFIX_FILE
 #endif //SUPPORT_RUN_MODE
 }
 
@@ -970,6 +974,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+#ifdef LOGS_PREFIX_FILE
     // Try to read logs dir from LOG_FILES_DIR_CONSTANT
     if(((int) util_file_to_buf(LOGS_PREFIX_FILE, logs_dir, sizeof(logs_dir) - 2)) > 0)
     {
@@ -990,6 +995,7 @@ int main(int argc, char *argv[])
                    logs_dir);
         }
     }
+#endif //LOGS_PREFIX_FILE
 
     // Load from the config file
     parse_config(FALSE, unum_config.config_path);
