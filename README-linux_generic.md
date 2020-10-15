@@ -333,7 +333,7 @@ Directory structure overview:
 |- out/linux_generic/       Final distributable output directory.
 ```
 
-### Configuration format
+### Configuration format (Key-Value Format)
 
 The Unum agent transmits device configuration information and supports applying
 changes (requested by the user from the Minim dashboard) to the device as well.
@@ -401,6 +401,92 @@ hwmode_wlan=11g
 channel_wlan=11
 ssid_wlan=MinimSecure
 passphrase_wlan="some passphrase"
+```
+
+### Configuration format (JSON)
+
+
+```
+{
+  "radios": [
+    {
+      "kind": "wifi_5",                    // always use this kind for 5GHz radio
+      "mode": "",
+      "width": 0,
+      "hwmode": "11ac",                    // 11ac or 11bgn
+      "channel": "36",
+      "country": "US",
+      "enabled": true,          
+      "is_mesh": true,
+      "radio_name": "",
+      "control_channel": 0,
+      "secondary_channel": 0,
+      "interface_name": "wifi_5",
+      "access_points": [                  // supports n access points 
+        {
+          "key": "wifipassword-5",       
+          "ssid": "wifissid-5",
+          "is_guest": false,
+          "key_management": "wpa-psk"
+        }
+      ]
+    },
+    {
+      "kind": "wifi_2_4",
+      "mode": "",
+      "width": 0,
+      "hwmode": "11bgn",
+      "channel": "auto",
+      "country": "US",
+      "enabled": true,
+      "is_mesh": false,
+      "radio_name": "",
+      "control_channel": 0,
+      "secondary_channel": 0,
+      "interface_name": "wifi_2_4",
+      "access_points": [
+        {
+          "key": "wifipassword",
+          "ssid": "wifissid",
+          "is_guest": false,
+          "key_management": "wpa-psk"
+        }
+      ]
+    }
+  ],
+  "forwarded_ports": [],
+  "dhcp_reservations": [],
+  "minim_opmode": "gw",                   // gw (gateway) or ap (access point)
+  "creds": {
+    "username": "admin",                  // username for WebUI or SSH
+    "password": "setecastronomy"          // password for WebUI or SSH
+  },
+  "dns_servers": {                        // user configured dns servers
+    "ipv4": [
+      "1.1.1.1",
+      "8.8.4.4"
+    ],
+    "ipv6": []
+  },
+  "extras": {},
+  "nat": {
+    "hardware": false
+  },
+  "speed_tier_limits": {
+    "upload_kbps_limit": null,
+    "download_kbps_limit": null
+  },
+  "qos_limits": {
+    "max_upload_limit_kbps": null,
+    "max_download_limit_kbps": null
+  },
+  "lan_ip": "192.168.1.1",              // lan ip address of this device 
+  "lan_mask": "255.255.255.0",          // lan subnet mask of this device
+  "mesh": {
+    "mesh_ssid": "Minim-XXXXXXXXXXXXXXXXXX",
+    "mesh_password": "YYYYYYYYYYYYYYYYYY"
+  }
+}
 ```
 
 ### Configuration application process
