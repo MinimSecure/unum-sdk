@@ -1,4 +1,4 @@
-// (c) 2017-2019 minim.co
+// (c) 2017-2020 minim.co
 // main entry point, option parsing, prepare and start the agent process
 
 #include "unum.h"
@@ -10,11 +10,6 @@ char *init_str_list[] = { INITSTRLIST, NULL };
 
 // The init level that we have executed all the init routines for
 int init_level_completed = 0;
-
-// Buffer to storing default log files dir path
-#ifdef LOGS_PREFIX_FILE
-static char logs_dir[LOG_MAX_PATH];
-#endif //LOGS_PREFIX_FILE
 
 // Unum configuration context global structure
 UNUM_CONFIG_t unum_config = {
@@ -28,7 +23,7 @@ UNUM_CONFIG_t unum_config = {
     .sysinfo_period            = SYSINFO_TELEMETRY_PERIOD,
     .ipt_period                = IPT_TELEMETRY_PERIOD,
     .config_path               = UNUM_CONFIG_PATH,
-    .logs_dir                  = UNUM_LOG_PATH,
+    .logs_dir                  = LOG_PATH_PREFIX,
     .dns_timeout               = DNS_TIMEOUT,
 #if defined(FEATURE_MANAGED_DEVICE)
     .opmode                    = UNUM_OPMS_MD,
@@ -71,7 +66,7 @@ static struct option long_options[] =
     {"support-period\0ic", required_argument, NULL, 'A'},
 #endif // SUPPORT_RUN_MODE
 #ifdef FW_UPDATER_RUN_MODE
-    {"fwupd-period\0ic",   required_argument, NULL, 'E'},
+    {"fwupd-period\0ic",   required_argument, NULL, 'B'},
 #endif // FW_UPDATER_RUN_MODE
     {"pid-prefix\0cc",     required_argument, NULL, 'i'},
     {"trusted-ca\0cc",     required_argument, NULL, 'c'},
@@ -81,19 +76,22 @@ static struct option long_options[] =
     {"wan-if\0cc",         required_argument, NULL, 'w'},
 #endif // FEATURE_LAN_ONLY
     {"lan-if\0ca",         required_argument, NULL, 'l'},
-    {"rtr-t-period\0ia",   required_argument, NULL, 'R'},
-    {"tpcap-period\0ia",   required_argument, NULL, 'T'},
-    {"wscan-period\0ia",   required_argument, NULL, 'Y'},
-    {"rad-t-period\0ia",   required_argument, NULL, 'O'},
-    {"ipt-period\0ia",     required_argument, NULL, 'B'},
-    {"sysinfo-period\0ia", required_argument, NULL, 'C'},
-    {"tpcap-nice\0ia",     required_argument, NULL, 'N'},
-    {"dns-timeout\0ia",    required_argument, NULL, 'D'},
-    {"log-dir\0co",        required_argument, NULL, 'L'},
+    {"rtr-t-period\0ia",   required_argument, NULL, 'C'},
+    {"tpcap-period\0ia",   required_argument, NULL, 'D'},
+    {"wscan-period\0ia",   required_argument, NULL, 'E'},
+    {"rad-t-period\0ia",   required_argument, NULL, 'F'},
+    {"ipt-period\0ia",     required_argument, NULL, 'G'},
+    {"sysinfo-period\0ia", required_argument, NULL, 'H'},
+    {"tpcap-nice\0ia",     required_argument, NULL, 'I'},
+    {"dns-timeout\0ia",    required_argument, NULL, 'J'},
+    {"cfg-trace\0ca",      required_argument, NULL, 'K'},
+#ifdef UNUM_LOG_ALLOW_RELOCATION
+    {"log-dir\0cc",        required_argument, NULL, 'L'},
+#endif // UNUM_LOG_ALLOW_RELOCATION
     {0, 0, 0, 0}
 };
 // The short options string for the above
-static char *optstring = "hvzf:dunps:i:c:m:o:w:l:L:";
+static char *optstring = "hvzf:dunps:i:c:m:o:w:l:";
     
 // Global variables for storing command line args
 int arg_count;
@@ -327,101 +325,106 @@ static void print_usage(int argc, char *argv[])
     printf("This is Unum device management and monitoring agent.\n");
     printf("All the time intervals are in seconds.\n");
     printf("Options:\n");
-    printf(" -h, --help                   - show usage\n");
-    printf(" -v, --version                - show version\n");
-    printf(" -z, --product-id             - show the device product name\n");
-    printf(" -f, --cfg-file <PATHNAME>    - config file pathname\n");
-    printf(" -n, --skip-net-check         - skip network connectivity check\n");
-    printf(" -d, --daemonize              - daemonize\n");
-    printf(" -u, --unmonitored            - no monitoring process\n");
-    printf(" -i, --pid-prefix             - PID file pathname prefix\n");
+    printf(" -h, --help                  - show usage\n");
+    printf(" -v, --version               - show version\n");
+    printf(" -z, --product-id            - show the device product name\n");
+    printf(" -f, --cfg-file <PATHNAME>   - config (JSON) file pathname\n");
+    printf("                               default: %s\n", UNUM_CONFIG_PATH);
+    printf("                               format: {\"option\":<value>,...}\n");
+    printf("                               use 0/1 for on/off options where\n");
+    printf("                               no value is expected\n");
+    printf(" -n, --skip-net-check        - skip network connectivity check\n");
+    printf(" -d, --daemonize             - daemonize\n");
+    printf(" -u, --unmonitored           - no monitoring process\n");
+    printf(" -i, --pid-prefix            - PID file pathname prefix\n");
 #ifdef DEBUG
-    printf(" -s, --set-url-pfx            - custom 'http(s)://<host>' URL\n");
+    printf(" -s, --set-url-pfx           - custom 'http(s)://<host>' URL\n");
     printf("                                prefix\n");
 #endif //DEBUG
-    printf(" -m, --mode                   - set custom run mode\n");
+    printf(" -m, --mode                  - set custom run mode\n");
 #ifdef FW_UPDATER_RUN_MODE
-    printf("                                u[pdater]: firmware updater\n");
+    printf("                               u[pdater]: firmware updater\n");
 #endif // FW_UPDATER_RUN_MODE
 #ifdef SUPPORT_RUN_MODE
-    printf("                                s[upport]: support portal agent\n");
+    printf("                               s[upport]: support portal agent\n");
 #endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
-    printf("                                t[1|2|3...]: run test 1,2,3...\n");
-    printf(" -p, --no-provision           - skip provisioning (no client\n");
-    printf("                                cert in the requests)\n");
+    printf("                               t[1|2|3...]: run test 1,2,3...\n");
+    printf(" -p, --no-provision          - skip provisioning (no client\n");
+    printf("                               cert in the requests)\n");
 #endif // DEBUG
-    printf(" -o, --opmode <mode_name>     - set unum agent operation mode\n");
+    printf(" -o, --opmode <mode_name>    - set unum agent operation mode\n");
 #if !defined(FEATURE_MESH_QCA) && !defined(FEATURE_MTK_EASYMESH)
 # if !defined(FEATURE_LAN_ONLY)
-    printf("                                gw: gateway (default)\n");
+    printf("                               gw: gateway (default)\n");
 # endif // !FEATURE_LAN_ONLY
 # if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
-    printf("                                ap: wireless AP\n");
+    printf("                               ap: wireless AP\n");
 # endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
 #endif // !FEATURE_MTK_EASYMESH && !FEATURE_MESH_QCA
 #if defined(FEATURE_MANAGED_DEVICE)
-    printf("                                md: managed device\n");
+    printf("                               md: managed device\n");
 #endif // FEATURE_MANAGED_DEVICE
 #if defined(FEATURE_MESH_11S)
 # if !defined(FEATURE_LAN_ONLY)
-    printf("                                mesh_11s_gw: gw w/ 802.11s mesh\n");
+    printf("                               mesh_11s_gw: gw w/ 802.11s mesh\n");
 # endif // !FEATURE_LAN_ONLY
 # if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
-    printf("                                mesh_11s_ap: ap w/ 802.11s mesh\n");
+    printf("                               mesh_11s_ap: ap w/ 802.11s mesh\n");
 # endif // FEATURE_AP_MODE || FEATURE_LAN_ONLY
 #endif // FEATURE_MESH_11S
 #if defined(FEATURE_MESH_QCA)
-    printf("                                mesh_qca_gw: Qualcomm mesh gw\n");
-    printf("                                mesh_qca_ap: Qualcomm mesh ap\n");
+    printf("                               mesh_qca_gw: Qualcomm mesh gw\n");
+    printf("                               mesh_qca_ap: Qualcomm mesh ap\n");
 #endif // FEATURE_MESH_QCA
 #if defined(FEATURE_MTK_EASYMESH)
 # if !defined(FEATURE_LAN_ONLY)
-    printf("                                mesh_em_gw: Mediatek EasyMesh gw\n");
+    printf("                               mesh_em_gw: Mediatek EasyMesh gw\n");
 # endif // !FEATURE_LAN_ONLY
 # if defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
     printf("                                mesh_em_ap: Mediatek EasyMesh ap\n");
 # endif // defined(FEATURE_AP_MODE) || defined(FEATURE_LAN_ONLY)
 #endif // FEATURE_MTK_EASYMESH
-    printf(" -c, --trusted-ca <PATHNAME>  - trusted CAs file pathname\n");
-    printf(" -l, --lan-if <IFNAME_LIST>   - custom LAN interface name(s)\n");
-    printf("                                separated by comma or space,\n");
-    printf("                                list the main LAN ifname first,\n");
-    printf("                                example: -l \"eth0 eth1 ...\"\n");
+    printf(" -c, --trusted-ca <PATHNAME> - trusted CAs file pathname\n");
+    printf(" -l, --lan-if <IFNAME_LIST>  - custom LAN interface name(s)\n");
+    printf("                               separated by comma or space,\n");
+    printf("                               list the main LAN ifname first,\n");
+    printf("                               example: -l \"eth0 eth1 ...\"\n");
 #ifndef FEATURE_LAN_ONLY
-    printf(" -w, --wan-if <IFNAME>        - custom WAN interface name\n");
+    printf(" -w, --wan-if <IFNAME>       - custom WAN interface name\n");
 #endif // FEATURE_LAN_ONLY
-    printf(" --rtr-t-period <5-120>       - router telemetry reporting\n");
-    printf("                                interval\n");
-    printf(" --tpcap-period <15-120>      - devices telemetry reporting\n");
-    printf("                                interval\n");
-    printf(" --tpcap-nice <-%d-%d>        - devices telemetry niceness\n",
-                                            NZERO, NZERO - 1);
-    printf(" --wscan-period <60-...>      - wireless scan interval\n");
-    printf("                                0: disable the scan\n");
-    printf(" --rad-t-period <15-120>      - radio and client telemetry\n");
-    printf("                                reporting interval\n");
-    printf(" --ipt-period <0-...>         - IP tables reporting interval\n");
-    printf("                                0: disable reporting\n");
-    printf(" --sysinfo-period <0-...>     - sysinfo reporting interval\n");
-    printf("                                0: disable reporting\n");
-    printf(" --dns-timeout <1-...>        - timeout in seconds for dns request\n");
+    printf(" --rtr-t-period <5-120>      - router telemetry reporting\n");
+    printf("                               interval\n");
+    printf(" --tpcap-period <15-120>     - devices telemetry reporting\n");
+    printf("                               interval\n");
+    printf(" --tpcap-nice <-%d-%d>       - devices telemetry niceness\n",
+                                           NZERO, NZERO - 1);
+    printf(" --wscan-period <60-...>     - wireless scan interval\n");
+    printf("                               0: disable the scan\n");
+    printf(" --rad-t-period <15-120>     - radio and client telemetry\n");
+    printf("                               reporting interval\n");
+    printf(" --ipt-period <0-...>        - IP tables reporting interval\n");
+    printf("                               0: disable reporting\n");
+    printf(" --sysinfo-period <0-...>    - sysinfo reporting interval\n");
+    printf("                               0: disable reporting\n");
+    printf(" --dns-timeout <1-...>       - timeout in seconds for dns request\n");
 #ifdef FW_UPDATER_RUN_MODE
-    printf(" --fwupd-period <60-...>      - firmware upgrade check time\n");
-    printf("                                for \"-m updater\"\n");
+    printf(" --fwupd-period <60-...>     - firmware upgrade check time\n");
+    printf("                               for \"-m updater\"\n");
 #endif //FW_UPDATER_MODE
 #ifdef SUPPORT_RUN_MODE
-    printf(" --support-period <%d-...>    - support connection attempt\n",
+    printf(" --support-period <%d-...>   - support connection attempt\n",
            SUPPORT_SHORT_PERIOD);
-    printf("                                interval for \"-m support\"\n");
-    printf("                                0: disable periodic retries\n");
-#ifdef LOGS_PREFIX_FILE
-    printf(" --log-dir <pathname>         - set default logs directory\n");
-    printf("                                the pathname must exist\n");
-    printf("                                it's read from " LOGS_PREFIX_FILE "\n");
-    printf("                                if the file exists\n");
-#endif //LOGS_PREFIX_FILE
+    printf("                               interval for \"-m support\"\n");
+    printf("                               0: disable periodic retries\n");
 #endif //SUPPORT_RUN_MODE
+#ifdef UNUM_LOG_ALLOW_RELOCATION
+    printf(" --log-dir <pathname>        - log files directory\n");
+    printf("                               default: %s\n", LOG_PATH_PREFIX);
+#endif // UNUM_LOG_ALLOW_RELOCATION
+    printf(" --cfg-trace <pathname>      - capture configs sent to/from\n");
+    printf("                               cloud (if pathname exists)\n");
+    printf("                               default: none\n");
 }
 
 // Takes a list of interface names from the command line, separates them using
@@ -524,7 +527,7 @@ static int do_config_int(char opt_long, int optarg)
             break;
 #endif // SUPPORT_RUN_MODE
 #ifdef FW_UPDATER_RUN_MODE
-        case 'E':
+        case 'B':
             if(!unum_config.mode || *(unum_config.mode) != 'u') {
                 status = -3;
             } else if(optarg < 60) {
@@ -534,21 +537,21 @@ static int do_config_int(char opt_long, int optarg)
             }
             break;
 #endif //FW_UPDATER_RUN_MODE
-        case 'R':
+        case 'C':
             if(optarg < 5 || optarg > 120) {
                 status = -5;
             } else {
                 unum_config.telemetry_period = optarg;
             }
             break;
-        case 'T':
+        case 'D':
             if(optarg < 15 || optarg > 120) {
                 status = -6;
             } else {
                 unum_config.tpcap_time_slice = optarg;
             }
             break;
-        case 'Y':
+        case 'E':
             if(optarg == 0) {
                 unum_config.wireless_scan_period = optarg;
             } else if(optarg < 60) {
@@ -557,35 +560,35 @@ static int do_config_int(char opt_long, int optarg)
                 unum_config.wireless_scan_period = optarg;
             }
             break;
-        case 'O':
+        case 'F':
             if(optarg < 15 || optarg > 120) {
                 status = -8;
             } else {
                 unum_config.wireless_telemetry_period = optarg;
             }
             break;
-        case 'N':
+        case 'I':
             if(optarg < -NZERO || optarg > NZERO - 1) {
                 status = -9;
             } else {
                 unum_config.tpcap_nice = optarg;
             }
             break;
-        case 'B':
+        case 'G':
             if(optarg < 0) {
                 status = -10;
             } else {
                 unum_config.ipt_period = optarg;
             }
             break;
-        case 'C':
+        case 'H':
             if(optarg < 0) {
                 status = -11;
             } else {
                 unum_config.sysinfo_period = optarg;
             }
             break;
-        case 'D':
+        case 'J':
             if(optarg < 1) {
                 status = -12;
             } else {
@@ -641,6 +644,11 @@ static int do_config_char(char opt_long, char *optarg)
                 status = -3;
             }
             unum_config.logs_dir = optarg;
+            break;
+        case 'K':
+            // No check for error here to allow the option to be there
+            // and the behavior controlled by creating/deleteing the folder.
+            unum_config.cfg_trace = optarg;
             break;
         case 'o':
             status = util_set_opmode(optarg);
@@ -847,7 +855,7 @@ int parse_config(int at_activate, char *file_or_data)
 }
 
 // Parse the command line options
-// pick_cfg_file_name - if TUE only pick the cfg file name from the options
+// pick_cfg_file_name - if TRUE only pick the cfg file name from the options
 static int parse_cmdline(int pick_cfg_file_name)
 {
     int opt_long;
@@ -973,29 +981,6 @@ int main(int argc, char *argv[])
         print_usage(arg_count, arg_vector);
         exit(EXIT_FAILURE);
     }
-
-#ifdef LOGS_PREFIX_FILE
-    // Try to read logs dir from LOG_FILES_DIR_CONSTANT
-    if(((int) util_file_to_buf(LOGS_PREFIX_FILE, logs_dir, sizeof(logs_dir) - 2)) > 0)
-    {
-        // util_fil_to_buf seems to be appending \n at the end .
-        // Remove it
-        char *newline = strchr(logs_dir, '\n');
-        if (newline != NULL) {
-            logs_dir[newline - logs_dir] = 0;
-        }
-        if(*logs_dir != 0 && util_path_exists(logs_dir)) {
-            int len = strlen(logs_dir);
-            if(logs_dir[len - 1] != '/') {
-                logs_dir[len - 1] = '/';
-            }
-            unum_config.logs_dir = logs_dir;
-        } else {
-            printf("Warning, invalid logs dir path <%s>, using defaults!",
-                   logs_dir);
-        }
-    }
-#endif //LOGS_PREFIX_FILE
 
     // Load from the config file
     parse_config(FALSE, unum_config.config_path);

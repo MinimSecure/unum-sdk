@@ -1,18 +1,15 @@
-// (c) 2017-2019 minim.co
+// (c) 2017-2020 minim.co
 // unum logging subsystem
 
 #include "unum.h"
 
-// The log control & configuration for the platform
-// This is the default log subsystem.
-// The constants UNUM_LOG_SCALE_FACTOR, UNUM_LOG_CUT_FRACTION and 
-// UNUM_LOG_EXTRA_ROTATIONS are defined in log_common.h
-// Please refer log_common.h for the explanation of these constants
-// This structure can be overwritten in platform specific code
-// ie log_platform.c
-// Similarly the contstants also can be overwritten in platform specific
-// log.h file without redefining the whole structure
-LOG_CONFIG_t __attribute__((weak)) log_cfg[] = {
+// Default log control & configuration data structure.
+// The defaults for all constants used in this structure are defined
+// in log_common.h and can be overridden by the platform. Please refer
+// to the log_common.h for more detail.
+// Note: nhis structure itself can be overwritten in platform specific
+// code (i.e. log_platform.c) to achieve more granualr control.
+LOG_CONFIG_t __attribute__((weak)) log_cfg[] ={
 [LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
 [LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
@@ -20,53 +17,50 @@ LOG_CONFIG_t __attribute__((weak)) log_cfg[] = {
 [LOG_DST_UNUM   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "unum.log",
-                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
-                            / UNUM_LOG_CUT_FRACTION) * 1024,
-                     UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_BIG_KB * 1024,
+                     (UNUM_LOG_SIZE_BIG_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_HIGH},
 [LOG_DST_HTTP   ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "http.log",
-                     UNUM_LOG_SCALE_FACTOR * 32 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
-			/ UNUM_LOG_CUT_FRACTION) * 1024,
-                     UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_BIG_KB * 1024,
+                     (UNUM_LOG_SIZE_BIG_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_HIGH},
 [LOG_DST_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "monitor.log",
-                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
-			/ UNUM_LOG_CUT_FRACTION) * 1024,
-                     UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_SMALL_KB * 1024,
+                     (UNUM_LOG_SIZE_SMALL_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_LOW},
 #ifdef FW_UPDATER_RUN_MODE
 [LOG_DST_UPDATE ] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "updater.log",
-                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
-			/ UNUM_LOG_CUT_FRACTION) * 1024,
-                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_SMALL_KB * 1024,
+                     (UNUM_LOG_SIZE_SMALL_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_HIGH},
 [LOG_DST_UPDATE_MONITOR] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "updater_monitor.log",
-                     UNUM_LOG_SCALE_FACTOR * 8 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 8 + UNUM_LOG_SCALE_FACTOR * 8
-			/ UNUM_LOG_CUT_FRACTION) * 1024,
-                     -1 + UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_SMALL_KB * 1024,
+                     (UNUM_LOG_SIZE_SMALL_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_LOW},
 #endif // FW_UPDATER_RUN_MODE
 #ifdef SUPPORT_RUN_MODE
 [LOG_DST_SUPPORT] = {LOG_FLAG_FILE | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
-                     "support.log", 32*1024, 48*1024, 1},
+                     "support.log",
+                     UNUM_LOG_SIZE_SMALL_KB * 1024,
+                     (UNUM_LOG_SIZE_SMALL_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_HIGH},
 #endif // SUPPORT_RUN_MODE
 #ifdef DEBUG
 [LOG_DST_DEBUG  ] = {LOG_FLAG_FILE | LOG_FLAG_MUTEX | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
                      "debug.log",
-                     UNUM_LOG_SCALE_FACTOR * 16 * 1024,
-                     (UNUM_LOG_SCALE_FACTOR * 16 + UNUM_LOG_SCALE_FACTOR * 16
-			/ UNUM_LOG_CUT_FRACTION) * 1024,
-                     UNUM_LOG_EXTRA_ROTATIONS},
+                     UNUM_LOG_SIZE_MEDIUM_KB * 1024,
+                     (UNUM_LOG_SIZE_MEDIUM_KB + UNUM_LOG_CUT_EXTRA_KB) * 1024,
+                     UNUM_LOG_ROTATIONS_HIGH},
 #endif // DEBUG
 [LOG_DST_DROP   ] = {} // for consistency, does not really need an entry
 };
@@ -154,7 +148,7 @@ static int init_log_entry(LOG_DST_t dst)
             for(ii = lc->max + 1; ii <= LOG_ROTATE_CLEANUP_MAX; ii++)
             {
                 char fn[LOG_MAX_PATH + 4];
-                snprintf(fn, sizeof(fn), "%s%s.%d",
+                snprintf(fn, sizeof(fn), "%s/%s.%d",
                          ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                          lc->name, ii);
                 fn[sizeof(fn) - 1] = 0;
@@ -173,7 +167,7 @@ static int init_log_entry(LOG_DST_t dst)
         {
             char fn[LOG_MAX_PATH + 1];
             int fn_len = 
-                snprintf(fn, sizeof(fn), "%s%s",
+                snprintf(fn, sizeof(fn), "%s/%s",
                      ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                      lc->name);
             
@@ -313,18 +307,18 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                     char to[LOG_MAX_PATH + 4];
                     char *from;
 
-                    snprintf(buf_from, sizeof(buf_from), "%s%s",
+                    snprintf(buf_from, sizeof(buf_from), "%s/%s",
                             ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                             lc->name);
                     from = buf_from; // redundant
                     if(ii - 1 > 0) {
-                        snprintf(buf_from, sizeof(buf_from), "%s%s.%d",
+                        snprintf(buf_from, sizeof(buf_from), "%s/%s.%d",
                                  ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                                  lc->name, ii - 1);
                         buf_from[sizeof(buf_from) - 1] = 0;
                         from = buf_from; // redundant
                     }
-                    snprintf(to, sizeof(to), "%s%s.%d", 
+                    snprintf(to, sizeof(to), "%s/%s.%d", 
                              ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                              lc->name, ii);
                     to[sizeof(to) - 1] = 0;
@@ -333,7 +327,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                 lc->flags &= ~(LOG_FLAG_INIT_FAIL | LOG_FLAG_INIT_DONE);
                 char fn[LOG_MAX_PATH + 1];
                 int fn_len =
-                    snprintf(fn, sizeof(fn), "%s%s",
+                    snprintf(fn, sizeof(fn), "%s/%s",
                          ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                          lc->name);
 
@@ -346,7 +340,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
                 if(lc->f) {
                     lc->flags |= LOG_FLAG_INIT_DONE;
                 } else {
-                    printf("%s: failed to create <%s%s> after rotation,"
+                    printf("%s: failed to create <%s/%s> after rotation,"
                            "error:%s\n",
                            __func__,
                            ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
