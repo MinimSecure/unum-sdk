@@ -21,33 +21,38 @@
 // Max log file pathsname length the code will deal with
 #define LOG_MAX_PATH 128
 
-// A file containing the Prefix(directory)
-// All log files (For example unum.log)
-// will be prefixed with the content in this filename
-#ifdef PERSISTENT_FS_DIR_PATH
-#define LOGS_PREFIX_FILE PERSISTENT_FS_DIR_PATH"/unum_prefix_file.txt"
-#endif // PERSISTENT_FS_DIR_PATH
+// Console device (default, override in platform header if needed)
+#define UNUM_LOG_CONSOLE_NAME "/dev/console"
 
-// Console device
-#define UNUM_LOG_CONSOLE_NAME        "/dev/console"
+// The below defaults determine log file sizes for big, medium and small
+// logs. The platform can override those and set its own limits.
+// The platform can also override the whole log_cfg[] if the default categories
+// (big, medium, small) are not sufficient.
+#define UNUM_LOG_SIZE_BIG_KB 128
+#define UNUM_LOG_SIZE_MEDIUM_KB 64
+#define UNUM_LOG_SIZE_SMALL_KB 32
+// Maximum extra space for the log file to grow after it exceedes the limit,
+// but before the messsage being written is cut off
+#define UNUM_LOG_CUT_EXTRA_KB 12
+// Default number of files to keep when rotating logs after max size is reached
+// (similarly to log size limits split into categories - high and low)
+#define UNUM_LOG_ROTATIONS_HIGH 2
+#define UNUM_LOG_ROTATIONS_LOW 1
+// Any of the above constants can be undefined and then changed in platform
+// specific log.h file, for example
+// #undef UNUM_LOG_SIZE_BIG_KB then #define UNUM_LOG_SIZE_BIG_KB 256
 
-// Below is an example of how the following constants are used in 
-// generic log destinations file or any platform specific files
-// UNUM_LOG_SCALE_FACTOR * 32 * 1024,
-// (UNUM_LOG_SCALE_FACTOR * 32 + UNUM_LOG_SCALE_FACTOR * 32
-//                            / UNUM_LOG_CUT_FRACTION) * 1024,
-//                     UNUM_LOG_EXTRA_ROTATIONS}, 
-// The factor by which the log file size has to be increased / decreased
-// For a 128KB file the size is defined as
-// UNUM_LOG_SCALE_FACTOR * 32 * 1024
-#define UNUM_LOG_SCALE_FACTOR 4
-// Default number Number of files to backup when max size of a file is reached
-#define UNUM_LOG_EXTRA_ROTATIONS 2
-// Maximum extra space for the log file to grow is
-// log_size / UNUM_LOG_CUT_FRACTION
-#define UNUM_LOG_CUT_FRACTION 10
-// The above three constants can be overwritten in platform specific log.h file
-// Example, with #undef UNUM_LOG_SCALE_FACTOR and #define UNUM_LOG_SCALE_FACTOR
+// The below constant should be defined (in platform's log.h) if the platform
+// allows for --log-dir option changing default location of the log files.
+// The intended use is temporary relocation to the persistent filesystem for
+// debugging the agent behavior across reboots. Relocation works for all the
+// file paths in log_cfg[] structure that do not start with '/'.
+//#define UNUM_LOG_ALLOW_RELOCATION
+
+// Note: the platforms are expected to provide LOG_PATH_PREFIX define
+//       pointing to their default logs directory, but in case it's missing
+//       the default is set to "/var/log" in unum.h
+
 
 // Enum of available log output destinations
 typedef enum {

@@ -23,22 +23,6 @@
 // want the config download to be handled by a scripted command
 #define CONFIG_DOWNLOAD_IN_AGENT
 
-// Config debug tracing define that (to enable tracing) should be set to point
-// to a path on the device where the config tracing code should store config
-// file snapshots for each send/receive operation.
-// The config snapshot file name format is:
-// <path>/sX_YY.bin (for sent configs)
-// <path>/rX_YY.bin (for received configs)
-// s/r - sent or received
-// X - session # (increases with each agent start, one digit, 0-9)
-// YY - sequence # in the session (increases with each send or receive)
-// <path>/session - session # file
-// Note: to track config changes causing reboots use persistent <path>,
-//       define this constant in the platform specific config.h header
-// Note1: The <path> has to exist for the tracing to work
-//#define CONFIG_TRACING_DIR "/tmp/cfgtrace"
-//#define CONFIG_TRACING_DIR PERSISTENT_FS_DIR_PATH "/cfgtrace"
-
 
 // Typedef for config UID on the platform (MD5 hash here).
 typedef char CONFIG_UID_t[16];
