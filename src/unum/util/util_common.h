@@ -317,4 +317,7 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
 // doesn't support this, it should return without doing anything.
 int __attribute__((weak)) platform_release_renew(void);
 
+// Check if the interface is a guest network
+int __attribute__((weak)) util_is_guest_network(char *ifname);
+
 #endif // _UTIL_COMMON_H

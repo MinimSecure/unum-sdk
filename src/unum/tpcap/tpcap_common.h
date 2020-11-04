@@ -40,6 +40,7 @@
 typedef struct _TPCAP_IF {
 #define TPCAP_IF_VALID    0x0001 // intrface info is populated
 #define TPCAP_IF_FD_READY 0x0002 // descriptor (fd) ready for capturing
+#define TPCAP_IF_GUEST    0x0004 // Guest Interface
     int flags; // interface flags as described above
     char name[IFNAMSIZ];  // interface name
     unsigned char mac[6]; // interface MAC address

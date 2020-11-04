@@ -113,6 +113,10 @@ int tpcap_add_if(char *ifname, void *_unused)
         return -5;
     }
     tp_ifs[ii].flags |= TPCAP_IF_VALID;
+    // Check and mark guest network
+    if(util_is_guest_network && util_is_guest_network(ifname)) {
+        tp_ifs[ii].flags |= TPCAP_IF_GUEST;
+    }
 
     return 0;
 }

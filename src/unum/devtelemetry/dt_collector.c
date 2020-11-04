@@ -325,6 +325,18 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     int from_rtr = TRUE;
     int to_rtr = TRUE;
 
+    if(IS_OPM(UNUM_OPM_AP)) {
+
+#ifdef FEATURE_GUEST_NAT
+        // We are interested in packets only from guest network
+        // Return if it is not a guest network
+        if((tpif->flags & TPCAP_IF_GUEST) == 0)
+#endif // FEATURE_GUEST_NAT
+        {
+
+            return;
+        }
+    }
 #ifndef FEATURE_LAN_ONLY
     // Is the packet from or to the router MAC address
     // If it is device->IP mcast pkt - assume to-the-router
@@ -786,14 +798,14 @@ int devtelemetry_init(int level)
 {
     if(level == INIT_LEVEL_DEVTELEMETRY)
     {
-#ifndef FEATURE_LAN_ONLY
+#if !defined(FEATURE_LAN_ONLY) && !defined(FEATURE_GUEST_NAT)
         // Unless it is a standalone AP device firmware we do not do device
         // telemetry in the AP operation mode (i.e. gateway firmware in the
         // AP mode).
         if(IS_OPM(UNUM_OPM_AP)) {
             return 0;
         }
-#endif // !FEATURE_LAN_ONLY
+#endif // !FEATURE_LAN_ONLY && !FEATURE_GUEST_NAT
         // Initialize the device info collector
         if(dt_main_collector_init() != 0) {
             return -1;
