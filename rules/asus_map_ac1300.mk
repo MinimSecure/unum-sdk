@@ -58,23 +58,25 @@ TARGET_VARS_jansson := VERSION=$(JANSSON_VERSION)
 TARGET_CPPFLAGS_unum := \
 	-I$(TARGET_LIBS)/libnvram/include \
 	-I$(TARGET_LIBS)/libshared/include \
-        -I$(TARGET_LIBS)/libssl/include \
-        -I$(TARGET_LIBS)/libcurl/include
+	-I$(TARGET_LIBS)/libssl/include \
+	-I$(TARGET_LIBS)/libcurl/include \
+	-I$(TARGET_LIBS)/libz/include
 
 TARGET_LDFLAGS_unum := -ldl -lm -lrt \
 	-L$(TARGET_LIBS)/libcurl/lib/ -l:libcurl.so \
 	-L$(TARGET_LIBS)/libssl/lib/ -l:libssl.so \
 	-L$(TARGET_LIBS)/libssl/lib/ -l:libcrypto.so \
 	-L$(TARGET_LIBS)/libnvram/lib/ -l:libnvram.so \
-	-L$(TARGET_LIBS)/libshared/lib/ -l:libshared.so
+        -L$(TARGET_LIBS)/libshared/lib/ -l:libshared.so \
+        -L$(TARGET_LIBS)/libz/lib/ -l:libz.so
         
 ### GDB
 GDB_VERSION := gdb-7.11
 TARGET_VARS_gdb := VERSION=$(GDB_VERSION)
 
 TARGET_VARS_unum := MBEDTLS=$(MBEDTLS_VERSION) CARES=$(C-ARES_VERSION) \
-		CURL=$(CURL_VERSION) \
-		IWINFO=$(IWINFO_VERSION) JANSSON=$(JANSSON_VERSION) 
+                    CURL=$(CURL_VERSION) IWINFO=$(IWINFO_VERSION) \
+                    JANSSON=$(JANSSON_VERSION) 
 
 
 # Component dependencies on each other

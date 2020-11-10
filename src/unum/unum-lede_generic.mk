@@ -19,8 +19,11 @@ LDFLAGS += -ljansson
 # UCI library
 LDFLAGS += -luci
 
-# Woreless
+# Wireless
 LDFLAGS += -liwinfo
+
+# Zlib
+LDFLAGS += -lz
 
 # Add hardware ID this LEDE build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
