@@ -4,8 +4,12 @@
 #ifndef _UTIL_COMMON_H
 #define _UTIL_COMMON_H
 
-// Pull in DNS utils header (it's platform independent)
+// Only platform independent util code headers can be included here
+
+// Pull in DNS utils header
 #include "util_dns.h"
+// Zlib wrappers header
+#include "util_zlib.h"
 
 
 // Get number of elements in an array

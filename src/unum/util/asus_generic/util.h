@@ -31,6 +31,8 @@
 // the kernel reboot syscall will be used)
 #define REBOOT_CMD "/sbin/reboot"
 
+#define PERSISTENT_FS_DIR_PATH "/jffs/"
+
 // Commands to execute to factory reset the router
 // We use util_platform_factory_reset() platform function
 //#define FACTORY_RESET_CMD "nvram erase; " REBOOT_CMD

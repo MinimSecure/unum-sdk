@@ -186,6 +186,9 @@ Note: when creating GIT repository for vendor SDK always create the first
    Minim cloud (for example cfg_bef_ssid_change.txt,
    cfg_aft_ssid_change.txt, cfg_bef_radio_off.txt, cfg_aft_radio_off.txt,
    cfg_bef_auth_open.txt, cfg_aft_auth_open.txt ...).
+   The "cfg-trace" command line and config file option can be used to turn
+   on configuration tracing for collecting examples of the configuration
+   sent to/from cloud and debugging.
 
 
 ### Firmware modifications

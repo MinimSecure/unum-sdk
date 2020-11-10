@@ -21,6 +21,39 @@
 // Max log file pathsname length the code will deal with
 #define LOG_MAX_PATH 128
 
+// Console device (default, override in platform header if needed)
+#define UNUM_LOG_CONSOLE_NAME "/dev/console"
+
+// The below defaults determine log file sizes for big, medium and small
+// logs. The platform can override those and set its own limits.
+// The platform can also override the whole log_cfg[] if the default categories
+// (big, medium, small) are not sufficient.
+#define UNUM_LOG_SIZE_BIG_KB 128
+#define UNUM_LOG_SIZE_MEDIUM_KB 64
+#define UNUM_LOG_SIZE_SMALL_KB 32
+// Maximum extra space for the log file to grow after it exceedes the limit,
+// but before the messsage being written is cut off
+#define UNUM_LOG_CUT_EXTRA_KB 12
+// Default number of files to keep when rotating logs after max size is reached
+// (similarly to log size limits split into categories - high and low)
+#define UNUM_LOG_ROTATIONS_HIGH 2
+#define UNUM_LOG_ROTATIONS_LOW 1
+// Any of the above constants can be undefined and then changed in platform
+// specific log.h file, for example
+// #undef UNUM_LOG_SIZE_BIG_KB then #define UNUM_LOG_SIZE_BIG_KB 256
+
+// The below constant should be defined (in platform's log.h) if the platform
+// allows for --log-dir option changing default location of the log files.
+// The intended use is temporary relocation to the persistent filesystem for
+// debugging the agent behavior across reboots. Relocation works for all the
+// file paths in log_cfg[] structure that do not start with '/'.
+//#define UNUM_LOG_ALLOW_RELOCATION
+
+// Note: the platforms are expected to provide LOG_PATH_PREFIX define
+//       pointing to their default logs directory, but in case it's missing
+//       the default is set to "/var/log" in unum.h
+
+
 // Enum of available log output destinations
 typedef enum {
     LOG_DST_STDOUT,  // logging to stdout (should be first)

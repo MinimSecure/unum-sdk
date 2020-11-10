@@ -16,6 +16,7 @@
 // - MAC addr (in xx:xx:xx:xx:xx:xx format)
 #define CFG_PATH "/v3/unums/%s/router_configs/raw"
 
+
 // UID of the last config that has been successfully
 // sent to the server (zeroed at bootup).
 CONFIG_UID_t last_sent_uid;
@@ -26,20 +27,56 @@ CONFIG_UID_t new_uid;
 // Set if cloud pull_router_config command is received
 static UTIL_EVENT_t download_cfg = UTIL_EVENT_INITIALIZER;
 
-#ifdef CONFIG_TRACING_DIR
-// Session file name
-#define CONFIG_TRACING_SFN CONFIG_TRACING_DIR "/session"
-
 // Session number for config tracing
 static char session_num_chr = '0' - 1;
 
 // Sequence number for config tracing
 static int sequence_num = 0;
 
-// Buffer for the trace file pathname
-char trace_file_pname[256];
-#endif // CONFIG_TRACING_DIR
 
+// Determines if tracing is "on" or "off" basing on the
+// unum_config.cfg_trace and the presence of the tracing folder
+// it poins to. Handles swinching between "on" and "off" state
+// (basing on the folder presence) while running.
+// Sets session_num_chr and resets sequence_num to 0 when
+// transitioning from "off" to "on".
+// Retunrs: TRUE/FALSE
+static int is_cfg_tracing(void)
+{
+    static int current_status = FALSE;
+
+    int new_status = unum_config.cfg_trace != NULL &&
+                     util_path_exists(unum_config.cfg_trace);
+    // No changes
+    if(!(new_status ^ current_status))
+    {
+        return new_status;
+    }
+
+    // Status has changed
+    current_status = new_status;
+
+    // Turning it off - nothing to do
+    if(!new_status) {
+        log("%s: stopping tracing session: %c\n", __func__, session_num_chr);
+        return new_status;
+    }
+
+    // Turning it on - start new session and reset sequence number
+    char status_file_pname[256];
+    snprintf(status_file_pname, sizeof(status_file_pname),
+             "%s/status", unum_config.cfg_trace);
+    if(util_file_to_buf(status_file_pname, &session_num_chr, 1) <= 0 ||
+       ++session_num_chr > '9' || session_num_chr < '0')
+    {
+        session_num_chr = '0';
+    }
+    log("%s: starting tracing session: %c\n", __func__, session_num_chr);
+    util_buf_to_file(status_file_pname, &session_num_chr, 1, 00666);
+    sequence_num = 0;
+
+    return new_status;
+}
 
 #ifdef CONFIG_DOWNLOAD_IN_AGENT
 // Called by command processing job when pull_router_config command is received
@@ -58,6 +95,7 @@ int cmd_update_config(char *cmd, char *s_unused, int len_unused)
 }
 #endif // CONFIG_DOWNLOAD_IN_AGENT
 
+
 static void config(THRD_PARAM_t *p)
 {
     http_rsp *rsp = NULL;
@@ -65,10 +103,6 @@ static void config(THRD_PARAM_t *p)
     char *my_mac = util_device_mac();
 
     log("%s: started\n", __func__);
-
-#ifdef CONFIG_TRACING_DIR
-    log("%s: tracing session: %c\n", __func__, session_num_chr);
-#endif // CONFIG_TRACING_DIR
 
     log("%s: waiting for activate to complete\n", __func__);
     wait_for_activate();
@@ -120,6 +154,7 @@ static void config(THRD_PARAM_t *p)
         char *cstr = NULL;
         int cstr_len = 0;
         unsigned long delay;
+        char trace_file_pname[256];
 
         for(;;) {
 
@@ -132,20 +167,21 @@ static void config(THRD_PARAM_t *p)
 
             log("%s: config has changed, sending...\n", __func__);
 
-#ifdef CONFIG_TRACING_DIR
-            char trace_file_pname[256];
-            snprintf(trace_file_pname, sizeof(trace_file_pname),
-                     CONFIG_TRACING_DIR "/s%c_%02d.bin",
-                     session_num_chr, sequence_num);
-            sequence_num = (sequence_num + 1) % 100;
-            if(util_buf_to_file(trace_file_pname, cstr, cstr_len, 00666) < 0) {
-                log("%s: failed to store sent config %s\n",
-                    __func__, trace_file_pname);
-            } else {
-                log("%s: stored sent config %s\n",
-                    __func__, trace_file_pname);
+            if(is_cfg_tracing())
+            {
+                snprintf(trace_file_pname, sizeof(trace_file_pname),
+                         "%s/s%c_%02d.bin", unum_config.cfg_trace,
+                         session_num_chr, sequence_num);
+                sequence_num = (sequence_num + 1) % 100;
+                if(util_buf_to_file(trace_file_pname, cstr, cstr_len, 00666) < 0)
+                {
+                    log("%s: failed to store sent config %s\n",
+                        __func__, trace_file_pname);
+                } else {
+                    log("%s: stored sent config %s\n",
+                        __func__, trace_file_pname);
+                }
             }
-#endif // CONFIG_TRACING_DIR
 
             // Send the config info
             rsp = http_post(url,
@@ -210,21 +246,22 @@ static void config(THRD_PARAM_t *p)
             }
             log("%s: downloaded config from cloud\n", __func__);
 
-#ifdef CONFIG_TRACING_DIR
-            snprintf(trace_file_pname, sizeof(trace_file_pname),
-                     CONFIG_TRACING_DIR "/r%c_%02d.bin",
-                     session_num_chr, sequence_num);
-            sequence_num = (sequence_num + 1) % 100;
-            if(util_buf_to_file(trace_file_pname,
-                                rsp->data, rsp->len, 00666) < 0)
+            if(is_cfg_tracing())
             {
-                log("%s: failed to store received config %s\n",
-                    __func__, trace_file_pname);
-            } else {
-                log("%s: stored received config %s\n",
-                    __func__, trace_file_pname);
+                snprintf(trace_file_pname, sizeof(trace_file_pname),
+                         "%s/r%c_%02d.bin", unum_config.cfg_trace,
+                         session_num_chr, sequence_num);
+                sequence_num = (sequence_num + 1) % 100;
+                if(util_buf_to_file(trace_file_pname,
+                                    rsp->data, rsp->len, 00666) < 0)
+                {
+                    log("%s: failed to store received config %s\n",
+                        __func__, trace_file_pname);
+                } else {
+                    log("%s: stored received config %s\n",
+                        __func__, trace_file_pname);
+                }
             }
-#endif // CONFIG_TRACING_DIR
 
             // Try to apply the config
             if(platform_apply_cloud_cfg(rsp->data, rsp->len) != 0) {
@@ -262,15 +299,6 @@ int config_init(int level)
         if(platform_cfg_init() != 0) {
             return -1;
         }
-#ifdef CONFIG_TRACING_DIR
-        // Read config tracing session #
-        if(util_file_to_buf(CONFIG_TRACING_SFN, &session_num_chr, 1) <= 0 ||
-           ++session_num_chr > '9' || session_num_chr < '0')
-        {
-            session_num_chr = '0';
-        }
-        util_buf_to_file(CONFIG_TRACING_SFN, &session_num_chr, 1, 00666);
-#endif // CONFIG_TRACING_DIR
         // Start the config management job
         ret = util_start_thrd("config", config, NULL, NULL);
     }

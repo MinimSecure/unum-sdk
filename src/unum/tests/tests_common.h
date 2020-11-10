@@ -29,7 +29,8 @@
 #define U_TEST_FE_DEFRAG    20 // test festats defrag
 #define U_TEST_FE_ARP       21 // test festats ARP tracker
 #define U_TEST_DNS          22 // test dns subsystem
-#define U_TEST_UNUSED       23 // next available entry
+#define U_TEST_ZIP          23 // test dns subsystem
+#define U_TEST_UNUSED       24 // next available entry
 
 // Test load cfg (stubbed)
 int test_loadCfg(void);
@@ -65,6 +66,9 @@ int tpcap_test_filters(char *filters_file);
 
 // Test DNS Subsystem
 int test_dns(void);
+
+// Test Minizip
+int test_zip(void);
 
 // Returns the running test number (0 if no test running)
 int get_test_num(void);

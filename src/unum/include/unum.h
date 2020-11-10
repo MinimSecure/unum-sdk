@@ -126,8 +126,18 @@
 
 // Default agent config path, platforms can override in platform.h.
 #ifndef UNUM_CONFIG_PATH
-#  define UNUM_CONFIG_PATH "/tmp/unum.conf"
-#endif
+#  ifdef PERSISTENT_FS_DIR_PATH
+#    define UNUM_CONFIG_PATH PERSISTENT_FS_DIR_PATH "/unum.conf"
+#  else // PERSISTENT_FS_DIR_PATH
+#    define UNUM_CONFIG_PATH "/etc/unum.conf"
+#  endif // PERSISTENT_FS_DIR_PATH
+#endif // UNUM_CONFIG_PATH
+
+// Default agent logs path, platforms can override in platform.h.
+// The path should be slash-terminated.
+#ifndef LOG_PATH_PREFIX
+#  define LOG_PATH_PREFIX "/var/log/"
+#endif // LOG_PATH_PREFIX
 
 // Main configuration context (for global startup options and paramters)
 typedef struct {
@@ -169,7 +179,15 @@ typedef struct {
     int sysinfo_period;            // sysinfo reporting time period
     int ipt_period;                // iptables reporting time period
     char *config_path;             // path to config file
+    char *logs_dir;                // path to logs directory (used for saving
+                                   // logs across reboots, for troubleshooting)
+    char *cfg_trace;               // path where to store config changes tracing
+                                   // files (for troubleshooting config changes)
     int dns_timeout;               // dns timeout value in seconds
+#ifdef FEATURE_GZIP_REQUESTS
+    int gzip_requests;             // threshold beyond which the request is
+                                   // to be compressed
+#endif // FEATURE_GZIP_REQUESTS
     char wan_ifname[IFNAMSIZ];     // specify a custom wan interface name
     char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];
                                    // list of custom lan interface names

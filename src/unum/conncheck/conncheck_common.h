@@ -22,8 +22,8 @@
 // Time (in sec) to stay quiet before starting over if unable to connect
 // and/or recover. The time is increased at each failure till it becomes
 // greater or equal to the max.
-#define CONNCHECK_QUIET_TIME_START  60
-#define CONNCHECK_QUIET_TIME_INC    30
+#define CONNCHECK_QUIET_TIME_START  30
+#define CONNCHECK_QUIET_TIME_INC     5
 #define CONNCHECK_QUIET_TIME_MAX   120
 
 // Max time (in sec) to keep tryinig connectivity test before assuming
@@ -58,8 +58,7 @@
 // IDs for conncheck state (cstate)
 typedef enum _CONNCHECK_STATES {
     CSTATE_UNINITIALIZED,    // 0 - not initialized
-    CSTATE_GET_URLS,         // 1 - get server urls via DNS
-    CSTATE_GRACE_PERIOD,     // 2 - connecting to cloud
+    CSTATE_CONNECTING,       // 1 - get server urls via DNS and connect to cloud
     CSTATE_RECOVERY,         // 3 - connecton recovery
     CSTATE_CHECKING_IPV4,    // 4 - checking IPv4 connectivity
     CSTATE_CHECKING_DNS,     // 5 - checking DNS
@@ -87,11 +86,13 @@ typedef struct _CONNCHECK_ST {
     unsigned int bad_ipv4_gw:   1; // invalid IPv4 default gateway address
     unsigned int no_dns:        1; // no DNS, use hardcoded IPs for cloud access
     unsigned int no_servers:    1; // no servers, couldn't get servers from dns
+    unsigned int slist_ready:   1; // server list can be used (this can happen
+                                   // if we got it from DNS or gave up and let
+                                   // the code use the defaults, see no_servers)
     // data
     unsigned long cloud_utc;       // UTC time in sec from the cloud
     unsigned long connect_uptime;  // uptime when connected
     unsigned long tb_start_uptime; // uptime when troubleshooting started
-    int server_list_ready;         // server list can be used
     char ifname[IFNAMSIZ];         // interface name to troubleshoot
     DEV_IP_CFG_t ipcfg;            // interface IP configuration
     IPV4_ADDR_t ipv4gw;            // IPv4 default gateway address
