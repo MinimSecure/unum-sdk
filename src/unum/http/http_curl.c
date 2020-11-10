@@ -184,6 +184,7 @@ static size_t speedtest_chunk(void *contents, size_t size, size_t nmemb, void *u
 #define HTTP_REQ_FLAGS_NO_RETRIES      0x00020000
 #define HTTP_REQ_FLAGS_SHORT_TIMEOUT   0x00040000
 #define HTTP_REQ_FLAGS_GET_CONNTIME    0x00080000
+#define HTTP_REQ_FLAGS_COMPRESS        0x00100000
 static http_rsp *http_req(char *url, char *headers,
                           int type, char *data, int len)
 {
@@ -198,6 +199,13 @@ static http_rsp *http_req(char *url, char *headers,
     struct curl_slist *slhdr = NULL;
     struct curl_slist *sldns = NULL;
     char err_buf[CURL_ERROR_SIZE] = "";
+    // dptr points to the data sent to the server
+    // When data is not compressed it points to data
+    // Otherwise it points to the compressed string after the message is
+    // compressed. dlen follows dptr.
+    int compressed = FALSE;
+    char *dptr = data;
+    int dlen = len;
 
     rsp = alloc_rsp(NULL, RSP_BUF_SIZE);
     if(!rsp) {
@@ -233,7 +241,7 @@ static http_rsp *http_req(char *url, char *headers,
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, write_func);
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, &rsp);
     curl_easy_setopt(ch, CURLOPT_ERRORBUFFER, err_buf);
-    if ((type & HTTP_REQ_FLAGS_SHORT_TIMEOUT) != 0) {
+    if((type & HTTP_REQ_FLAGS_SHORT_TIMEOUT) != 0) {
         curl_easy_setopt(ch, CURLOPT_TIMEOUT, REQ_API_TIMEOUT_SHORT);
         // Give connecting the whole timeout, but just reuse the constant
         curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, REQ_API_TIMEOUT_SHORT);
@@ -244,10 +252,37 @@ static http_rsp *http_req(char *url, char *headers,
     if((type & HTTP_REQ_FLAGS_CAPTURE_HEADERS) != 0) {
         curl_easy_setopt(ch, CURLOPT_HEADERDATA, &rsp);
     }
-    if(headers)
+#ifdef FEATURE_GZIP_REQUESTS
+    int cstrlen;
+    char *cstr = NULL;
+
+    // If compress flag is set and message length exceeds the threshold,
+    // then try to compress the message
+    if(data != NULL && (type & HTTP_REQ_FLAGS_COMPRESS) &&
+       unum_config.gzip_requests && len > unum_config.gzip_requests)
+    {
+        // Allocate memory for compressed message
+        // If the memory allocation fails, let the message
+        // go uncompressed
+        cstr = UTIL_MALLOC(len);
+        if(cstr) {
+            // Compress the message
+            cstrlen = util_compress(data, len, cstr, len);
+            if(cstrlen > 0) {
+                compressed = TRUE;
+                dptr = cstr;
+                dlen = cstrlen;
+            } else {
+                UTIL_FREE(cstr);
+                cstr = NULL;
+            }
+        }
+    }
+#endif //FEATURE_GZIP_REQUESTS
+    if(headers || compressed)
     {
         struct curl_slist *slold = NULL;
-        for(hdr = headers; *hdr != 0; hdr += strlen(hdr) + 1)
+        for(hdr = headers; hdr && *hdr != 0; hdr += strlen(hdr) + 1)
         {
             log("%s: %08x hdr: '%s'\n", __func__, ch, hdr);
             slold = slhdr;
@@ -255,14 +290,19 @@ static http_rsp *http_req(char *url, char *headers,
                 break;
             }
         }
-        if(slhdr) {
-            curl_easy_setopt(ch, CURLOPT_HTTPHEADER, slhdr);
-        } else {
+        if(compressed) {
+            slold = slhdr;
+            slhdr = curl_slist_append(slold, "Content-Encoding: gzip");
+        }
+        if(slhdr == NULL) {
             log("%s: %08x failed to add headers, ignoring\n", __func__, ch);
             if(slold) {
                 curl_slist_free_all(slold);
             }
         }
+    }
+    if(slhdr) {
+        curl_easy_setopt(ch, CURLOPT_HTTPHEADER, slhdr);
     }
     if(conncheck_no_dns())
     {
@@ -295,11 +335,12 @@ static http_rsp *http_req(char *url, char *headers,
     if(((type & HTTP_REQ_TYPE_MASK) == HTTP_REQ_TYPE_POST) ||
        ((type & HTTP_REQ_TYPE_MASK) == HTTP_REQ_TYPE_PUT))
     {
-        log("%s: %08x len: %d, data: '%.*s%s'\n", __func__, ch, len,
+        log("%s: %08x len%s: %d, ptr: '%.*s%s'\n",
+            __func__, ch, (compressed ? "(gzip)" : ""), dlen,
             (len > MAX_LOG_DATA_LEN ? MAX_LOG_DATA_LEN : len), data,
             (len > MAX_LOG_DATA_LEN ? "..." : ""));
-        curl_easy_setopt(ch, CURLOPT_POSTFIELDS, data);
-        curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE, len);
+        curl_easy_setopt(ch, CURLOPT_POSTFIELDS, dptr);
+        curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE, dlen);
     }
 
     if((type & HTTP_REQ_FLAGS_NO_RETRIES) != 0) {
@@ -347,6 +388,12 @@ static http_rsp *http_req(char *url, char *headers,
     if(sldns != NULL) {
         curl_slist_free_all(sldns);
     }
+#ifdef FEATURE_GZIP_REQUESTS
+    // Free the compressed message string
+    if(cstr != NULL) {
+        UTIL_FREE(cstr);
+    }
+#endif //FEATURE_GZIP_REQUESTS
 
     if(err) {
         free_rsp(rsp);
@@ -370,7 +417,8 @@ static http_rsp *http_req(char *url, char *headers,
 // The caller must free the http_rsp when it is no longer needed.
 http_rsp *http_post(char *url, char *headers, char *data, int len)
 {
-    return http_req(url, headers, HTTP_REQ_TYPE_POST, data, len);
+    return http_req(url, headers, HTTP_REQ_TYPE_POST | HTTP_REQ_FLAGS_COMPRESS,
+                    data, len);
 }
 // The same as http_post(), but response headers are captured too
 http_rsp *http_post_all(char *url, char *headers, char *data, int len)
