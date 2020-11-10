@@ -88,6 +88,9 @@ static struct option long_options[] =
 #ifdef UNUM_LOG_ALLOW_RELOCATION
     {"log-dir\0cc",        required_argument, NULL, 'L'},
 #endif // UNUM_LOG_ALLOW_RELOCATION
+#ifdef FEATURE_GZIP_REQUESTS
+    {"gzip-requests\0ia",  required_argument, NULL, 'M'},
+#endif //FEATURE_GZIP_REQUESTS
     {0, 0, 0, 0}
 };
 // The short options string for the above
@@ -408,6 +411,10 @@ static void print_usage(int argc, char *argv[])
     printf(" --sysinfo-period <0-...>    - sysinfo reporting interval\n");
     printf("                               0: disable reporting\n");
     printf(" --dns-timeout <1-...>       - timeout in seconds for dns request\n");
+#ifdef FEATURE_GZIP_REQUESTS
+    printf(" --gzip-requests <0-...>      - message compression threshold\n");
+    printf("                                0: no compression (default)\n");
+#endif //FEATURE_GZIP_REQUESTS
 #ifdef FW_UPDATER_RUN_MODE
     printf(" --fwupd-period <60-...>     - firmware upgrade check time\n");
     printf("                               for \"-m updater\"\n");
@@ -595,8 +602,17 @@ static int do_config_int(char opt_long, int optarg)
                 unum_config.dns_timeout = optarg;
             }
             break;
+#ifdef FEATURE_GZIP_REQUESTS
+         case 'M':
+            if(optarg < 0) {
+                status = -13;
+            } else {
+                unum_config.gzip_requests = optarg;
+            }
+            break;
+#endif //FEATURE_GZIP_REQUESTS
         default:
-            status = -13;
+            status = -14;
             break;
     }
 	

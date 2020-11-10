@@ -184,6 +184,10 @@ typedef struct {
     char *cfg_trace;               // path where to store config changes tracing
                                    // files (for troubleshooting config changes)
     int dns_timeout;               // dns timeout value in seconds
+#ifdef FEATURE_GZIP_REQUESTS
+    int gzip_requests;             // threshold beyond which the request is
+                                   // to be compressed
+#endif // FEATURE_GZIP_REQUESTS
     char wan_ifname[IFNAMSIZ];     // specify a custom wan interface name
     char lan_ifname[TPCAP_IF_MAX][IFNAMSIZ];
                                    // list of custom lan interface names

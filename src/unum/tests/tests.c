@@ -86,6 +86,8 @@ static void print_tests_info()
            "- test forwarding engine ARP tracker\n");
     printf(UTIL_STR(U_TEST_DNS)
            "- test dns subsystem\n");
+    printf(UTIL_STR(U_TEST_ZIP)
+           "- test zip subsystem\n");
     printf(UTIL_STR(U_TEST_UNUSED)
            "- unused\n");
     printf("...\n");
@@ -166,6 +168,11 @@ static int run_platform_tests(int test_num, char *test_num_str)
 
         case U_TEST_DNS:
             return test_dns();
+
+#ifdef FEATURE_GZIP_REQUESTS
+        case U_TEST_ZIP:
+            return test_zip();
+#endif // FEATURE_GZIP_REQUESTS
 
         default:
             printf("There is no test %d\n", test_num);
