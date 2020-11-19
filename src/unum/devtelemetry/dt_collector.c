@@ -36,8 +36,21 @@ static PKT_PROC_ENTRY_t collector_all_ip = {
     0,
     {},
     NULL, ip_pkt_rcv_cb, stats_ready_cb, NULL,
-    "Captures IP packets for device and connection tracking"
+    "Captures IP packets for device and connection tracking, "
+    "finalizes devices telemetery and stats collection"
 };
+
+#ifdef FEATURE_FESTATS_ONLY
+// When festats_only feature flag is enabled, the packets from tpcap shouldn't
+// be used for connections tracking. However, everything else including
+// collecting and reporting various statistics at the end of the capturing
+// interval should continue working as before.
+static PKT_PROC_ENTRY_t collector_stats_cb_only = {
+    0, {}, 0, {}, 0, {},  // Don't match any packets
+    NULL, NULL, stats_ready_cb, NULL,
+    "finalizes devices telemetery and stats collection"
+};
+#endif // FEATURE_FESTATS_ONLY
 
 // Capturing interval counter. Incremented at the end of the
 // capturing when stats are reported to the devtelemetry subsystem.
@@ -759,6 +772,13 @@ int dt_main_collector_init(void)
 
     // Add the collector main packet processing entry.
     pe = &collector_all_ip;
+
+#ifdef FEATURE_FESTATS_ONLY
+    // For platforms having festats_only feature flag enabled override
+    // collector_all_ip with collector_stats_cb_only
+    pe = &collector_stats_cb_only;
+#endif // FEATURE_FESTATS_ONLY
+
     if(tpcap_add_proc_entry(pe) != 0)
     {
         log("%s: tpcap_add_proc_entry() failed for: %s\n",
