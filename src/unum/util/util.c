@@ -85,37 +85,71 @@ void util_factory_reset(void)
     log("%s: not supported on the platform\n", __func__);
 }
 
-// Populate auth_info_key. This is a unique identifier (typically
-// device serial number) that isn't as easy to guess as the MAC
-// address. It can provide extra security during initial onboardning
-// for the platforms that support it.
-#ifdef AUTH_INFO_GET_CMD
-void util_get_auth_info_key(char *auth_info_key, int max_key_len)
+// Get the command output and trim by removing trailing '\n' and '\r'
+// characters
+// cmd - Command to execute
+// output - Command output buffer
+// max_out_len - Maximum lenghth or output buffer
+int util_get_cmd_output_and_trim(char *cmd, char *output,
+                            int max_out_len)
 {
-    char *get_auth_info_key_cmd = AUTH_INFO_GET_CMD;
     int pstatus;
+    int ret = 0;
 
-    if(util_get_cmd_output(get_auth_info_key_cmd,
-                           auth_info_key, max_key_len, &pstatus) > 0)
+    if(util_get_cmd_output(cmd,
+                           output, max_out_len, &pstatus) > 0)
     {
         if(pstatus == 0) {
             // Chop CR/LF
             int len;
-            while((len = strlen(auth_info_key)) > 0 &&
-                  (auth_info_key[len - 1] == '\r' ||
-                   auth_info_key[len - 1] == '\n'))
+            while((len = strlen(output)) > 0 &&
+                  (output[len - 1] == '\r' ||
+                   output[len - 1] == '\n'))
             {
-                auth_info_key[len - 1] = 0;
+                output[len - 1] = 0;
             }
         } else {
-            // Some error while getting the auth info key, zero it
-            memset(auth_info_key, 0, max_key_len);
-            log("%s: Failed to get the auth info key\n", __func__);
+            // Some error while getting the output, zero it
+            memset(output, 0, max_out_len);
+            ret = -1;
         }
-        return;
+    }
+    return ret;
+}
+
+// Populate auth_info_key. This is an unique identifier 
+// that isn't as easy to guess as the MAC
+// address. It can provide extra security during initial onboardning
+// for the platforms that support it.
+// auth_info_key - Auth Info key will be saved into this buffer if it exists
+// max_key_len - Max length of auth_info_key buffer
+#ifdef AUTH_INFO_GET_CMD
+void util_get_auth_info_key(char *auth_info_key, int max_key_len)
+{
+    char *get_auth_info_key_cmd = AUTH_INFO_GET_CMD;
+    if (util_get_cmd_output_and_trim(get_auth_info_key_cmd, auth_info_key,
+                                    max_key_len) < 0) {
+        log("%s: Failed to get the auth info key\n", __func__);
     }
 }
 #endif // AUTH_INFO_GET_CMD
+
+// Populate Serial Number. This is an unique identifier 
+// that isn't as easy to guess as the MAC
+// address. It can provide extra security during initial onboardning
+// for the platforms that support it.
+// serail_num - Serial number will be saved into this buffer if it exists
+// max_sn_len - Max length of serial_num buffer
+#ifdef SERIAL_NUM_GET_CMD
+void util_get_serial_num(char *serial_num, int max_sn_len)
+{
+    char *get_serial_num_cmd = SERIAL_NUM_GET_CMD;
+    if (util_get_cmd_output_and_trim(get_serial_num_cmd, serial_num,
+                                    max_sn_len) < 0) {
+        log("%s: Failed to get Serial Number\n", __func__);
+    }
+}
+#endif // SERIAL_NUM_GET_CMD
 
 // Return uptime in specified fractions of the second (rounded to the low)
 // Note: it's typically (but not necessarily) the same as uptime

@@ -61,6 +61,7 @@ static char *router_activate_json(char *my_mac)
     JSON_KEYVAL_TPL_t *crashinfo_tpl_ptr = NULL;
     int add_crash_info = FALSE;
     char *auth_info_key_ptr = NULL;
+    char *serial_num_ptr = NULL;
     char *mac_list_ptr = NULL;
     char wan_mac_buf[MAC_ADDRSTRLEN];
     char *wan_mac = NULL;
@@ -78,6 +79,20 @@ static char *router_activate_json(char *my_mac)
         }
     }
 #endif // AUTH_INFO_KEY_LEN
+    // Check if serial number exists
+#ifdef SERIAL_NUM_LEN
+    char serial_num[SERIAL_NUM_LEN];
+
+    // Get Serial Number if platform has an API for that
+    if(util_get_serial_num != NULL)
+    {
+        memset(serial_num, 0, sizeof(serial_num));
+        util_get_serial_num(serial_num, SERIAL_NUM_LEN - 1);
+        if(strlen(serial_num) != 0) {
+            serial_num_ptr = serial_num;
+        }
+    }
+#endif // SERIAL_NUM_LEN
 
 #ifdef MAX_MAC_LIST_LEN
     char mac_list[MAX_MAC_LIST_LEN];
@@ -185,6 +200,7 @@ static char *router_activate_json(char *my_mac)
       { "start_reason",    {.type = JSON_VAL_STR, {.s = start_reason}}},
       { "crash_info",      {.type = JSON_VAL_OBJ, {.o = crashinfo_tpl_ptr}}},
       { "auth_info_key",   {.type = JSON_VAL_STR, {.s = auth_info_key_ptr}}},
+      { "serial_number",   {.type = JSON_VAL_STR, {.s = serial_num_ptr}}},
       { "mac_list",        {.type = JSON_VAL_STR, {.s = mac_list_ptr}}},
       { "wan_mac_address", {.type = JSON_VAL_STR, {.s = wan_mac}}},
 #ifdef DEVELOPER_BUILD
