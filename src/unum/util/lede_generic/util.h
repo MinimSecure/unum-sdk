@@ -44,6 +44,10 @@
 // ToDo: If needed we need to have separate lengths for each LEDE platform
 #define AUTH_INFO_KEY_LEN 32
 
+#define SERIAL_NUM_GET_CMD "/sbin/get_serial_num.sh"
+// ToDo: If needed we need to have separate lengths for each LEDE platform
+#define SERIAL_NUM_LEN 32
+
 // Define for the platforms where the agent version is used
 // as the firmware version # for identification and upgrade
 // purposes. The platforms that do not use agent version here

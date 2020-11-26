@@ -174,6 +174,9 @@ int __attribute__((weak)) util_platform_factory_reset(void);
 // For now (03/17/19), for all other devices, auth_info_key is not updated
 void __attribute__((weak)) util_get_auth_info_key(char *auth_info_key, int max_key_len);
 
+// Populate Serial Number if the device supports
+void __attribute__((weak)) util_get_serial_num(char *serial_num, int max_sn_len);
+
 // Get all the MAC Addresses on the router
 int  __attribute__((weak)) util_get_mac_list(char *mac_list, int max_len);
 
