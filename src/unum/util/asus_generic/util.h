@@ -31,7 +31,9 @@
 // the kernel reboot syscall will be used)
 #define REBOOT_CMD "/sbin/reboot"
 
-#define PERSISTENT_FS_DIR_PATH "/jffs/"
+// Rewritable persistent filesystem folder location (for the platfroms
+// that support persistent storage) where to store the agent files
+#define PERSISTENT_FS_DIR_PATH "/jffs"
 
 // Commands to execute to factory reset the router
 // We use util_platform_factory_reset() platform function
