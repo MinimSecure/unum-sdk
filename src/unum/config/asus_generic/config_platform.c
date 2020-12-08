@@ -15,7 +15,7 @@ static char skip_vars[] = "wan0_expires\0login_timestamp\0client_info_tmp\0"
                           "wanduck_start_detect\0login_ip\0login_ip_str\0"
                           "networkmap_fullscan\0reload_svc_radio\0rc_service\0"
                           "link_internet\0wan0_auxstate_t\0rc_service_pid\0"
-                          "wlready\0"
+                          "wlready\0ddns_status\0"
                           "\0";
 
 // Check if string matches any var in skip_vars[] array
