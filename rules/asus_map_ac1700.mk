@@ -74,8 +74,7 @@ TARGET_LDFLAGS_unum := -ldl -lm -lrt \
 GDB_VERSION := gdb-7.11
 TARGET_VARS_gdb := VERSION=$(GDB_VERSION)
 
-TARGET_VARS_unum := MBEDTLS=$(MBEDTLS_VERSION) CURL=$(CURL_VERSION) \
-                    IWINFO=$(IWINFO_VERSION) JANSSON=$(JANSSON_VERSION) 
+TARGET_VARS_unum := IWINFO=$(IWINFO_VERSION) JANSSON=$(JANSSON_VERSION) 
 
 
 # Component dependencies on each other
@@ -109,4 +108,3 @@ files.install:
 	cp -f "$(TARGET_FILES)/scripts/fw_upgrade.sh" "$(TARGET_RFS)/usr/bin/"
 	cp -f "$(TARGET_FILES)/scripts/apply_config.sh" "$(TARGET_RFS)/sbin/"
 	ln -sf /var/provision_info.htm $(TARGET_RFS)/www/provision_info.htm
-

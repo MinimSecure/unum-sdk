@@ -74,8 +74,8 @@ TARGET_LDFLAGS_unum := -ldl -lm -lrt \
 GDB_VERSION := gdb-7.11
 TARGET_VARS_gdb := VERSION=$(GDB_VERSION)
 
-TARGET_VARS_unum := MBEDTLS=$(MBEDTLS_VERSION) CARES=$(C-ARES_VERSION) \
-                    CURL=$(CURL_VERSION) IWINFO=$(IWINFO_VERSION) \
+TARGET_VARS_unum := CARES=$(C-ARES_VERSION) \
+                    IWINFO=$(IWINFO_VERSION) \
                     JANSSON=$(JANSSON_VERSION) 
 
 
