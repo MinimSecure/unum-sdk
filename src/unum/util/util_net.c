@@ -1075,9 +1075,9 @@ typedef struct _FIND_IF_IP {
 } FIND_IF_IP_t;
 
 // Target IP check callback for util_find_if_by_ip(). It returns
-// non-0 value if device IP belong to one of the LAN interface subnets.
-// The util_platform_enum_ifs() then returns the number of times a non-0
-// value was reported by the callback.
+// non-0 value if device IP belongs to one of the LAN interface subnets.
+// The util_enum_ifs() then returns the number of times a non-0 value
+// was reported by the callback.
 static int find_if_ip(char *ifname, void *ptr)
 {
     FIND_IF_IP_t *pd = (FIND_IF_IP_t *)ptr;
@@ -1110,7 +1110,7 @@ int util_find_if_by_ip(IPV4_ADDR_t *ip, char *ifn_buf)
     FIND_IF_IP_t data = { .ip = ip, .ifname = ifn_buf };
 
     // Walk through all our LAN IPs, return error unless exactly 1 match found
-    ret = util_platform_enum_ifs(UTIL_IF_ENUM_RTR_LAN, find_if_ip, &data);
+    ret = util_enum_ifs(UTIL_IF_ENUM_RTR_LAN, find_if_ip, &data);
     if(ret == 1)
     {
         return 0;
@@ -1128,7 +1128,7 @@ int util_find_if_by_ip(IPV4_ADDR_t *ip, char *ifn_buf)
 // specified through the command line or config options.
 // For each interface a caller's callback is invoked until all the interfaces
 // are enumerated.
-// flags - flags indicating which interfaces to enumerate
+// flags - flags controlling behavior
 //        UTIL_IF_ENUM_RTR_LAN - include all IP routing LAN interfaces
 //        UTIL_IF_ENUM_RTR_WAN - include IP routing WAN interface
 //        ... - see util_net.h
@@ -1139,14 +1139,26 @@ int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
 {
     int ret = 0;
     int failed = 0;
+    IF_ENUM_CB_EXT_DATA_t ext_data;
+    int use_ext_data = ((flags & UTIL_IF_ENUM_EXT_DATA) != 0);
+    void *dptr = use_ext_data ? &ext_data : data;
 
     if(0 != (UTIL_IF_ENUM_RTR_LAN & flags)) {
         if(unum_config.lan_ifcount <= 0) {
-            failed += util_platform_enum_ifs(UTIL_IF_ENUM_RTR_LAN, f, data);
+            if(use_ext_data) {
+                memset(&ext_data, 0, sizeof(ext_data));
+                ext_data.user_payload = data;
+            }
+            int no_wan_flags = flags & (~UTIL_IF_ENUM_RTR_WAN);
+            failed += util_platform_enum_ifs(no_wan_flags, f, dptr);
         } else {
             int ii;
             for(ii = 0; ii < unum_config.lan_ifcount; ++ii) {
-                ret = f(unum_config.lan_ifname[ii], data);
+                if(use_ext_data) {
+                    memset(&ext_data, 0, sizeof(ext_data));
+                    ext_data.user_payload = data;
+                }
+                ret = f(unum_config.lan_ifname[ii], dptr);
                 failed += (ret == 0 ? 0 : 1);
             }
         }
@@ -1154,13 +1166,17 @@ int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
 
 #ifndef FEATURE_LAN_ONLY
     // We only support 1 WAN interface.
-    // Note: This might need to be updated to deal with
-    //       PPPoE and VPN-based WAN connections properly
     if(IS_OPM(UNUM_OPM_GW) && 0 != (UTIL_IF_ENUM_RTR_WAN & flags)) {
+        if(use_ext_data) {
+            memset(&ext_data, 0, sizeof(ext_data));
+            ext_data.user_payload = data;
+            ext_data.flags |= IF_ENUM_CB_ED_FLAGS_WAN;
+        }
         if(unum_config.wan_ifcount <= 0) {
-            failed += util_platform_enum_ifs(UTIL_IF_ENUM_RTR_WAN, f, data);
+            int no_lan_flags = flags & (~UTIL_IF_ENUM_RTR_LAN);
+            failed += util_platform_enum_ifs(no_lan_flags, f, dptr);
         } else {
-            ret = f(unum_config.wan_ifname, data);
+            ret = f(unum_config.wan_ifname, dptr);
             failed += (ret == 0 ? 0 : 1);
         }
     }
