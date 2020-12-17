@@ -299,19 +299,30 @@ int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
     // (if exist).
     // Note: TPCAP uses this to rescan interfaces every 30sec, SSDP uses it to
     //       send discoveries, and there might be other uses for this function.
-    if(0 != (UTIL_IF_ENUM_RTR_LAN & flags)) {
+    if(0 != (UTIL_IF_ENUM_RTR_LAN & flags))
+    {
         int ii;
+        struct { char *ifs; int if_type; } if_info[] = {
+            { PLATFORM_GET_MAIN_LAN_NET_DEV(),  IF_ENUM_CB_ED_IFT_PRIMARY },
+            { PLATFORM_GET_GUEST_LAN_NET_DEV(), IF_ENUM_CB_ED_IFT_GUEST   },
+            { PLATFORM_GET_AUX_LAN_NET_DEV(1),  0                         },
+            { PLATFORM_GET_AUX_LAN_NET_DEV(2),  0                         },
+        };
 
-        char *ifs[] = { PLATFORM_GET_MAIN_LAN_NET_DEV(),
-                        PLATFORM_GET_GUEST_LAN_NET_DEV(),
-                        PLATFORM_GET_AUX_LAN_NET_DEV(1),
-                        PLATFORM_GET_AUX_LAN_NET_DEV(2) };
-        for(ii = 0; ii < UTIL_ARRAY_SIZE(ifs) && ifs[ii] != NULL; ++ii) {
-            int ifindex = if_nametoindex(ifs[ii]);
-            if (ifindex > 0) {
-                ret = f(ifs[ii], data);
-                failed += (ret == 0 ? 0 : 1);
+        for(ii = 0;
+            ii < UTIL_ARRAY_SIZE(if_info) && if_info[ii].ifs != NULL;
+            ++ii)
+        {
+            if(if_nametoindex(if_info[ii].ifs) <= 0) {
+                continue;
             }
+            if((flags & UTIL_IF_ENUM_EXT_DATA) != 0) {
+                IF_ENUM_CB_EXT_DATA_t *e_data = (IF_ENUM_CB_EXT_DATA_t *)data;
+                e_data->if_type = if_info[ii].if_type;
+                e_data->flags |= IF_ENUM_CB_ED_FLAGS_IFT;
+            }
+            ret = f(if_info[ii].ifs, data);
+            failed += (ret == 0 ? 0 : 1);
         }
     }
 

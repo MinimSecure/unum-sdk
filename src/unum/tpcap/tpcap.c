@@ -46,9 +46,21 @@ static int tpcap_prep_if_stats(int ii, char *name)
 // Add interface to the tp_ifs array
 // Note: for use in tpcap thread only
 // Returns: 0 - if the interface is added, error code otherwise
-int tpcap_add_if(char *ifname, void *_unused)
+int tpcap_add_if(char *ifname, void *data)
 {
     int ii;
+#ifdef NOT_YET // remove the ifdef/endif when start using if_type
+    IF_ENUM_CB_EXT_DATA_t *e_data = (IF_ENUM_CB_EXT_DATA_t *)data;
+    int if_type = 0;
+
+    // Note: old platforms do not report intrface type bitmap
+    // For the new ones IF_ENUM_CB_ED_IFT_PRIMARY and IF_ENUM_CB_ED_IFT_GUEST
+    // bits allow to identify primary and guest LAN intrfaces. 
+    // See IF_ENUM_CB_EXT_DATA_t in util_net.h for more details.
+    if((e_data->flags & IF_ENUM_CB_ED_FLAGS_IFT) != 0) {
+        if_type = e_data->if_type;
+    }
+#endif // NOT_YET
 
     for(ii = 0; ii < TPCAP_IF_MAX; ii++) {
         if(((tp_ifs[ii].flags & TPCAP_IF_VALID) != 0) &&
@@ -494,7 +506,9 @@ static int discover_and_prep_interfaces(struct pollfd *pfd,
     int ii, ifcount;
 
     // Update the list of interfaces we have to monitor
-    if(util_enum_ifs(UTIL_IF_ENUM_RTR_LAN, tpcap_add_if, NULL) != 0) {
+    if(util_enum_ifs(UTIL_IF_ENUM_RTR_LAN |
+                     UTIL_IF_ENUM_EXT_DATA, tpcap_add_if, NULL) != 0)
+    {
         log("%s: error updating interface list, proceeding anyway\n",
             __func__);
     }

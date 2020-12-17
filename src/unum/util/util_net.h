@@ -154,6 +154,21 @@ typedef struct _UDP_PAYLOAD {
     int len;
 } UDP_PAYLOAD_t;
 
+// Data structure passed to UTIL_IF_ENUM_CB_t callback when interface
+// enumeration function is called with UTIL_IF_ENUM_EXT_DATA flag
+typedef struct _IF_ENUM_CB_EXT_DATA {
+    int flags;          // flags describing the data
+#define IF_ENUM_CB_ED_FLAGS_WAN 0x00000001 // the data is for WAN intrface
+#define IF_ENUM_CB_ED_FLAGS_IFT 0x00000002 // if_type field present
+    void *user_payload; // ptr passed by user to util_enum_ifs()
+    int if_type;        // IF_ENUM_CB_ED_IFT_... type bitmap
+#define IF_ENUM_CB_ED_IFT_PRIMARY 0x00000001 // primary LAN interface
+#define IF_ENUM_CB_ED_IFT_GUEST   0x00000002 // guest LAN interface
+//#define IF_ENUM_CB_ED_IFT_BRIDGE  0x00000004 // bridge interface
+//#define IF_ENUM_CB_ED_IFT_ENET    0x00000008 // Ethernet interface
+//#define IF_ENUM_CB_ED_IFT_DOCSIS  0x00000008 // DOCSIS interface
+} IF_ENUM_CB_EXT_DATA_t;
+
 // Checks if the interface is administratively UP
 // ifname - the interface name
 // Returns: TRUE - interface is up, FALSE - down or error
@@ -167,11 +182,12 @@ int util_net_dev_link_is_up(char *ifname);
 // Enumerite the list of the IP interfaces. For each interface a caller's
 // callback is invoked until all the interfaces are enumerated.
 // Returns: 0 - success, number of times the callback has failed
-// flags - flags indicating which interfaces to enumerate
+// flags - flags controlling the enumerator behavior
 // f - callback function to invoke per interface
 // payload - payload to pass to the callback function
-#define UTIL_IF_ENUM_RTR_LAN 0x00000001 // include all IP routing LAN interfaces
-#define UTIL_IF_ENUM_RTR_WAN 0x00000002 // include IP routing WAN interface
+#define UTIL_IF_ENUM_RTR_LAN  0x00000001 // all IP routing LAN interfaces
+#define UTIL_IF_ENUM_RTR_WAN  0x00000002 // IP routing WAN interface
+#define UTIL_IF_ENUM_EXT_DATA 0x00000004 // see IF_ENUM_CB_EXT_DATA_t above
 typedef int (*UTIL_IF_ENUM_CB_t)(char *, void *); // Callback function type
 int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *payload);
 
@@ -180,7 +196,15 @@ int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *payload);
 // unless they are explicitly specified on the command line. If the
 // platform does not provide its own implementation the common stub
 // that uses required PLATFORM_GET_MAIN_WAN_NET_DEV() and
-// PLATFORM_GET_MAIN_LAN_NET_DEV() macros.
+// PLATFORM_GET_MAIN_LAN_NET_DEV() macros is called.
+// Note: When util_enum_ifs() is called with UTIL_IF_ENUM_EXT_DATA
+//       flag it pre-fills IF_ENUM_CB_EXT_DATA_t structure and passes
+//       its pointer as the payload. See the util_enum_ifs() to
+//       find out what is pre-filled. The old platforms that do not
+//       need UTIL_IF_ENUM_EXT_DATA can continue to act as simple
+//       pass-through for the payload pointer. The new platforms should
+//       complete filling in the IF_ENUM_CB_EXT_DATA_t structure before
+//       passing it over to the interface enumerator callback.
 int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *payload);
 
 // Get the MAC address (binary) of a network device.

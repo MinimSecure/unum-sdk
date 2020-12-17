@@ -27,14 +27,28 @@ int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *data)
     int ret = 0;
     int failed = 0;
 
-    // Asus 1300 has just a primary Interface unlike 1750
+    // Asus 1300 and 1700 have just the primary interface, all the
+    // guest access SSIDs traffic is isolated using iptable rules
     if(0 != (UTIL_IF_ENUM_RTR_LAN & flags))
     {
         int ii;
-        char *ifs[] = { PLATFORM_GET_MAIN_LAN_NET_DEV() };
+        struct { char *ifs; int if_type; } if_info[] = {
+            { PLATFORM_GET_MAIN_LAN_NET_DEV(), IF_ENUM_CB_ED_IFT_PRIMARY },
+        };
 
-        for(ii = 0; ii < UTIL_ARRAY_SIZE(ifs) && ifs[ii] != NULL; ++ii) {
-            ret = f(ifs[ii], data);
+        for(ii = 0;
+            ii < UTIL_ARRAY_SIZE(if_info) && if_info[ii].ifs != NULL;
+            ++ii)
+        {
+            if(if_nametoindex(if_info[ii].ifs) <= 0) {
+                continue;
+            }
+            if((flags & UTIL_IF_ENUM_EXT_DATA) != 0) {
+                IF_ENUM_CB_EXT_DATA_t *e_data = (IF_ENUM_CB_EXT_DATA_t *)data;
+                e_data->if_type = if_info[ii].if_type;
+                e_data->flags |= IF_ENUM_CB_ED_FLAGS_IFT;
+            }
+            ret = f(if_info[ii].ifs, data);
             failed += (ret == 0 ? 0 : 1);
         }
     }
