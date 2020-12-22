@@ -49,7 +49,6 @@ static int tpcap_prep_if_stats(int ii, char *name)
 int tpcap_add_if(char *ifname, void *data)
 {
     int ii;
-#ifdef NOT_YET // remove the ifdef/endif when start using if_type
     IF_ENUM_CB_EXT_DATA_t *e_data = (IF_ENUM_CB_EXT_DATA_t *)data;
     int if_type = 0;
 
@@ -60,12 +59,13 @@ int tpcap_add_if(char *ifname, void *data)
     if((e_data->flags & IF_ENUM_CB_ED_FLAGS_IFT) != 0) {
         if_type = e_data->if_type;
     }
-#endif // NOT_YET
 
     for(ii = 0; ii < TPCAP_IF_MAX; ii++) {
         if(((tp_ifs[ii].flags & TPCAP_IF_VALID) != 0) &&
            (strcmp(tp_ifs[ii].name, ifname) == 0))
         {
+            // Update interface type
+            tp_ifs[ii].if_type = if_type;
             // The interface is already listed, but it might have been
             // removed and added again, so verify its ifindex is the same.
             // If ifindex is not the same consider it no longer valid.
