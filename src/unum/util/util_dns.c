@@ -44,11 +44,11 @@ static char *dns_servers[] = { "8.8.8.8", "1.1.1.1", NULL };
 static void util_get_txt_record_static(char *txt, int len)
 {
     strncpy(txt,
-            "api:api.minim.co:80:34.207.26.129;"
-            "api:api.minim.co:443:34.207.26.129;"
-            "my:my.minim.co:443:34.207.26.129;"
-            "releases:releases.minim.co:443:34.207.26.129;"
-            "provision:provision.minim.co:443:34.207.26.129;",
+            "api:api.minim.co:80:20.190.254.217;"
+            "api:api.minim.co:443:20.190.254.217;"
+            "my:my.minim.co:443:20.190.254.217;"
+            "releases:releases.minim.co:443:20.190.254.217;"
+            "provision:provision.minim.co:443:20.190.254.217;",
             len);
     txt[len - 1] = '\0';
 }
