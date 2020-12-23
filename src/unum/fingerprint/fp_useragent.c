@@ -152,6 +152,20 @@ static void useragent_rcv_cb(TPCAP_IF_t *tpif,
                        tcphdr->doff * 4;
     char *tcp = ((void *)iph) + sizeof(struct iphdr) + (tcphdr->doff * 4);
 
+    if(IS_OPM(UNUM_OPM_AP)) {
+#ifdef FEATURE_GUEST_NAT
+        // The guest_nat feature is used for the devices that double-NAT
+        // guest traffic when in AP mode.
+        // The agent has to watch the traffic on the AP guest interfaces
+        // to know which device it originates from.
+        if((tpif->if_type & IF_ENUM_CB_ED_IFT_GUEST) == 0)
+#endif // FEATURE_GUEST_NAT
+        {
+
+            return;
+        }
+    }
+
     // Calculate Payload Size (includes offset in tcp header, which could be wrong)
     int payload_size = thdr->tp_snaplen - header_total;
 
@@ -300,6 +314,12 @@ int fp_useragent_init(void)
 {
     PKT_PROC_ENTRY_t *pe;
 
+#if !defined(FEATURE_LAN_ONLY) && !defined(FEATURE_GUEST_NAT)
+    // No AP mode
+    if(IS_OPM(UNUM_OPM_AP)) {
+        return 0;
+    }
+#endif // !FEATURE_LAN_ONLY && !FEATURE_GUEST_NAT
     // Allocate memory for the UserAgent info table (never freed).
     useragent_tbl = UTIL_CALLOC(FP_MAX_DEV, sizeof(*useragent_tbl));
     if(!useragent_tbl) {

@@ -204,6 +204,20 @@ static void mdns_rcv_cb(TPCAP_IF_t *tpif,
   struct udphdr *udph = ((void *)iph) + sizeof(struct iphdr);
   struct mdns_rsp *dnsh = ((void *)udph) + sizeof(struct udphdr);
 
+    if(IS_OPM(UNUM_OPM_AP)) {
+#ifdef FEATURE_GUEST_NAT
+        // The guest_nat feature is used for the devices that double-NAT
+        // guest traffic when in AP mode.
+        // The agent has to watch the traffic on the AP guest interfaces
+        // to know which device it originates from.
+        if((tpif->if_type & IF_ENUM_CB_ED_IFT_GUEST) == 0)
+#endif // FEATURE_GUEST_NAT
+        {
+
+            return;
+        }
+    }
+
   // We are guaranteed to have the IP header, but have to keep checking
   // the mDNS data being examined is actually captured.
   int remains = thdr->tp_snaplen;

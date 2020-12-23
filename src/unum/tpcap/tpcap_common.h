@@ -41,6 +41,8 @@ typedef struct _TPCAP_IF {
 #define TPCAP_IF_VALID    0x0001 // intrface info is populated
 #define TPCAP_IF_FD_READY 0x0002 // descriptor (fd) ready for capturing
     int flags; // interface flags as described above
+    int if_type; // type of the interface, refer to if_type from
+                 // IF_ENUM_CB_EXT_DATA_t
     char name[IFNAMSIZ];  // interface name
     unsigned char mac[6]; // interface MAC address
     DEV_IP_CFG_t ipcfg;   // IP configuration of the device
