@@ -206,8 +206,10 @@ static void mdns_rcv_cb(TPCAP_IF_t *tpif,
 
     if(IS_OPM(UNUM_OPM_AP)) {
 #ifdef FEATURE_GUEST_NAT
-        // We are interested in packets only from guest network
-        // Return if it is not a guest network
+        // The guest_nat feature is used for the devices that double-NAT
+        // guest traffic when in AP mode.
+        // The agent has to watch the traffic on the AP guest interfaces
+        // to know which device it originates from.
         if((tpif->if_type & IF_ENUM_CB_ED_IFT_GUEST) == 0)
 #endif // FEATURE_GUEST_NAT
         {

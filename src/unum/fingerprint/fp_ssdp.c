@@ -163,6 +163,20 @@ static void ssdp_rsp_rcv_cb(TPCAP_IF_t *tpif,
     struct udphdr *udph = ((void *)iph) + sizeof(struct iphdr);
     char *ptr = ((void *)udph) + sizeof(struct udphdr);
 
+    if(IS_OPM(UNUM_OPM_AP)) {
+#ifdef FEATURE_GUEST_NAT
+        // The guest_nat feature is used for the devices that double-NAT
+        // guest traffic when in AP mode.
+        // The agent has to watch the traffic on the AP guest interfaces
+        // to know which device it originates from.
+        if((tpif->if_type & IF_ENUM_CB_ED_IFT_GUEST) == 0)
+#endif // FEATURE_GUEST_NAT
+        {
+
+            return;
+        }
+    }
+
     // We are guaranteed to have the IP & UDP headers, the SSDP data
     // is the only packet payload. Make sure we have enough space for
     // at least "HTTP/1.1 200 OK\r\n<PAYLOAD>\r\n\r\n" (22 characters)
@@ -395,13 +409,13 @@ void cmd_ssdp_discovery(void)
 // Returns: 0 - if successful
 int fp_ssdp_init(void)
 {
-#ifndef FEATURE_LAN_ONLY
+#if !defined(FEATURE_LAN_ONLY) && !defined(FEATURE_GUEST_NAT)
     // We do not do SSDP discovery in the AP operation mode (i.e. gateway
     // firmware in the AP mode), but do it in the standalone AP firmware
     if(IS_OPM(UNUM_OPM_AP)) {
         return 0;
     }
-#endif // !FEATURE_LAN_ONLY
+#endif // !FEATURE_LAN_ONLY && !FEATURE_GUEST_NAT
 
     // Allocate memory for the SSDP info table (never freed).
     // The memory for each element is allocated when required

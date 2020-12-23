@@ -343,6 +343,10 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 #ifdef FEATURE_GUEST_NAT
         // We are interested in packets only from guest network
         // Return if it is not a guest network
+        // The guest_nat feature is used for the devices that double-NAT
+        // guest traffic when in AP mode.
+        // The agent has to watch the traffic on the AP guest interfaces
+        // to know which device it originates from.
         if((tpif->if_type & IF_ENUM_CB_ED_IFT_GUEST) == 0)
 #endif // FEATURE_GUEST_NAT
         {
@@ -822,10 +826,12 @@ int devtelemetry_init(int level)
         // Unless it is a standalone AP device firmware we do not do device
         // telemetry in the AP operation mode (i.e. gateway firmware in the
         // AP mode).
+        // But when guest nat is enabled, we need device telemetry in AP mode
+        // too as the guest network is in a separate network.
         if(IS_OPM(UNUM_OPM_AP)) {
             return 0;
         }
-#endif // !FEATURE_LAN_ONLY
+#endif // !FEATURE_LAN_ONLY && !FEATURE_GUEST_NAT
         // Initialize the device info collector
         if(dt_main_collector_init() != 0) {
             return -1;
