@@ -25,5 +25,8 @@ LDFLAGS += -liwinfo
 # Zlib
 LDFLAGS += -lz
 
+# Netlink Library
+LDFLAGS += -lnl-tiny
+
 # Add hardware ID this LEDE build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
