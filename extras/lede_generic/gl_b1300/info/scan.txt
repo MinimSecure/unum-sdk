@@ -5,14 +5,22 @@ wireless_do_scan_report: JSON for <https://api.minim.co/v3/unums/e4:95:6e:45:15:
       "name": "phy1",
       "scanlist": [
         {
-          "bssid": "94:fb:a7:6a:ba:2c",
-          "ssid": "53616970726979615f3547",
-          "chan": 36,
-          "rssi": -87,
+          "bssid": "94:fb:a7:6a:ba:2c",        // BSSID of the BSS
+          "ssid": "53616970726979615f3547",    // SSID of the BSS
+          "chan": 36,                          // Channel (for wider than 20MHz channels
+                                               // in 5GHz band it's the starting one)
+          "rssi": -87,                         // Signal strength
           "extras": {
-            "chanspec": "42",
-            "ch_width": "80",
-            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK"
+            "chanspec": "42",                  // Primary channel (for 802.11n 40MHz wide
+                                               // in 2.4GHz band the suffix 'l' or 'u'
+                                               // indicates if the extended channel is
+                                               // above or below the primary)
+            "ch_width": "80",                  // Channel width (can be '80+80' for 802.11ac
+                                               // in which case 'chanspec' also shows 'X+Y')
+            "encryption": "Group:CCMP Pairwise:CCMP Auth:PSK" // Authentication and encryption
+                                                              // methods supported (see examples
+                                                              // and the code for possible
+                                                              // values)
           }
         },
         {
