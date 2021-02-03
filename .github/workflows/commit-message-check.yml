@@ -1,0 +1,36 @@
+name: 'Commit Message Check'
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+jobs:
+  check-commit-message:
+    name: Check Commit Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Commit Message Format 
+        uses: violetatrium/commit-message-checker@v1
+        with:
+          pattern: '^[a-z0-9_-]+:[^\n]+(|\n\n[^\n]+[^]+)$'
+          flags: ''
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+          error: 'Your first line has to specify subsytem in lowercase followed by ": ", e.g. "wireless: ...".
+                  If there are more lines they must be separated from the first by an empty line.'
+      - name: Check Summary Line Length
+        uses: violetatrium/commit-message-checker@v1
+        with:
+          pattern: '^.{0,74}$'
+          flags: 'gm'
+          error: 'The maximum first/summary line length of 74 characters is exceeded.'
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
