@@ -548,14 +548,17 @@ static void wireless(THRD_PARAM_t *p)
             wireless_do_radio_telemetry();
         }
 
-        // Check if scan has been disabled
-        if(unum_config.wireless_scan_period == 0) {
-            continue;
-        }
         // Check if it is time to do scan (but only unless a report already
         // pending)
         int force_scan =
             __sync_bool_compare_and_swap(&force_neighborhood_scan, TRUE, FALSE);
+        // Check if scan has been disabled
+        // scan is not forced
+        // and scan is not already triggered
+        if(do_scan_report_at == 0xFFFFFFFF && !force_scan &&
+            unum_config.wireless_scan_period == 0) {
+            continue;
+        }
         // Scan only if not waiting for report and it is time to (or forced)
         if(do_scan_report_at == 0xFFFFFFFF &&
            (do_scan_at < cur_t || force_scan))
