@@ -26,16 +26,17 @@ Additional variables that can be specified on the command line:
 The hardware kind/model files can be stored within the open source repository
 or separately. Typically the approach of storing them separately could be taken
 by the 3rd parties integrating Minim agent into their firmware on their own.
-The development can be started by adding the harware specific files to the open
-source repo, then later the fles can be pulled into an external location using
-the "./mk_hwtype.sh -X &lt;path&gt;" command and subsequently referred to during the
-build by "ADD_TARGET=&lt;path&gt;" make argument.
+The development can be started by adding the hardware specific files to the open
+source repo (for convenience), then later the files can be exported to an external
+location using the "./mk_hwtype.sh -X &lt;path&gt; &lt;model&gt;" command. When
+building for the hardware kind which files reside in a separate location run
+make with the "ADD_TARGET=&lt;path&gt;" argument.
 
 You might have to make sure your system meets all the requrements
 necessary for building for a specific device model/target. Most likely
 the precompiled toolchain will have some requirements. Some components
 might depend on the specific make or autotools version. The README files
-should list the requirements.
+should list those requirements.
 
 ## MacOS Users:
 If running from a Mac through Vagrant, make sure this repo
@@ -84,8 +85,8 @@ The officail support for 3rd party integrations is TBD. If you have
 interest please contact Minim for details.
 
 The amount of work for adding a new hardware type varies significantly.
-If the platform is supported through OpenWRT/LEDE then follow the
-instructions in OpenWRT/LEDE repository here:
+If the platform is supported through OpenWRT/LEDE then start by following
+the instructions in OpenWRT/LEDE repository here:
 https://github.com/violetatrium/lede/blob/master/README.txt
 then continue from the step IV in the instructions below.
 
@@ -94,11 +95,11 @@ with the following document describing what we need from the vendor:
 https://docs.google.com/document/d/12AgcU3-53aqWTult7zeA1Iob2EMCH2r1G8eU5hQudXY
 
 When all the software, headers, libraries and other information is available
-come up with the hardware type name following the existing naming conventions.
+come up with the hardware kind/model name following the existing naming conventions.
 Then follow the steps outlined below:
 
 
-### Vendor SDK repository
+### Vendor SDK repository (step I)
 
 1. Create the vendor SDK repository for building the firmware;
 2. Add README file describing the hardware: CPU type, clock speed, RAM size
@@ -106,7 +107,7 @@ Then follow the steps outlined below:
    Make sure to include the firmware building instructions. How long it takes
    to build the firmware. Where to download the toolchains (we store some of
    them in AWS S3 storage).
-3. Change the SDK to allow adding unum tarball files to the firmware rootfs
+3. Change the vendor SDK to allow adding unum tarball files to the firmware rootfs
    (the unum tarball is built here in the unum-sdk repository)
 4. Add the standard build script:
    ./build.sh &lt;HARDWARE_TYPE&gt; [--no-changes | --add &lt;PATH_TO_UNUM_TARBALL&gt;]
@@ -134,7 +135,7 @@ Note: when creating GIT repository for vendor SDK always create the first
       the new version.
 
 
-### Adding the new hardware type to unum-sdk repo
+### Adding the new hardware type to unum-sdk repo (step II)
 
 1. Use script for generating the new hardware type template files:
    ./mk_hwtype.sh [-l] &lt;TARGET_TYPE&gt; &lt;SOURCE_TYPE&gt;
@@ -169,18 +170,18 @@ Note: when creating GIT repository for vendor SDK always create the first
    to export your hardware kind to &lt;path_to_your_unum_folder&gt;. After that
    you can delete it from the open source unum files and do the builds
    by adding "ADD_TARGET=&lt;path_to_your_unum_folder&gt;" make argument. Use
-   "./mk_hwtype.sh -D &lt;hw_kind&gt;" to delete a hardware kind from the open
-   source files tree. For consistency Minim developers should use "unum-v2"
+   "./mk_hwtype.sh -D &lt;hw_kind&gt;" to delete the exported hardware kind from
+   the open source files tree. For consistency Minim developers should use "unum-v2"
    folder in the hardware vendor SDK repo as &lt;path_to_your_unum_folder&gt;.
    The file duplication has to be avoided, therefore the hardware kinds
-   that share the same agent files, but have to be compiled with vendor
-   SDKs in multiple repos should be pulled in into those repos "unum-v2"
-   folders as GIT submodules.
+   that share the same agent files, but have to be compiled with different vendor
+   SDKs in multiple repos should be kept together and pulled in into those repos
+   "unum-v2" folders as GIT submodule.
 6. Make the ./extras/&lt;hw_kind&gt; folder and add there info and tools for
    the new hardware type. You can see the examples of what is useful
    in the open sourced hardware kind subfolders. Typically here you'd save
-   the examples of the configuratin, radio telemetry, the gdb (host) and
-   gdbserver (target) for debugging.
+   the examples of the configuration, radio telemetry, the gdb (host) and
+   gdbserver (target) binaries for debugging.
    When capturing the configuration please provide an example of the
    configuration changes for each parameter configurable through the
    Minim cloud (for example cfg_bef_ssid_change.txt,
@@ -191,7 +192,7 @@ Note: when creating GIT repository for vendor SDK always create the first
    sent to/from cloud and debugging.
 
 
-### Firmware modifications
+### Firmware modifications (step III)
 
 1. Use the section "Firmware Changes Required for Integration" in the document
    https://docs.google.com/document/d/12AgcU3-53aqWTult7zeA1Iob2EMCH2r1G8eU5hQudXY
@@ -199,35 +200,39 @@ Note: when creating GIT repository for vendor SDK always create the first
    sure everything is done.
 
 
-### Adding hardaware type to the cloud, part 1
+### Adding hardaware type to the cloud, part 1 (step IV)
 
 1. Go to https://my.minim.co/admin/hardware_kinds and do step 1 of adding the
    new hardware type as instructed on that web page.
 2. Implement the config file support on the cloud service side for the new
    hardware type.
 3. Add new unum for your development device on the following page:
-   https://my.minim.co/admin/unums or jsut add its MAC address to the inventory
+   https://my.minim.co/admin/unums or just add its MAC address to the inventory
    on the "Minim Prototypes" ISP page.
 4. Enable/activate the new unum, make sure new LAN is created for the device
    and that device can connect and communicate with the cloud service.
 
 
-### Build system
+### Build system (step V)
 
-1. Go to Jenkins build system and set up a build for the new hardware type.
+1. Go to Jenkins build system and set up a build for the new hardware kind.
    Keep the promotion (the firmware upload to cloud disabled for now).
+   If sharing the source code with other hardware kinds make sure all the
+   build jobs ignore commits changing files that are not related to them.
 2. Make sure the build works as expected and is properly versioned.
 3. Enable the firmware promotion step and publish a build to the cloud.
+4. Update the list of the hardware kinds in the OpenSource and BuildKeeper
+   jobs.
 
 
-### Adding hardaware type to the cloud, part 2
+### Adding hardaware type to the cloud, part 2 (step VI)
 
 1. Go to https://my.minim.co/admin/hardware_kinds and do remaining (2 - ...)
    steps for adding the new hardware type support (i.e. add, if necessary, and
    assing to the new hardware kind a command set, e.t.c.).
 
 
-### Testing
+### Testing (step VII)
 
 1. Thoroughly test that all the cloud features work.
 2. Make sure support portal works and that you can access web UI and shell
@@ -236,3 +241,4 @@ Note: when creating GIT repository for vendor SDK always create the first
 4. Add the new hardware type device to the QA setup.
 5. Check crash reports for the new hardware type.
 6. Check that the mobile app works with the new hardware kind.
+
