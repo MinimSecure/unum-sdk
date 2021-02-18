@@ -48,9 +48,12 @@
 // logs. The platform can override those and set its own limits.
 // The platform can also override the whole log_cfg[] if the default categories
 // (big, medium, small) are not sufficient.
-//#define UNUM_LOG_SIZE_BIG_KB 128
-//#define UNUM_LOG_SIZE_MEDIUM_KB 64
-//#define UNUM_LOG_SIZE_SMALL_KB 32
+#undef UNUM_LOG_SIZE_BIG_KB
+#undef UNUM_LOG_SIZE_MEDIUM_KB
+#undef UNUM_LOG_SIZE_SMALL_KB
+#define UNUM_LOG_SIZE_BIG_KB 512
+#define UNUM_LOG_SIZE_MEDIUM_KB 256
+#define UNUM_LOG_SIZE_SMALL_KB 128
 // Maximum extra space for the log file to grow after it exceedes the limit,
 // but before the messsage being written is cut off
 //#define UNUM_LOG_CUT_EXTRA_KB 12

@@ -6,10 +6,10 @@
 // Default log control & configuration data structure.
 // The defaults for all constants used in this structure are defined
 // in log_common.h and can be overridden by the platform. Please refer
-// to the log_common.h for more detail.
-// Note: nhis structure itself can be overwritten in platform specific
+// to the log_common.h for more details.
+// Note: this structure itself can be overwritten in platform specific
 // code (i.e. log_platform.c) to achieve more granualr control.
-LOG_CONFIG_t __attribute__((weak)) log_cfg[] ={
+LOG_CONFIG_t __attribute__((weak)) log_cfg[] = {
 [LOG_DST_STDOUT ] = {LOG_FLAG_STDOUT},
 [LOG_DST_CONSOLE] = {LOG_FLAG_TTY | LOG_FLAG_INIT_MSG,
                      UTIL_MUTEX_INITIALIZER,
@@ -241,7 +241,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
     }
 
     // If no dst or if logging to stdout printf and leave
-    if(!lc) {
+    if(!lc || (lc->flags & LOG_FLAG_STDOUT) != 0) {
         vprintf(str, ap);
         return;
     }
