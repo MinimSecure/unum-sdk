@@ -17,22 +17,22 @@
 #include <sys/utsname.h>
 #include "unum.h"
 
-// Get main WAN interface name, NULL if not yet set
+// Get main WAN interface name, eth1 if not set
 char *util_main_wan_ifname(void)
 {
     if(unum_config.wan_ifcount > 0) {
         return unum_config.wan_ifname;
     }
-    return NULL;
+    return "eth1";
 }
 
-// Get main LAN interface name, NULL if not yet set
+// Get main LAN interface name, eth0 if not set
 char *util_main_lan_ifname(void)
 {
     if(unum_config.lan_ifcount > 0) {
         return unum_config.lan_ifname[0];
     }
-    return NULL;
+    return "eth0";
 }
 
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface

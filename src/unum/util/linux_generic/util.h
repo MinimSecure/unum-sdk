@@ -95,9 +95,9 @@
 // Functions returning main WAN and LAN interface names. The
 // values are static strings captured during init. I.e. if
 // network names are reconfigured the agent should be restarted.
-// Get main WAN interface name, NULL if not yet set
+// Get main WAN interface name, "eth0" if not set
 char *util_main_wan_ifname(void);
-// Get main LAN interface name, NULL if not yet set
+// Get main LAN interface name, "eth1" if not set
 char *util_main_lan_ifname(void);
 
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
