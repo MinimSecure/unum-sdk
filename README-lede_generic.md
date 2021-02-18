@@ -1,8 +1,8 @@
 ## Introduction
 
-The generic LEDE builds use only the "./src/unum" and "./files" subtrees of 
-the repository. The build and install are driven by the package Makefile 
-in the LEDE repo, see under "./local-feeds/minim/unum-v2"
+The generic LEDE/OpenWRT builds use only the "./src/unum" and "./files"
+subtrees of the repository. The build and install are driven by the package
+Makefile in the LEDE repo, see under "./local-feeds/minim/unum-v2"
 
 All the LEDE builds use the MODEL set to "lede_generic", but pass the 
 specific hardware type to make in the "HARDWARE" variable. The type is 
@@ -20,21 +20,21 @@ same.
 
 Following platforms are supported so far.
  - TPLink Archer C7 v2/v4/v5
- - GL - Inet B1300
- - TPLink - WDR3600 V1
+ - GL.iNet B1300
 
-Following are also supported, but "support being phased out".
+Following are also supported, but "support is being phased out".
  - Linksys WRT1900CS
- - GL - Inet AR300M
+ - GL.iNet AR300M
+ - TPLink WDR3600 V1
 
 ## Build
 
- LEDE code with unum-specifc build config files is here:
+ LEDE/OpenWRT code with unum-specifc build config files is here:
  https://github.com/violetatrium/lede
 
- Make sure unum-sdk is accessisble from lede as ../unum-sdk.
+ Make sure unum-sdk is accessisble from the lede repo directory as ../unum-sdk.
 
- Build can be triggered with the following command from lede directory:
+ Build can be started with the following command (in the lede repo directory):
  ./build -d &lt;platform name&gt;
  
  For example to build for TP Link Archer C7 v4,

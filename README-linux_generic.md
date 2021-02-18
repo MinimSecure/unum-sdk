@@ -45,7 +45,7 @@ As a regular user, change to the directory containing the Unum SDK and then
 invoke `make`:
 
 ```bash
-make
+make MODEL=linux_generic
 ```
 
 The resulting tarball is placed into the `out/` directory relative to the
@@ -63,15 +63,15 @@ Enable debug mode to build Unum with verbose logging as well
 as built-in test mode with `UNUM_DEBUG=1`:
 
 ```bash
-make UNUM_DEBUG=1
+make MODEL=linux_generic UNUM_DEBUG=1
 ```
 
 #### Build Model
 
-Use `MODEL=&lt;model_name&gt;` to alter the build model. Defaults to `linux_generic`.
+Use `MODEL=&lt;model_name&gt;` to alter the build model.
 
 ```bash
-make MODEL=linux_generic
+make MODEL=asus_map_ac1300
 ```
 
 #### Bundled extras
