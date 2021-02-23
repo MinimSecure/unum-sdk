@@ -114,6 +114,15 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
                 struct udphdr* udph = ((void *)iph) + sizeof(struct iphdr);
                 printf("  UDP %u -> %u\n", ntohs(udph->source),
                                            ntohs(udph->dest));
+            } else if(iph->protocol == 1) {
+                struct icmphdr* icmp = ((void *)iph) + sizeof(struct iphdr);
+                printf("  ICMP type %u code %u", icmp->type,
+                                                 icmp->code);
+                if(icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY) {
+                    printf(" seq %u\n", ntohs(icmp->un.echo.sequence));
+                } else {
+                    printf("\n");
+                }
             }
         }
         printf("    tp_snaplen : %d\n", thdr->tp_snaplen);
