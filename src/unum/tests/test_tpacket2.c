@@ -258,7 +258,7 @@ int tpcap_test_filters(char *filters_file)
 
     int hook_added[MAX_PKT_PROC_ENTRIES] = {};
     for(;;) {
-        printf("Choose an action (1-%d: add/remove entry, l: list):\n",
+        printf("Choose an action (1-%d: add/remove entry, l: list, e: edit):\n",
                tst_hooks_cnt);
         scanf("%02s", str);
         str[2] = 0;
@@ -289,6 +289,73 @@ int tpcap_test_filters(char *filters_file)
                printf("    Status: %s\n",
                       hook_added[ii] ? "active" : "inactive");
            }
+        } else if(strcasecmp(str, "e") == 0) {
+            printf("Choose an entry to edit (1-%d):\n",
+                   tst_hooks_cnt);
+            scanf("%02s", str);
+            str[2] = 0;
+            ii = 0;
+            sscanf(str, "%d", &ii);
+            --ii;
+            if(ii >= 0 && ii < tst_hooks_cnt) {
+                PKT_PROC_ENTRY_t *pe = &(tst_hooks[ii]);
+                if(pe->flags_eth) {
+                    printf("MAC: " MAC_PRINTF_FMT_TPL "\n",
+                           MAC_PRINTF_ARG_TPL(pe->eth.mac));
+
+                    do {
+                        printf("MAC: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, MAC_PRINTF_FMT_TPL,
+                                   &pe->eth.mac[0], &pe->eth.mac[1],
+                                   &pe->eth.mac[2], &pe->eth.mac[3],
+                                   &pe->eth.mac[4], &pe->eth.mac[5]) != 6);
+                    printf("Ethtype: 0x%04x\n", pe->eth.proto);
+                    do {
+                        printf("Ethtype: 0x");
+                        scanf("%s", str);
+                   } while(sscanf(str, "%04x", &pe->eth.proto) != 1);
+                }
+                if(pe->flags_ip) {
+                    printf("A1: " IP_PRINTF_FMT_TPL "\n",
+                           IP_PRINTF_ARG_TPL(pe->ip.a1.b));
+                    do {
+                        printf("A1: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, IP_PRINTF_FMT_TPL,
+                                   &pe->ip.a1.b[0], &pe->ip.a1.b[1],
+                                   &pe->ip.a1.b[2], &pe->ip.a1.b[3]) != 4);
+                    printf("A2: " IP_PRINTF_FMT_TPL "\n",
+                           IP_PRINTF_ARG_TPL(pe->ip.a2.b));
+                    do {
+                        printf("A2: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, IP_PRINTF_FMT_TPL,
+                                   &pe->ip.a2.b[0], &pe->ip.a2.b[1],
+                                   &pe->ip.a2.b[2], &pe->ip.a2.b[3]) != 4);
+                    printf("Proto: %u\n", pe->ip.proto);
+                    do {
+                        printf("Proto: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, "%u", &pe->ip.proto) != 1);
+                }
+                if(pe->flags_tcpudp) {
+                    printf("P1: %u\n", pe->tcpudp.p1);
+                    do {
+                        printf("P1: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, "%u", &pe->tcpudp.p1) != 1);
+
+                    printf("P2: %u\n", pe->tcpudp.p2);
+                    do {
+                        printf("P2: ");
+                        scanf("%s", str);
+                    } while(sscanf(str, "%u", &pe->tcpudp.p2) != 1);
+                }
+                pe->desc = NULL;
+            } else {
+                printf("Invalid entry\n", ii);
+            }
         } else if(ii >= 0 && ii < tst_hooks_cnt) {
             PKT_PROC_ENTRY_t *pe = &(tst_hooks[ii]);
             if(hook_added[ii] > 0) {
