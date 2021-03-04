@@ -6515,20 +6515,15 @@ static _Bool dns_so_tcp_keep(struct dns_socket *so) {
 } /* dns_so_tcp_keep() */
 
 
-#if defined __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warray-bounds"
-#endif
-
 static int dns_so_tcp_send(struct dns_socket *so) {
 	unsigned char *qsrc;
 	size_t qend;
 	long n;
 
-	so->query->data[-2] = 0xff & (so->query->end >> 8);
-	so->query->data[-1] = 0xff & (so->query->end >> 0);
+	*(so->query->data - 2) = 0xff & (so->query->end >> 8);
+	*(so->query->data - 1) = 0xff & (so->query->end >> 0);
 
-	qsrc = &so->query->data[-2] + so->qout;
+	qsrc = so->query->data - 2 + so->qout;
 	qend = so->query->end + 2;
 
 	while (so->qout < qend) {
@@ -6554,7 +6549,7 @@ static int dns_so_tcp_recv(struct dns_socket *so) {
 	aend = so->alen + 2;
 
 	while (so->apos < aend) {
-		asrc = &so->answer->data[-2];
+		asrc = so->answer->data - 2;
 
 		if (0 > (n = recv(so->tcp, (void *)&asrc[so->apos], aend - so->apos, 0)))
 			return dns_soerr();
@@ -6565,8 +6560,8 @@ static int dns_so_tcp_recv(struct dns_socket *so) {
 		so->stat.tcp.rcvd.bytes += n;
 
 		if (so->alen == 0 && so->apos >= 2) {
-			alen = ((0xff & so->answer->data[-2]) << 8)
-			     | ((0xff & so->answer->data[-1]) << 0);
+			alen = ((0xff & *(so->answer->data - 2)) << 8)
+			     | ((0xff & *(so->answer->data - 1)) << 0);
 
 			if ((error = dns_so_newanswer(so, alen)))
 				return error;
@@ -6581,10 +6576,6 @@ static int dns_so_tcp_recv(struct dns_socket *so) {
 
 	return 0;
 } /* dns_so_tcp_recv() */
-
-#if __clang__
-#pragma clang diagnostic pop
-#endif
 
 
 int dns_so_check(struct dns_socket *so) {
