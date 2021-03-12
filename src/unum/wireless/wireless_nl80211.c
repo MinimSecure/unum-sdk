@@ -910,3 +910,80 @@ int wt_nl80211_get_scan(char *ifname, char *buf)
     wt_nl80211_cleanup();
     return scan_index;
 }
+
+// Callback for country code
+// msg - Netlink message received from WLAN driver
+// arg - Scanlist Buffer
+static int wt_handle_country_code(struct nl_msg *msg, void *arg)
+{
+    struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+    struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+
+    // parse the message
+    nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+                genlmsg_attrlen(gnlh, 0), NULL);
+
+    if (!tb_msg[NL80211_ATTR_WIPHY] && tb_msg[NL80211_ATTR_REG_ALPHA2]) {
+        char *country = nla_data(tb_msg[NL80211_ATTR_REG_ALPHA2]);
+        if (arg) {
+            memcpy(arg, country, 2);
+            ((char *)arg)[2] = 0;
+        } else {
+            log("%s: country code callback arg is NULL\n", __func__);
+        }
+    }
+    return 0;
+}
+
+// Generic nl80211 command function
+// Returns 0 success and error code on failure
+int wt_handle_cmd(int if_index, int (*cb_func)(struct nl_msg *, void *),
+                                    void *cb_arg)
+{
+    struct nl_msg *msg;
+
+    // Allocate the messages and callback handler.
+    msg = nlmsg_alloc();
+    if (!msg) {
+        log("%s: Error while allocating netlink message\n", __func__);
+        return -1;
+    }
+
+    // Issue command to get country code
+    genlmsg_put(msg, 0, 0, driver_id, 0, NLM_F_DUMP, NL80211_CMD_GET_REG, 0);
+    // Interface Index
+    if (if_index > -1) {
+        nla_put_u32(msg, NL80211_ATTR_IFINDEX, if_index);
+    }
+
+    // Send message to the driver
+    int ret = wt_send_message(msg, cb_func, cb_arg,
+                                                NULL);
+    if (ret < 0) {
+        log("%s: Error while sending scan comand to kernel\n", __func__);
+        nlmsg_free(msg);
+        return -2;
+    }
+
+    nlmsg_free(msg);
+    return 0;
+}
+
+// Main function for country code
+// ifname - Interface name
+// Returns - 0 on success and error code on failure
+char* wt_nl80211_get_country(char *ifname)
+{
+    static char cc[32];
+    // Init nl80211 socket
+    int err = wt_nl80211_init();
+
+    if (err != 0) {
+        return NULL;
+    }
+
+    wt_handle_cmd(-1, wt_handle_country_code, cc);
+    // Cleanup before exit
+    wt_nl80211_cleanup();
+    return cc;
+}

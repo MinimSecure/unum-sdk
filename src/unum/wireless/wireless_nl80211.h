@@ -41,4 +41,7 @@ int wt_nl80211_get_scan(char *ifname, char *buf);
 
 // Get the first VAP name
 char* __attribute__((weak)) wt_platform_nl80211_get_vap(char *phyname);
+
+// Get country code
+char* wt_nl80211_get_country(char *ifname);
 #endif

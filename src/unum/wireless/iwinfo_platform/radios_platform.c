@@ -61,8 +61,13 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
         extras_obj[0].val.s = mode;
     }
 
+    // Until we move completely to nl80211 this is workaround
+#ifdef FEATURE_MAC80211_LIBNL
     // Get the country code
+    cc = wt_nl80211_get_country(phyname);
+#else
     cc = wt_iwinfo_get_country(phyname);
+#endif
 
     if(cc == NULL || *cc == 0)
     {

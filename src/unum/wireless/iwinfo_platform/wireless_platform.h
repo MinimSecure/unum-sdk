@@ -8,6 +8,8 @@
 #ifndef _WIRELESS_PLATFORM_H
 #define _WIRELESS_PLATFORM_H
 
+#include "../wireless_nl80211.h"
+
 // Capture the STAs info for an interface
 // Returns: # of STAs - if successful, negative error otherwise
 int wt_rt_get_stas_info(int radio_num, char *ifname);
