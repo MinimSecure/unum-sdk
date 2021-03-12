@@ -8,7 +8,9 @@
 #ifndef _WIRELESS_PLATFORM_H
 #define _WIRELESS_PLATFORM_H
 
+#ifdef FEATURE_MAC80211_LIBNL
 #include "../wireless_nl80211.h"
+#endif
 
 // Capture the STAs info for an interface
 // Returns: # of STAs - if successful, negative error otherwise
