@@ -18,15 +18,25 @@
   *((unsigned char *)(a) + 4), \
   *((unsigned char *)(a) + 5)
 
+// Format string and argument macros for reading MAC addresses
+// with sscanf style functions
+#define MAC_SSCANF_FMT_TPL "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx"
+#define MAC_SSCANF_ARG_TPL(a)  &a[0],&a[1],&a[2],&a[3],&a[4],&a[5]
+
 // Format string and argument macros for printing IP addresses
 // from printf style functions (network byte order is expected)
 // The argument is the pointer to the IP address (32 bit value)
 #define IP_PRINTF_FMT_TPL "%u.%u.%u.%u"
-#define IP_PRINTF_ARG_TPL(a)   \
+#define IP_PRINTF_ARG_TPL(a)	\
   *((unsigned char *)(a)),     \
   *((unsigned char *)(a) + 1), \
   *((unsigned char *)(a) + 2), \
   *((unsigned char *)(a) + 3)
+
+// Format string and argument  macros for reading IP addresses
+// with sscanf style functions
+#define IP_SSCANF_FMT_TPL "%hhu.%hhu.%hhu.%hhu"
+#define IP_SSCANF_ARG_TPL(a)  &a[0],&a[1],&a[2],&a[3]
 
 // Static declaration of a port range
 // _name - name of the PORT_RANGE_MAP_t structure to declare
