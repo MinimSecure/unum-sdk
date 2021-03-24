@@ -49,3 +49,16 @@ function set_mesh_led_state()
 {
 	echo $1 > /sys/class/leds/gl-b1300\:green\:mesh/brightness
 }
+
+function get_b1300_country_code()
+{
+	cc=`dd if=/dev/mtd7 bs=1 skip=$((0x88)) count=2 2>/dev/null`
+	case "$cc" in
+	"US"|"UK"|"ES")
+		echo "$cc"
+	;;
+	*)
+		echo "US"
+	;;
+	esac
+}

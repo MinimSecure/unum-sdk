@@ -7,6 +7,7 @@ source m_functions.sh
 bname=`cat /tmp/sysinfo/board_name`
 case $bname in
 glinet,gl-b1300)
+	cc=$(get_b1300_country_code)
 	mac_suffix=$(get_ipq40xx_mac_suffix)
 	suff=$(get_b1300_serial_num)
 	suff=`echo ${suff: -8}`
@@ -26,6 +27,8 @@ glinet,gl-b1300)
 			set wireless.default_radio${devidx}.key=$key
 			set wireless.default_radio${devidx}.disabled=0
 			set wireless.radio${devidx}.disabled=0
+			set wireless.radio${devidx}.country=$cc
+
 EOF
 	done
 ;;
