@@ -513,6 +513,7 @@ int http_download_test(char *ifname, char *url,
         curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
     }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, speedtest_chunk);
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *)&total_size);
@@ -588,6 +589,7 @@ int http_upload_test(char *ifname, char *url,
         curl_easy_setopt(ch, CURLOPT_INTERFACE, ifname);
     }
     curl_easy_setopt(ch, CURLOPT_URL, url);
+    curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(ch, CURLOPT_READFUNCTION, random_data_reader);

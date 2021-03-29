@@ -449,7 +449,7 @@ static int speedtest_fetch_settings(speedtest_settings *cfg)
     // Send a blocking GET request to the Minim API to get fresh settings.
     http_rsp *rsp = http_get(
         endpoint_settings_url,
-        "Accept: application/json");
+        "Accept: application/json\0");
     if(rsp == NULL || (rsp->code / 100) != 2) {
         log("%s: request error, code %d%s\n",
             __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
