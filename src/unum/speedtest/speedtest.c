@@ -429,6 +429,9 @@ static int speedtest_read_settings(json_t *data_root, speedtest_settings *cfg)
     } else if(endpoint_index < MAX_ENDPOINTS) {
         cfg->endpoints[endpoint_index].domain[0] = '\0';
     }
+    if(ping_endpoint_index < MAX_ENDPOINTS) {
+        cfg->ping_endpoints[ping_endpoint_index].domain[0] = '\0';
+    }
     cfg->online = TRUE;
     return 0;
 }

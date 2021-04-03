@@ -180,11 +180,12 @@ static size_t speedtest_chunk(void *contents, size_t size, size_t nmemb, void *u
 #define HTTP_REQ_TYPE_POST 1
 #define HTTP_REQ_TYPE_PUT  2
 #define HTTP_REQ_TYPE_MASK 0x0000ffff
-#define HTTP_REQ_FLAGS_CAPTURE_HEADERS 0x00010000
-#define HTTP_REQ_FLAGS_NO_RETRIES      0x00020000
-#define HTTP_REQ_FLAGS_SHORT_TIMEOUT   0x00040000
-#define HTTP_REQ_FLAGS_GET_CONNTIME    0x00080000
-#define HTTP_REQ_FLAGS_COMPRESS        0x00100000
+#define HTTP_REQ_FLAGS_CAPTURE_HEADERS   0x00010000
+#define HTTP_REQ_FLAGS_NO_RETRIES        0x00020000
+#define HTTP_REQ_FLAGS_SHORT_TIMEOUT     0x00040000
+#define HTTP_REQ_FLAGS_GET_CONNTIME      0x00080000
+#define HTTP_REQ_FLAGS_COMPRESS          0x00100000
+#define HTTP_REQ_FLAGS_NO_SSL_VERIFYHOST 0x00200000
 static http_rsp *http_req(char *url, char *headers,
                           int type, char *data, int len)
 {
@@ -251,6 +252,9 @@ static http_rsp *http_req(char *url, char *headers,
     }
     if((type & HTTP_REQ_FLAGS_CAPTURE_HEADERS) != 0) {
         curl_easy_setopt(ch, CURLOPT_HEADERDATA, &rsp);
+    }
+    if((type & HTTP_REQ_FLAGS_NO_SSL_VERIFYHOST) != 0) {
+        curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0);
     }
 #ifdef FEATURE_GZIP_REQUESTS
     int cstrlen;
