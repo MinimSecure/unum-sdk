@@ -62,6 +62,8 @@
 #define MAX_DOMAIN_STRING_LEN   64
 #define MAX_PROTOCOL_STIRNG_LEN 32
 
+#define MAX_LATENCY 9999
+
 // Ping Endpoint Struct
 // Contains the domain (or IP), # of samples
 // and then storage of the latency result 
@@ -841,25 +843,87 @@ static void speedtest_upload_worker(THRD_PARAM_t *p)
     speedtest_transfer_worker("upload", http_upload_test, url, p);
 }
 
-// Performs count number of HTTP GETs to the URL and returns
-// the average time or -1 on failure.
-static int speedtest_ping(char *url, int count)
+// Connects to sa on specified port and returns the time
+// it took to connect in milliseconds
+static int get_conn_time(struct sockaddr *sa, short port)
 {
-    int ii;
-    int latency_sum_ms = 0;
+    struct sockaddr_in server;
+    int retval = MAX_LATENCY, sock;
+    unsigned long long before;
+    char dst_addr[INET_ADDRSTRLEN];
+    fd_set fdset;
+    struct timeval tv;
 
-    for(ii = 0; ii < count; ii++) {
-        http_rsp *rsp;
-        rsp = http_get_conn_time(url, NULL);
-        if(rsp == NULL) {
-            log("%s: HTTP GET Failure\n", __func__);
-            return -1;
-        }
-        latency_sum_ms += rsp->time;
-        free_rsp(rsp);
+    inet_ntop(AF_INET,
+              &((struct sockaddr_in *)sa)->sin_addr,
+              dst_addr, INET_ADDRSTRLEN);
+    log_dbg("%s: Destination address: %s\n", __func__, dst_addr);
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        log("%s: Error: Could not create socket!\n", __func__);
+        return retval;
     }
 
-    return latency_sum_ms / count;
+    server.sin_addr.s_addr = inet_addr(dst_addr);
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+
+    if((fcntl(sock, F_SETFL, O_NONBLOCK)) < 0) {
+        log("%s: Error: fctnl G_SETFL failed! %s\n", __func__, strerror(errno));
+        close(sock);
+        return retval;
+    }
+
+    before = util_time(1000);
+    connect(sock, (struct sockaddr *)&server, sizeof(server));
+
+    FD_ZERO(&fdset);
+    FD_SET(sock, &fdset);
+    tv.tv_sec = 3;
+    tv.tv_usec = 0;
+
+    if(select(sock + 1, NULL, &fdset, NULL, &tv) == 1)
+    {
+        int so_error;
+        socklen_t len = sizeof(so_error);
+
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len);
+
+        if(so_error == 0) {
+            retval = util_time(1000) - before;
+        } else {
+            log("%s: Error: Could not connect to server! %d\n", __func__, strerror(so_error));
+        }
+
+    } else {
+        log("%s: Error: Could not connect to server! %s\n", __func__, strerror(errno));
+    }
+
+    close(sock);
+
+    return retval;
+}
+
+// Performs count number of TCP connects to sa on specified port
+// and returns the average time or -1 on failure.
+static int speedtest_ping(struct sockaddr *sa, short port, int count)
+{
+    int ii;
+    int time, retval = MAX_LATENCY;
+
+    for(ii = 0; ii < count; ii++) {
+        time = get_conn_time(sa, port);
+        retval = UTIL_MIN(retval, time);
+
+    }
+
+    if(retval == MAX_LATENCY) {
+        log("%s: Connect Failure\n", __func__);
+        return -1;
+    }
+
+    return retval;
 }
 
 // Measures latency between the candidate speedtest servers and the agent.
@@ -869,7 +933,6 @@ static int speedtest_ping(char *url, int count)
 // or they were unreachable.
 static int speedtest_latency()
 {
-    char url[256];
     int i;
 
     int min_time = INT_MAX;
@@ -894,15 +957,8 @@ static int speedtest_latency()
             continue;
         }
 
-        // Build URL w/ Server IP
-        snprintf(url, sizeof(url),
-                 "%s" IP_PRINTF_FMT_TPL ":%d/speedtest/latency.txt",
-                 settings.endpoints[i].protocol,
-                 IP_PRINTF_ARG_TPL(&((struct sockaddr_in*)&sa)->sin_addr),
-                 settings.endpoints[i].port);
-
         // Send "ping" to Server
-        time = speedtest_ping(url, settings.latency_samples);
+        time = speedtest_ping(&sa, settings.endpoints[i].port, settings.latency_samples);
         log("%s: server <%s> latency was %ims\n", __func__,
             settings.endpoints[i].domain, time);
 
