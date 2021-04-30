@@ -52,13 +52,19 @@ function set_mesh_led_state()
 
 function get_b1300_country_code()
 {
-	cc=`dd if=/dev/mtd7 bs=1 skip=$((0x88)) count=2 2>/dev/null`
-	case "$cc" in
-	"US"|"UK"|"ES")
-		echo "$cc"
-	;;
-	*)
-		echo "US"
-	;;
-	esac
+	prefix=`dd if=/dev/mtd7 bs=1 skip=$((0x80)) count=8 2>/dev/null`
+
+	if [ "$prefix" = "COUNTRY:" ] ; then
+		offset=$((0x88))
+	else
+		offset=$((0x80))
+	fi
+
+	cc=`dd if=/dev/mtd7 bs=1 skip=$offset count=2 2>/dev/null`
+	expr match "$cc" "[A-Z][A-Z]$" > /dev/null
+	if [ $? -eq 0 ] ; then
+		echo $cc
+	else
+		echo US
+	fi
 }
