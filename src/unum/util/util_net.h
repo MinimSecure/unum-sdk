@@ -98,7 +98,7 @@ static inline PORT_RANGE_MAP_t *util_port_range_alloc(unsigned short start,
 };
 
 // Helper inline for port range operations (if val < 0 indicates get operation)
-// It return TRUE, FLASE or aneative value if the port is out of range.
+// It returns TRUE, FLASE or a negative value if the port is out of range.
 static inline int util_port_range_op(PORT_RANGE_MAP_t *r_ptr,
                                      unsigned short port, int val)
 {

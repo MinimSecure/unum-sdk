@@ -32,7 +32,7 @@ typedef pthread_mutex_t UTIL_MUTEX_t;
 
 #else  // Can't find recursive mutex static initializer
 #  error No PTHREAD_RECURSIVE_MUTEX_INITIALIZER... defines!
-#endif //
+#endif // Done with mutex initializers
 
 // Free dynamically initialized mutex
 #define UTIL_MUTEX_DEINIT(_m) (pthread_mutex_destroy((void *)(_m)))
