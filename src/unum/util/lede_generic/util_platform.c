@@ -53,7 +53,7 @@ char *util_base_mac_file_name(void)
         snprintf(fname, sizeof(fname), DEVICEID_FILE);
     } else {
         if(*lan_device == 0) {
-            log("%s: LAN Ethenrnet inteface name is not available, using <%s>\n",
+            log("%s: LAN Ethernet inteface name is not available, using <%s>\n",
                 __func__, device);
         } else {
             device = lan_device;
