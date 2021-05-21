@@ -107,8 +107,11 @@ static int run_platform_tests(int test_num, char *test_num_str)
         case U_TEST_FILE_TO_CFG:
             return test_saveCfg();
         case U_TEST_SPEEDTEST:
-            speedtest_perform();
-            return 0;
+	    {
+                THRD_PARAM_t t_param = {{.cptr_val = "speedtest"}};
+                speedtest_perform(&t_param);
+                return 0;
+	    }
 
         // TPCAP tests were written before shared global test IDs became
         // available. Do not copycat what was done here, it is obsolete.

@@ -54,8 +54,8 @@ static CMD_RULE_t cmd_gen_rules[] = {
       CMD_RULE_M_FULL | CMD_RULE_F_RETRY,
       { .act_data = cmd_update_config }},
     { "speedtest", // runs a speedtest
-      CMD_RULE_M_FULL | CMD_RULE_F_VOID,
-      { .act_void = cmd_speedtest }},
+      CMD_RULE_M_FULL | CMD_RULE_F_CMD,
+      { .act_cmd = cmd_speedtest }},
     { "do_ssdp_discovery", // schedule SSDP discovery
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
       { .act_void = cmd_ssdp_discovery }},
@@ -83,6 +83,9 @@ static CMD_RULE_t cmd_gen_rules[] = {
       CMD_RULE_M_FULL | CMD_RULE_F_VOID,
       { .act_void = create_support_flag_file }},
 #endif // SUPPORT_RUN_MODE
+    { "caf", // run a caf test
+      CMD_RULE_M_SUBSTR | CMD_RULE_F_CMD,
+      { .act_cmd = cmd_speedtest }},
     // CMD_RULE_M_ANY must be the last one
     { "shell_cmd", // generic commands, pass to shell
       CMD_RULE_M_ANY | CMD_RULE_F_DATA,
@@ -349,6 +352,13 @@ static void cmdproc(THRD_PARAM_t *p)
                     __func__, (rule->cmd == NULL ? "No Name" : rule->cmd));
             }
             err = 0;
+        } else if ((rule->flags & CMD_RULE_F_CMD) != 0) {
+            if(rule->act_cmd != NULL) {
+                rule->act_cmd(cmd);
+            } else {
+                log("%s: cmd <%s> is not supported\n",
+                    __func__, (rule->cmd == NULL ? "No Name" : rule->cmd));
+            }
         } else {
             if(rule->act_data != NULL) {
                 err = rule->act_data(cmd, data, len);

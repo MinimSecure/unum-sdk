@@ -32,6 +32,9 @@ typedef int (*CMD_FUNC_DATA_t)(char *, char *, int);
 // assumed to be successful.
 typedef void (*CMD_FUNC_VOID_t)(void);
 
+// Processing function needs command string, always
+// assumed to be successful.
+typedef void (*CMD_FUNC_CMD_t)(char *);
 
 // Structure defining command processing rules
 typedef struct {
@@ -40,6 +43,7 @@ typedef struct {
     union {
         CMD_FUNC_DATA_t   act_data;   // CMD_RULE_F_DATA
         CMD_FUNC_VOID_t   act_void;   // CMD_RULE_F_VOID
+        CMD_FUNC_CMD_t    act_cmd;    // CMD_RULE_F_CMD
     };
 } CMD_RULE_t;
 
@@ -50,6 +54,7 @@ typedef struct {
 #define CMD_RULE_F_VOID    0x00000001 // Processing function is "void f(void)"
 #define CMD_RULE_F_DATA    0x00000002 // Processing function needs payload data
 #define CMD_RULE_F_RETRY   0x00000004 // Keep in queue till successful (forever)
+#define CMD_RULE_F_CMD     0x00000008 // Processing function needs cmd string
 #define CMD_RULE_END       0x10000000 // Empty rule indicating the end of the list
 
 // Pointer to command processing rules array for the platform

@@ -14,8 +14,14 @@
 
 #define SPEEDTEST_PROTO_VER "v2.1"
 
-#define SPEEDTEST_REMOTE_TELEMETRY_PATH "/v3/unums/%s/speed_tests"
-#define SPEEDTEST_REMOTE_SETTINGS_PATH  "/v3/unums/%s/speed_tests/settings"
+#define NORMAL_SPEEDTEST_REMOTE_TELEMETRY_PATH "/v3/unums/%s/speed_tests"
+#define NORMAL_SPEEDTEST_REMOTE_SETTINGS_PATH  "/v3/unums/%s/speed_tests/settings"
+#define CAF_LATENCY_TEST_REMOTE_TELEMETRY_PATH "/v3/caf/unums/%s/caf_latency"
+#define CAF_LATENCY_TEST_REMOTE_SETTINGS_PATH  "/v3/caf/unums/%s/caf_latency/settings"
+#define CAF_DOWNLOAD_TEST_REMOTE_TELEMETRY_PATH "/v3/caf/unums/%s/caf_download"
+#define CAF_DOWNLOAD_TEST_REMOTE_SETTINGS_PATH  "/v3/caf/unums/%s/caf_download/settings"
+#define CAF_UPLOAD_TEST_REMOTE_TELEMETRY_PATH "/v3/caf/unums/%s/caf_upload"
+#define CAF_UPLOAD_TEST_REMOTE_SETTINGS_PATH  "/v3/caf/unums/%s/caf_upload/settings"
 
 #define TEST_JSON \
 "{\
@@ -112,6 +118,8 @@ typedef struct speedtest_settings
     struct pingtest_endpoint ping_endpoints[MAX_ENDPOINTS];
     // Either TRUE if the agent is activated, otherwise FALSE.
     char online;
+    // Optional test_id (used for caf testing)
+    int test_id;
 } speedtest_settings;
 
 // Actual Test Server Parameters
@@ -139,6 +147,9 @@ static int upload_speed_kbps = -1;
 static int latency_ms = -1;
 static int complete = 0;
 
+// Optional test id
+static int test_id = 0;
+
 // Speedtest settings
 static speedtest_settings settings;
 // Contains the state of the currently running speedtest.
@@ -157,11 +168,29 @@ static int speedtest_latency();
 static int speedtest_download();
 static int speedtest_upload();
 // All known tests.
-static speedtest speedtests[] = {
+static speedtest normal_speedtests[] = {
     speedtest_latency,
     speedtest_download,
     speedtest_upload,
 };
+
+// latency test only
+static speedtest latency_speedtests[] = {
+    speedtest_latency,
+};
+
+// download test only
+static speedtest download_speedtests[] = {
+    speedtest_download,
+};
+
+// upload test only
+static speedtest upload_speedtests[] = {
+    speedtest_upload,
+};
+
+// A pointer to the speedtest array for the current test
+static speedtest *speedtests;
 
 #define MIN_LATENCY_SAMPLES 1
 #define MAX_LATENCY_SAMPLES 10
@@ -208,23 +237,66 @@ static speedtest_settings speedtest_default_settings() {
                 .port = DEFAULT_PORT,
             }
         },
-        .online = FALSE
+        .online = FALSE,
+        .test_id = 0
     };
     return cfg;
 }
 
-// Set URLs for the remote Minim API.
-static void set_remote_urls()
+// Set URLs for the remote Minim API and
+// select the correct test array for the type of
+// test requested
+static int config_for_cmd(char * test_cmd)
 {
 
-     util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
-                    endpoint_settings_url, sizeof(endpoint_settings_url),
-                    SPEEDTEST_REMOTE_SETTINGS_PATH, util_device_mac());
+    if(0 == strcmp(test_cmd, "speedtest")) {
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_settings_url, sizeof(endpoint_settings_url),
+                       NORMAL_SPEEDTEST_REMOTE_SETTINGS_PATH, util_device_mac());
 
-     util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
-                    endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
-                    SPEEDTEST_REMOTE_TELEMETRY_PATH, util_device_mac());
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
+                       NORMAL_SPEEDTEST_REMOTE_TELEMETRY_PATH, util_device_mac());
 
+        speedtests = normal_speedtests;
+        return UTIL_ARRAY_SIZE(normal_speedtests);
+    } else if(0 == strcmp(test_cmd, "caf_latency")) {
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_settings_url, sizeof(endpoint_settings_url),
+                       CAF_LATENCY_TEST_REMOTE_SETTINGS_PATH, util_device_mac());
+
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
+                       CAF_LATENCY_TEST_REMOTE_TELEMETRY_PATH, util_device_mac());
+
+        speedtests = latency_speedtests;
+        return UTIL_ARRAY_SIZE(latency_speedtests);
+    } else if(0 == strcmp(test_cmd, "caf_download")) {
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_settings_url, sizeof(endpoint_settings_url),
+                       CAF_DOWNLOAD_TEST_REMOTE_SETTINGS_PATH, util_device_mac());
+
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
+                       CAF_DOWNLOAD_TEST_REMOTE_TELEMETRY_PATH, util_device_mac());
+
+        speedtests = download_speedtests;
+        return UTIL_ARRAY_SIZE(download_speedtests);
+    } else if(0 == strcmp(test_cmd, "caf_upload")) {
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_settings_url, sizeof(endpoint_settings_url),
+                       CAF_UPLOAD_TEST_REMOTE_SETTINGS_PATH, util_device_mac());
+
+        util_build_url(RESOURCE_PROTO_HTTPS, RESOURCE_TYPE_API,
+                       endpoint_telemetry_url, sizeof(endpoint_telemetry_url),
+                       CAF_UPLOAD_TEST_REMOTE_TELEMETRY_PATH, util_device_mac());
+
+        speedtests = upload_speedtests;
+        return UTIL_ARRAY_SIZE(upload_speedtests);
+    }
+
+    // we can't handle this command
+    return -1;
 }
 
 // Populates res with the full download URL.
@@ -259,6 +331,7 @@ static void reset_results()
     latency_ms = -1;
     complete = 0;
     endpoint = NULL;
+    test_id = 0;
 }
 
 // Reset shared static state.
@@ -425,6 +498,12 @@ static int speedtest_read_settings(json_t *data_root, speedtest_settings *cfg)
         // This field is optional
     }
 
+    if((val = json_object_get(data_root, "test_id")) != NULL) {
+        cfg->test_id = json_integer_value(val);
+    } else {
+        // This field is optional
+    }
+
     if(endpoint_index == 0) {
         log("%s: No endpoints found in JSON\n", __func__);
         return -1;
@@ -523,16 +602,27 @@ static void speedtest_print_settings()
             settings.ping_endpoints[ii].domain,
             settings.ping_endpoints[ii].samples);
     }
+
+    if(settings.test_id != 0) {
+        log("%s: test_id(%i)\n", __func__, settings.test_id);
+    }
 }
 
 // Resolve the IP address for the configured speedtest endpoint domain.
 // Not thread safe. Should be called before starting any worker threads.
-static int resolve_server_addr(speedtest_settings *cfg)
+static int resolve_server_addr()
 {
     s_addr_in_ptr = (struct sockaddr_in*)&s_addr;
-    if(endpoint == NULL || endpoint->domain == NULL) {
+
+    // If endpoint is NULL, use the first endpoint we received in the settings
+    if(endpoint == NULL) {
+        endpoint = &settings.endpoints[0];
+    }
+
+    if(endpoint->domain == NULL) {
         return -1;
     }
+
     if(util_get_ip4_addr(endpoint->domain, &s_addr) < 0 ||
          s_addr.sa_family != AF_INET)
     {
@@ -552,6 +642,14 @@ static int speedtest_transfer(const char *descriptor, THRD_FUNC_t workfn,
     reset_counters();
     UTIL_EVENT_RESET(&all_workers_started);
     UTIL_EVENT_RESET(&all_workers_finished);
+
+    // Resolve Server Address for target
+    if(resolve_server_addr() < 0) {
+       // Device is probably completely offline-- can't do anything but abort.
+       log("%s: unable to resolve only remote host %s, aborting\n",
+           __func__, endpoint->domain);
+       return -1;
+    }
 
     // Used as the parameter to the main thread's worker function.
     THRD_PARAM_t t_param = {{.int_val = TRUE}};
@@ -730,6 +828,8 @@ static int speedtest_results_to_json(char *out, int len)
 
 
     JSON_OBJ_TPL_t tpl_data = {
+        { "test_id",
+            {.type = JSON_VAL_PINT, {.pi = test_id != 0 ? &test_id : NULL}}},
         { "download_speed_kbps",
             {.type = JSON_VAL_PINT, {.pi = download >= 0 ? &download : NULL}}},
         { "upload_speed_kbps",
@@ -979,15 +1079,6 @@ static int speedtest_latency()
     // lowest latency server we will use for test
     endpoint = &settings.endpoints[min_time_index];
 
-    // Resolve Server Address for target
-    if(resolve_server_addr(&settings) < 0) {
-       // Device is probably completely offline-- can't do anything but abort.
-       log("%s: unable to resolve remote host %s, aborting\n",
-           __func__, endpoint->domain);
-
-       return -1;
-    }
-
     latency_ms = min_time;
     log("%s: lowest latency server: %s\n", __func__, endpoint->domain);
     return 0;
@@ -1018,14 +1109,20 @@ static int speedtest_upload()
 }
 
 // Performs the whole speed test, blocking until complete.
-void speedtest_perform()
+void speedtest_perform(THRD_PARAM_t *p)
 {
-    int i;
+    int i, num_tests;
+    char * test_cmd = p->cptr_val;
 
-    log("%s: unum speedtest " SPEEDTEST_PROTO_VER "\n", __func__);
+    log("%s: unum speedtest " SPEEDTEST_PROTO_VER " cmd: %s\n", __func__, test_cmd);
 
     reset_results();
-    set_remote_urls();
+
+    num_tests = config_for_cmd(test_cmd);
+    if(num_tests < 0) {
+        log("%s: Cannot handle unknown command %s\n", __func__, test_cmd);
+        return;
+    }
 
     // Fetch the settings from the Minim API, if possible. If this fails, the
     // defaults defined at the top of this file will be used.
@@ -1040,6 +1137,11 @@ void speedtest_perform()
 
     if(settings.online) {
         log("%s: streaming results to Minim API as tests finish\n", __func__);
+    }
+
+    // Set the global test id if one came with the test settings
+    if(settings.test_id != 0) {
+        test_id = settings.test_id;
     }
 
     // Determine the interface to run the test from if running in
@@ -1086,8 +1188,7 @@ void speedtest_perform()
     }
 
     // Iterate over individual tests, running each one at a time.
-    int limit = UTIL_ARRAY_SIZE(speedtests);
-    for(i = 0; i < limit; ++i) {
+    for(i = 0; i < num_tests; ++i) {
         int test_result;
         // Run the test and record result
         test_result = speedtests[i]();
@@ -1126,7 +1227,7 @@ void speedtest_perform()
         // Let other threads have a turn.
         sched_yield();
         // Report intermediate results
-        if(i < limit - 1) {
+        if(i < num_tests - 1) {
             // Stream results except for the last iteration-- the results
             // will be uploaded after the test is over anyway.
             speedtest_upload_results_failfast();
@@ -1151,9 +1252,12 @@ void speedtest_perform()
     log("%s: results: %s\n", __func__, results);
 }
 
-// Starts a speedtest on a new thread.
-void cmd_speedtest()
+// Starts the requested test type on a new thread.
+void cmd_speedtest(char * cmd)
 {
+    THRD_PARAM_t t_param = {{.cptr_val = cmd}};
+
     // Perform the test in a new thread so this command can return immediately.
-    util_start_thrd("speedtest_perform", speedtest_perform, NULL, NULL);
+    util_start_thrd("speedtest_perform", speedtest_perform, &t_param, NULL);
 }
+

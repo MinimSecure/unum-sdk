@@ -5,10 +5,10 @@
 #define _SPEEDTEST_H
 
 // Performs a speedtest, blocking until complete.
-void speedtest_perform();
+void speedtest_perform(THRD_PARAM_t *p);
 
 // Performs a speedtest asynchronously.
 // This function starts the speedtest in a new thread and returns immediately.
-void cmd_speedtest();
+void cmd_speedtest(char *test_cmd);
 
 #endif // _SPEEDTEST_H
