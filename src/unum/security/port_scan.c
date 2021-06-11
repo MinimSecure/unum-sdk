@@ -204,7 +204,7 @@ static int probe_ports(unsigned long scan_delay, unsigned long wait_time,
         unsigned char protocol;
         unsigned short tcp_length;
         struct tcphdr tcp;
-    } __attribute__((packed)) *psh; // pseudoheader for TCP checksum
+    } *psh; // pseudoheader for TCP checksum
     char pkt[(sizeof(struct pseudo_header) + 15) & (~0xf)]; // data buf
 
     // Set pointers to the pseudo and TCP header within the buffer

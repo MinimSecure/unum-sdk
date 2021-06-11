@@ -20,3 +20,5 @@ CPPFLAGS += -I$(UNUM_PATH)/util/$(MODEL)
 
 # Include common portion of the makefile for the subsystem
 include ./util/util_common.mk
+
+OBJECTS += ./util/util_stime.o

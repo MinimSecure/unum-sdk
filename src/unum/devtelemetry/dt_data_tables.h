@@ -89,7 +89,7 @@ struct _DT_DNS_IP {
     struct _DT_DNS_NAME *dns; // DNS name entry pointer for the IP
     unsigned short refs;      // Number of references to this entry
     unsigned short pad;       // Padding, unused
-} __attribute__((packed));
+};
 typedef struct _DT_DNS_IP DT_DNS_IP_t;
 
 // DNS table name entry

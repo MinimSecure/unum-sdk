@@ -34,7 +34,8 @@
 #include "../util_json.h"
 // Crash info
 #include "../util_crashinfo.h"
-
+// stime removed from glibc 2.31 and later
+#include "../util_stime.h"
 
 // This string is the hardware kind. It should be in sync with the server.
 // Usually it comes from the Makefile in the gcc invocation options
