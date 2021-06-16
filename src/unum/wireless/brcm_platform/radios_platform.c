@@ -219,10 +219,30 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     if(!infra) {
         log_dbg("%s: %s is in adhoc mode\n", __func__, ifname);
         return 3;
-	} else if(ap) {
+    } else if(ap) {
         strncpy(vinfo->mode, WIRELESS_OPMODE_AP, sizeof(vinfo->mode));
-	} else {
+    } else {
         strncpy(vinfo->mode, WIRELESS_OPMODE_STA, sizeof(vinfo->mode));
+    }
+
+    // Get operating mode if it is mesh backhaul interface
+    memset(wlcval, 0, WLC_IOCTL_MAXLEN);
+    char *var = "map";
+    ret = wl_iovar_get(ifname, var, wlcval, WLC_IOCTL_MAXLEN);
+    if(ret < 0)
+    {
+        log("%s: Error while getting map on %s\n", __func__, ifname);
+        // Not returning error for now
+    } else {
+        char apmode = ((char *)wlcval)[0];
+        if (apmode == 4) {
+            // Broadcom mesh backhaul station
+            strncpy(vinfo->mode, WIRELESS_OPMODE_MESHSTA_BCM, sizeof(vinfo->mode));
+        } else if (apmode == 2) {
+            // Broadcom mesh backhaul AP
+            strncpy(vinfo->mode, WIRELESS_OPMODE_MESHAP_BCM, sizeof(vinfo->mode));
+        }
+        // We are not handling all other values for now
     }
 
     // Find out if BSS is enabled (for AP mode) up/down (for STA mode) 
@@ -292,7 +312,7 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     };
     // Get values and fill in the txpower arrays
     memset(wlcval, 0, sizeof(txpwr_target_max_t));
-    char *var = "txpwr_target_max";
+    var = "txpwr_target_max";
     ret = wl_iovar_get(ifname, var, wlcval, sizeof(txpwr_target_max_t));
     if(ret < 0)
     {

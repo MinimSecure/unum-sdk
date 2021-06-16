@@ -16,6 +16,10 @@
 // collecting the results (in sec)
 #define WT_SCAN_LIST_WAIT_TIME 15
 
+// Interface operation modes we report to the server
+#define WIRELESS_OPMODE_MESHAP_BCM      "meshap_bcm"  // broadcom mesh ap
+#define WIRELESS_OPMODE_MESHSTA_BCM     "meshsta_bcm" // broadcom mesh sta
+
 // Capture the STAs info for an interface
 // Returns: # of STAs - if successful, negative error otherwise
 int __attribute__((weak)) wt_rt_get_stas_info(int radio_num, char *ifname);
