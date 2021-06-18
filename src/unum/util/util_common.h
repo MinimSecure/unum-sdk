@@ -78,6 +78,14 @@ enum unum_start_reason {
 #define UTIL_REALLOC(_p, _s) realloc((_p), (_s))
 #define UTIL_FREE(_p)        free(_p)
 
+// Macros for handling bitmaps in arrays
+#define UTIL_BIT_GET(_p, _i) (((_p)[((_i) / (sizeof(*(_p)) * 8))] >> \
+                              ((_i) % (sizeof(*(_p)) * 8))) & 1)
+#define UTIL_BIT_SET(_p, _i) ((_p)[((_i) / (sizeof(*(_p)) * 8))] |= \
+                                  (1 << ((_i) % (sizeof(*(_p)) * 8))))
+#define UTIL_BIT_CLR(_p, _i) ((_p)[((_i) / (sizeof(*(_p)) * 8))] &= \
+                                  ~(1 << ((_i) % (sizeof(*(_p)) * 8))))
+
 // MIN/MAX
 #define UTIL_MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define UTIL_MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -323,5 +331,20 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
 // interface if the WAN interface is set for DHCP. If the platform
 // doesn't support this, it should return without doing anything.
 int __attribute__((weak)) platform_release_renew(void);
+
+// Match pattern to a string
+// ptr - pointer to the pattern, the pattern can contain following
+//       special symbols:
+//       '*' - matches 0 or more characters in the target string
+//       '?' - matches exactly one character
+//       '\' - escape (prefix any special pattern symbol to treat it as is)
+// ptr_len - length of the pattern (can be -1 if the pattern is 0-terminated)
+// str - pointer to a string to try matcing to the pattern
+// str_len - length of the string (can be -1 if the string is 0-terminated)
+// Returns: 0 - no match, 1 - match
+// Note: the function uses space on stack proportional to the string length
+//       (approximately 1 bit per character, i.e. 1KB for a 8K long string)
+// Note1: incomplete escape sequence at the end (i.e. "abc\") is ignored
+int util_match_str(char *ptr, int ptr_len, char *str, int str_len);
 
 #endif // _UTIL_COMMON_H

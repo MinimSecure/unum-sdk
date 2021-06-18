@@ -538,6 +538,92 @@ void util_cleanup_str(char *str)
     return;
 }
 
+// Match pattern to a string
+// ptr - pointer to the pattern, the pattern can contain following
+//       special symbols:
+//       '*' - matches 0 or more characters in the target string
+//       '?' - matches exactly one character
+//       '\' - escape (prefix any special pattern symbol to treat it as is)
+// ptr_len - length of the pattern (can be -1 if the pattern is 0-terminated)
+// str - pointer to a string to try matcing to the pattern
+// str_len - length of the string (can be -1 if the string is 0-terminated)
+// Returns: 0 - no match, 1 - match
+// Note: the function uses space on stack proportional to the string length
+//       (approximately 1 bit per character, i.e. 1KB for a 8K long string)
+// Note1: incomplete escape sequence at the end (i.e. "abc\") is ignored
+int util_match_str(char *ptr, int ptr_len, char *str, int str_len)
+{
+    // Set lengths if not provided by the caller
+    if(ptr_len < 0) {
+        ptr_len = strlen(ptr);
+    }
+    if(str_len < 0) {
+        str_len = strlen(str);
+    }
+    // The work area has to fit str_len + 1 bits
+    int res_len = ((str_len + (sizeof(int) * 8)) / (sizeof(int) * 8));
+    int res[res_len];
+    memset(res, 0, sizeof(res));
+
+    // Prepare state vars and work areas
+    UTIL_BIT_SET(res, 0);
+    int esc = FALSE;
+    int p_i, s_i = 0;
+
+    // Loop through pattern (1 - the first letter, 0 - empty string)
+    // Example: ptr = "b*m", str = boom
+    //       b o o m
+    //     0 1 2 3 4
+    //   0 .
+    // b 1   .
+    // * 2   . . . .
+    // m 3         . <- match result
+    for(p_i = 1; p_i <= ptr_len; ++p_i)
+    {
+        int res_prev = 0;
+        char p_c = ptr[p_i - 1];
+        if(!esc)
+        {
+            if(p_c == '\\') { // escape sequence detected
+                esc = TRUE;
+                continue;
+            }
+            if(p_c != '*') { // only '*' matches empty string
+                res_prev = UTIL_BIT_GET(res, 0);
+                UTIL_BIT_CLR(res, 0);
+            }
+        }
+        for(s_i = 1; s_i <= str_len; ++s_i)
+        {
+            int val;
+            char s_c = str[s_i - 1];
+            if(!esc && p_c == '*')
+            {
+                val = UTIL_BIT_GET(res, s_i - 1);
+                val |= UTIL_BIT_GET(res, s_i);
+            }
+            else if(!esc && p_c == '?')
+            {
+                val = res_prev;
+            }
+            else
+            {
+                val = res_prev & (p_c == s_c);
+            }
+            res_prev = UTIL_BIT_GET(res, s_i);
+            if(val) {
+                UTIL_BIT_SET(res, s_i);
+            } else {
+                UTIL_BIT_CLR(res, s_i);
+            }
+        }
+        // we get here only after processing the escaped char, clear flag
+        esc = FALSE;
+    }
+    
+    return UTIL_BIT_GET(res, str_len);
+}
+
 // Configure the agent to the specified operation mode
 // opmode - the operation mode string pointer
 // Returns: 0 - success, negative - error setting the opmode
