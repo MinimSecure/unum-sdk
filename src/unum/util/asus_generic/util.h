@@ -70,8 +70,4 @@
   "%llu%llu%lu%lu%lu%lu%lu%lu%llu%llu%lu%lu%lu%lu%lu%lu"
 #define UTIL_NET_DEV_CNTRS_FORMAT_COUNT 16
 
-// Rewritable persistent filesystem folder location (for the platfroms
-// that support persistent storage) where to store the agent files
-//#define PERSISTENT_FS_DIR_PATH "/etc/unum"
-
 #endif // _UTIL_H
