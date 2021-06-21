@@ -30,6 +30,13 @@ static int cc_cstate_progress;
 // in the process instance
 static int cc_activated = FALSE;
 
+// Flag indicating that a connection status reporting script is
+// present and should be called
+#ifdef CONNCHECK_STATUS_REPORT_SCRIPT
+static int cc_status_script_present = FALSE;
+#endif // CONNCHECK_STATUS_REPORT_SCRIPT
+
+#define CC_STATE_NAME_MAX_LEN 20
 
 // Restart connectivity check and recovery
 void restart_conncheck(void) {
@@ -109,6 +116,15 @@ static char *cstate_name(int cstate)
         default:
             cstate_str = "unknown";
             break;
+    }
+
+    if(strlen(cstate_str) > CC_STATE_NAME_MAX_LEN-1)
+    {
+        log("%s: error, max state string length is %d, %s is too long\n",
+            __func__,
+            CC_STATE_NAME_MAX_LEN,
+            cstate_str);
+        agent_exit(EXIT_FAILURE);
     }
 
     return cstate_str;
@@ -305,6 +321,27 @@ static void conncheck_update_state_event(int new_state, int progress)
     // Update state
     if(update_state)
     {
+#ifdef CONNCHECK_STATUS_REPORT_SCRIPT
+        if(cc_status_script_present)
+        {
+            char script_str[sizeof(CONNCHECK_STATUS_REPORT_SCRIPT) + 1 +
+                            CC_STATE_NAME_MAX_LEN + 1 +
+                            CC_STATE_NAME_MAX_LEN + 1];
+            char* cc_cstate_str = cstate_name(cc_cstate);
+            char* new_state_str = cstate_name(new_state);
+            snprintf(script_str,
+                     sizeof(script_str),
+                     "%s %s %s",
+                     CONNCHECK_STATUS_REPORT_SCRIPT,
+                     cc_cstate_str,
+                     new_state_str);
+            if(util_system(script_str, CONNCHECK_STATUS_REPORT_SCRIPT_TIMEOUT,
+                           NULL) != 0)
+            {
+                log("%s: failed to run '%s'\n", __func__, script_str);
+            }
+        }
+#endif  // CONNCHECK_STATUS_REPORT_SCRIPT
         if(cc_cstate == new_state) {
             log("%s: state <%s>, progress %d%%\n", __func__,
                 cstate_name(new_state), progress);
@@ -742,6 +779,16 @@ static void conncheck(THRD_PARAM_t *p)
     unsigned long start_tb_t = wake_up_t + CONNCHECK_START_GRACE_TIME;
     // The default server list is not from DNS
     int server_list_from_dns = FALSE;
+
+#ifdef CONNCHECK_STATUS_REPORT_SCRIPT
+    // check if the connection status reporting script is present
+    // and set a flag if so
+    if(util_path_exists(CONNCHECK_STATUS_REPORT_SCRIPT))
+    {
+        log("%s: status script %s found\n", __func__, CONNCHECK_STATUS_REPORT_SCRIPT);
+        cc_status_script_present = TRUE;
+    }
+#endif // CONNCHECK_STATUS_REPORT_SCRIPT
 
     // Try to connect for up to CONNCHECK_START_GRACE_TIME, then troubleshoot
     // and attempt to recover (if still cannot connect)
