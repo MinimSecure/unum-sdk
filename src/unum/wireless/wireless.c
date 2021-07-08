@@ -96,6 +96,7 @@ static JSON_OBJ_TPL_t tpl_tbl_vaps_obj = {
   { "ssid",  { .type = JSON_VAL_STR, {.s = wt_vap_state.ssid}}},
   { "bssid", { .type = JSON_VAL_STR, {.s = wt_vap_state.bssid}}},
   { "mode",  { .type = JSON_VAL_STR, {.s = wt_vap_state.mode }}},
+  { "kind",  { .type = JSON_VAL_PINT, {.pi = &wt_vap_state.kind }}},
   { "extras",{ .type = JSON_VAL_FOBJ, {.fo = wt_tpl_vap_extras_f}}},
   { "stas",  { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_stas_array_f}}},
   { NULL }
@@ -107,6 +108,7 @@ static JSON_OBJ_TPL_t tpl_tbl_vapsta_obj = {
   { "sta_mac",     { .type = JSON_VAL_STR, {.s = wt_vap_state.mac}}},
   { "ssid",        { .type = JSON_VAL_STR, {.s = wt_vap_state.ssid}}},
   { "mode",        { .type = JSON_VAL_STR, {.s = wt_vap_state.mode }}},
+  { "kind",        { .type = JSON_VAL_PINT, {.pi = &wt_vap_state.kind }}},
   { "extras",      { .type = JSON_VAL_FOBJ, {.fo = wt_tpl_vap_extras_f}}},
   { "assoc_info",  { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_assoc_array_f}}},
   { NULL }

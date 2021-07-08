@@ -245,6 +245,12 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         // We are not handling all other values for now
     }
 
+    if(wireless_get_interface_kind != NULL) {
+        vinfo->kind = wireless_get_interface_kind(ifname);
+    } else {
+        vinfo->kind = -1; // Not supported yet on this platform
+    }
+
     // Find out if BSS is enabled (for AP mode) up/down (for STA mode) 
     int bsscfg_idx = ~0;
     ret = wl_iovar_getbuf(ifname, "bss", &bsscfg_idx, sizeof(bsscfg_idx),
