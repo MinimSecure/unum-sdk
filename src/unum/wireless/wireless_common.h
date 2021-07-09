@@ -23,23 +23,6 @@
 
 #define WIRELESS_RADIO_IS_DOWN   -2
 
-// Interface kind sent in wireless radio telemetry
-enum INTERFACE_KIND {
-    UNUM_INTERFACE_KIND_HOME2       = 0,       // 2.4Ghz Home Network
-    UNUM_INTERFACE_KIND_HOME5       = 1,       // 5Ghz Home Network
-    UNUM_INTERFACE_KIND_GUEST2      = 2,       // 2.4Ghz Guest Network
-    UNUM_INTERFACE_KIND_GUEST5      = 3,       // 5Ghz Guest Network
-    UNUM_INTERFACE_KIND_MESH5       = 4,       // 5Ghz Mesh Network
-    UNUM_INTERFACE_KIND_MULTIBAND   = 5,       // 5Ghz Multiband
-    UNUM_INTERFACE_KIND_LAN         = 6,       // LAN
-    UNUM_INTERFACE_KIND_WAN         = 7,       // LAN
-    UNUM_INTERFACE_KIND_MOCA        = 8,       // MOCA
-    UNUM_INTERFACE_KIND_LAN_BRIDGE  = 9,       // LAN Bridge
-    UNUM_INTERFACE_KIND_ETHERNET    = 10,      // Ethernet
-    UNUM_INTERFACE_KIND_MESH2       = 11,      // 2.4Ghz Mesh Network
-    UNUM_INTERFACE_KIND_MAX,                   // For max size
-};
-
 // The structure for collecting state of the current radio being reported
 // in the telemetry JSON
 typedef struct _WT_JSON_TPL_RADIO_STATE {
@@ -222,11 +205,6 @@ int wireless_get_sta_counters(char *ifname, unsigned char* mac,
 int __attribute__((weak)) wireless_iwinfo_platform_get_sta_counters(char *ifname,
                               unsigned char* mac,
                               WIRELESS_COUNTERS_t *wc);
-
-// Get Interface kind
-// Parameters:
-// ifname - The name of the interface
-int __attribute__((weak)) wireless_get_interface_kind(char *ifname);
 
 // Init function for the platform wireless APIs (if needed,
 // the default stub just returns TRUE).

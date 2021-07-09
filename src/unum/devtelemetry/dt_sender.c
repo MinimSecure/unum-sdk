@@ -329,6 +329,7 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
       { "ip", { .type = JSON_VAL_STR, {.s = ip}}},
       { "mask", { .type = JSON_VAL_STR, {.s = mask}}},
       { "wan",  { .type = JSON_VAL_PINT, {.pi = &dtst.wan}}},
+      { "kind",  { .type = JSON_VAL_PINT, {.pi = &dtst.kind}}},
       { "slice",  { .type = JSON_VAL_PINT, {.pi = &dtst.slice}}},
       { "end_sec", { .type = JSON_VAL_PUL, {.pul = &dtst.sec}}},
       { "end_msec", { .type = JSON_VAL_PUL, {.pul = &dtst.msec}}},

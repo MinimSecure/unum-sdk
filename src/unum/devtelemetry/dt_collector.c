@@ -689,6 +689,11 @@ static void stats_ready_cb(TPCAP_IF_STATS_t *st)
         dtst->tp_drops = ste->tp_drops;
         dtst->slice = slice_num;
         dtst->wan = (ii == TPCAP_WAN_STATS_IDX);
+        if(util_get_interface_kind != NULL) {
+            dtst->kind = util_get_interface_kind(dtst->name);
+        } else {
+            dtst->kind = -1;
+        }
         if(util_get_ipcfg(dtst->name, &dtst->ipcfg) != 0) {
             memset(&dtst->ipcfg, 0, sizeof(dtst->ipcfg));
         }

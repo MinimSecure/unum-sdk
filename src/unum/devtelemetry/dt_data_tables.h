@@ -117,6 +117,7 @@ typedef struct _DT_IF_STATS {
     unsigned long tp_drops;  // tpcap packets dropped  (if not WAN)
     int slice;               // telemetry time slice # (0 - based)
     int wan;                 // TRUE if wan interface
+    int kind;                // Interface kind
     DEV_IP_CFG_t ipcfg;      // IP configuration of the interface
     unsigned char mac[6];    // interface MAC address
 } DT_IF_STATS_t;

@@ -69,6 +69,23 @@ enum unum_start_reason {
     UNUM_START_REASON_KILL,         // terminated by kill (set by monitor)
 };
 
+// Interface kind sent in wireless radio telemetry and dev telemtry
+enum INTERFACE_KIND {
+    UNUM_INTERFACE_KIND_HOME2       = 0,       // 2.4Ghz Home Network
+    UNUM_INTERFACE_KIND_HOME5       = 1,       // 5Ghz Home Network
+    UNUM_INTERFACE_KIND_GUEST2      = 2,       // 2.4Ghz Guest Network
+    UNUM_INTERFACE_KIND_GUEST5      = 3,       // 5Ghz Guest Network
+    UNUM_INTERFACE_KIND_MESH5       = 4,       // 5Ghz Mesh Network
+    UNUM_INTERFACE_KIND_MULTIBAND   = 5,       // 5Ghz Multiband
+    UNUM_INTERFACE_KIND_LAN         = 6,       // LAN
+    UNUM_INTERFACE_KIND_WAN         = 7,       // LAN
+    UNUM_INTERFACE_KIND_MOCA        = 8,       // MOCA
+    UNUM_INTERFACE_KIND_LAN_BRIDGE  = 9,       // LAN Bridge
+    UNUM_INTERFACE_KIND_ETHERNET    = 10,      // Ethernet
+    UNUM_INTERFACE_KIND_MESH2       = 11,      // 2.4Ghz Mesh Network
+    UNUM_INTERFACE_KIND_MAX,                   // For max size
+};
+
 // Makes a hex digit from a 4-bit value
 #define UTIL_MAKE_HEX_DIGIT(a) ((((a)&0xf) > 9) ? (((a)&0xf)+87) : (((a)&0xf)+'0'))
 
@@ -347,4 +364,8 @@ int __attribute__((weak)) platform_release_renew(void);
 // Note1: incomplete escape sequence at the end (i.e. "abc\") is ignored
 int util_match_str(char *ptr, int ptr_len, char *str, int str_len);
 
+// Get Interface kind
+// Parameters:
+// ifname - The name of the interface
+int __attribute__((weak)) util_get_interface_kind(char *ifname);
 #endif // _UTIL_COMMON_H

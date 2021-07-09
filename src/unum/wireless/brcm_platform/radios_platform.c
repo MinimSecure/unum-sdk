@@ -245,8 +245,8 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
         // We are not handling all other values for now
     }
 
-    if(wireless_get_interface_kind != NULL) {
-        vinfo->kind = wireless_get_interface_kind(ifname);
+    if(util_get_interface_kind != NULL) {
+        vinfo->kind = util_get_interface_kind(ifname);
     } else {
         vinfo->kind = -1; // Not supported yet on this platform
     }
