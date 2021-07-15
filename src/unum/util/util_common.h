@@ -86,6 +86,15 @@ enum INTERFACE_KIND {
     UNUM_INTERFACE_KIND_MAX,                   // For max size
 };
 
+// Radio kind sent in wireless radio telemetry
+enum RADIO_KIND {
+    // We are starting the unum with 5Ghz instead of 2.4Ghz
+    // to be in sync with the values defined on the server
+    UNUM_RADIO_KIND_5       = 0,       // 5Ghz Radio
+    UNUM_RADIO_KIND_2       = 1,       // 2.4Ghz Radio
+    UNUM_RADIO_KIND_6       = 2,       // 6Ghz Radio
+};
+
 // Makes a hex digit from a 4-bit value
 #define UTIL_MAKE_HEX_DIGIT(a) ((((a)&0xf) > 9) ? (((a)&0xf)+87) : (((a)&0xf)+'0'))
 
@@ -368,4 +377,8 @@ int util_match_str(char *ptr, int ptr_len, char *str, int str_len);
 // Parameters:
 // ifname - The name of the interface
 int __attribute__((weak)) util_get_interface_kind(char *ifname);
+// Get Radio kind
+// Returns Radio kind
+// -1 if the Radio name is not found
+int __attribute__((weak)) util_get_radio_kind(char *ifname);
 #endif // _UTIL_COMMON_H
