@@ -321,27 +321,6 @@ static void conncheck_update_state_event(int new_state, int progress)
     // Update state
     if(update_state)
     {
-#ifdef CONNCHECK_STATUS_REPORT_SCRIPT
-        if(cc_status_script_present)
-        {
-            char script_str[sizeof(CONNCHECK_STATUS_REPORT_SCRIPT) + 1 +
-                            CC_STATE_NAME_MAX_LEN + 1 +
-                            CC_STATE_NAME_MAX_LEN + 1];
-            char* cc_cstate_str = cstate_name(cc_cstate);
-            char* new_state_str = cstate_name(new_state);
-            snprintf(script_str,
-                     sizeof(script_str),
-                     "%s %s %s",
-                     CONNCHECK_STATUS_REPORT_SCRIPT,
-                     cc_cstate_str,
-                     new_state_str);
-            if(util_system(script_str, CONNCHECK_STATUS_REPORT_SCRIPT_TIMEOUT,
-                           NULL) != 0)
-            {
-                log("%s: failed to run '%s'\n", __func__, script_str);
-            }
-        }
-#endif  // CONNCHECK_STATUS_REPORT_SCRIPT
         if(cc_cstate == new_state) {
             log("%s: state <%s>, progress %d%%\n", __func__,
                 cstate_name(new_state), progress);
@@ -365,6 +344,31 @@ static void conncheck_update_state_event(int new_state, int progress)
         conncheck_mk_info_file();
 #endif // LAN_INFO_FOR_MOBILE_APP
     }
+
+#ifdef CONNCHECK_STATUS_REPORT_SCRIPT
+    if(update_file)
+    {
+        if(cc_status_script_present)
+        {
+            char script_str[sizeof(CONNCHECK_STATUS_REPORT_SCRIPT) + 1 +
+                            CC_STATE_NAME_MAX_LEN + 1 +
+                            CC_STATE_NAME_MAX_LEN + 1];
+            char* cc_cstate_str = cstate_name(cc_cstate);
+            char* new_state_str = cstate_name(new_state);
+            snprintf(script_str,
+                     sizeof(script_str),
+                     "%s %s %s",
+                     CONNCHECK_STATUS_REPORT_SCRIPT,
+                     cc_cstate_str,
+                     new_state_str);
+            if(util_system(script_str, CONNCHECK_STATUS_REPORT_SCRIPT_TIMEOUT,
+                           NULL) != 0)
+            {
+                log("%s: failed to run '%s'\n", __func__, script_str);
+            }
+        }
+    }
+#endif  // CONNCHECK_STATUS_REPORT_SCRIPT
 
     return;
 }
