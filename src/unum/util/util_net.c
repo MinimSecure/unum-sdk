@@ -411,9 +411,11 @@ int util_get_dev_stats(char *dev, NET_DEV_STATS_t *st)
         return -1;
     }
     if (fgets(buf, sizeof(buf), f) == NULL) {
+        fclose(f);
         return -1;
     }
     if (fgets(buf, sizeof(buf), f) == NULL) {
+        fclose(f);
         return -1;
     }
 
@@ -741,7 +743,7 @@ int util_send_arp_query(char *ifname, IPV4_ADDR_t *tgt)
 // Returns: 0 - success, negative - error
 static int nl_sock(NL_SOCK_t *s, int type)
 {
-    struct sockaddr_nl nladdr;
+    struct sockaddr_nl nladdr = { .nl_pid = 0 };
     int err = 0;
     int fd = -1;
 

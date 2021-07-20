@@ -332,8 +332,8 @@ int cmd_mdns_discovery(char *cmd, char *s, int s_len)
     size_t array_length;
     json_error_t jerr;
     int err = -1;
-    char queries[512];
-    UDP_PAYLOAD_t payload;
+    char queries[FP_MAX_MDNS_TXT];
+    UDP_PAYLOAD_t payload = { .len = 0 };
     int remainder = FP_MAX_MDNS_TXT;
 
     log("%s: processing mDNS discovery command\n", __func__);

@@ -385,6 +385,13 @@ static http_rsp *http_req(char *url, char *headers,
         break;
     }
 
+    if ((type & HTTP_REQ_FLAGS_GET_CONNTIME) != 0) {
+        double connect_time, name_lookup_time;
+        curl_easy_getinfo(ch, CURLINFO_CONNECT_TIME, &connect_time);
+        curl_easy_getinfo(ch, CURLINFO_NAMELOOKUP_TIME, &name_lookup_time);
+        rsp->time = (connect_time - name_lookup_time) * 1000.0;
+    }
+
     curl_easy_cleanup(ch);
     if(slhdr != NULL) {
         curl_slist_free_all(slhdr);
@@ -402,13 +409,6 @@ static http_rsp *http_req(char *url, char *headers,
     if(err) {
         free_rsp(rsp);
         return NULL;
-    }
-
-    if ((type & HTTP_REQ_FLAGS_GET_CONNTIME) != 0) {
-        double connect_time, name_lookup_time;
-        curl_easy_getinfo(ch, CURLINFO_CONNECT_TIME, &connect_time);
-        curl_easy_getinfo(ch, CURLINFO_NAMELOOKUP_TIME, &name_lookup_time);
-        rsp->time = (connect_time - name_lookup_time) * 1000.0;
     }
 
     return rsp;

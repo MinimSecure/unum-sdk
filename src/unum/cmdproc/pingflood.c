@@ -181,8 +181,8 @@ static int do_flood(unsigned char *mac,
     int ii, err = 0;
     unsigned long cur_t, end_t, last_t;
     unsigned long pkts_sent;
-    WIRELESS_COUNTERS_t wc_before;
-    WIRELESS_COUNTERS_t wc_after;
+    WIRELESS_COUNTERS_t wc_before = { .flags = 0 };
+    WIRELESS_COUNTERS_t wc_after = { .flags = 0 };
 
     // Calculate token bucket credit interval and initial creadit.
     // The interval is calculated to allow 1 packet transmission,
