@@ -120,6 +120,7 @@ int test_zip(void)
     zf = zipOpen64(zip_file, 0);
     if(zf == NULL) {
         printf("%s: Error while opening zip file\n", __func__);
+        closedir(dfd);
         return -2;
     }
 
@@ -139,6 +140,8 @@ int test_zip(void)
             break;
         }
     }
+    closedir(dfd);
+
     // Close the zip file descriptor
     err = zipClose(zf, NULL);
     if(err != ZIP_OK) {

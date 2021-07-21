@@ -17,7 +17,7 @@
 //          if fails
 int util_compress(char *buf, int buf_len, char *cbuf, int cbuf_len)
 {
-    z_stream stream;
+    z_stream stream = { .total_in = 0, .total_out = 0 };
     int ret;
     int GZIP_ENCODING = 16;
     int WINDOW_BITS = 15;

@@ -470,7 +470,8 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 
     // Update the interface and the device IPv4 address
     dev->ipv4.i = dev_ipv4.i;
-    strncpy(dev->ifname, tpif->name, IFNAMSIZ);
+    strncpy(dev->ifname, tpif->name, IFNAMSIZ-1);
+    dev->ifname[IFNAMSIZ-1] = '\0';
 
     // Prepare header for the connection info table entry
     DT_CONN_HDR_t hdr;
@@ -678,7 +679,8 @@ static void stats_ready_cb(TPCAP_IF_STATS_t *st)
         }
         DT_IF_STATS_t *dtst = &(stats_tbl[slice_num][st_if_num]);
         TPCAP_IF_STATS_t *ste = &(st[ii]);
-        strncpy(dtst->name, st[ii].name, sizeof(dtst->name));
+        strncpy(dtst->name, st[ii].name, sizeof(dtst->name)-1);
+        dtst->name[sizeof(dtst->name)-1] = '\0';
         dtst->sec = ste->rt.tv_sec;
         dtst->msec = ste->rt.tv_nsec / 1000000;
         dtst->len_t = ste->len_t;

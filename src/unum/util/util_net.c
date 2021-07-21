@@ -696,7 +696,8 @@ int util_send_arp_query(char *ifname, IPV4_ADDR_t *tgt)
     // Get the index of the network interface
     struct ifreq s_ifr;
     memset(&s_ifr, 0, sizeof(s_ifr));
-    strncpy(s_ifr.ifr_name, ifname, sizeof(s_ifr.ifr_name));
+    strncpy(s_ifr.ifr_name, ifname, sizeof(s_ifr.ifr_name)-1);
+    s_ifr.ifr_name[sizeof(s_ifr.ifr_name)-1] = '\0';
     if(ioctl(s, SIOCGIFINDEX, &s_ifr) < 0)
     {
         close(s);

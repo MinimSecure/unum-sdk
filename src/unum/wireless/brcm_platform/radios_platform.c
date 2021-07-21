@@ -117,8 +117,9 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     {
         strncpy(band_str, "unknown", sizeof(band_str));
     } else {
-        strncpy(band_str, ((CHSPEC_IS2G(chspec))?"2":"5"), sizeof(band_str));
+        strncpy(band_str, ((CHSPEC_IS2G(chspec))?"2":"5"), sizeof(band_str)-1);
     }
+    band_str[sizeof(band_str)-1] = '\0';
     // control/main channel
     rinfo->chan = wf_chspec_ctlchan(chspec);
     // width and spec info in Broadcom's format

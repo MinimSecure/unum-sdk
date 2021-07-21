@@ -321,7 +321,7 @@ static int tx_ring_setup(char *ifname)
     // Get the index of the network interface
     struct ifreq s_ifr;
     memset(&s_ifr, 0, sizeof(s_ifr));
-    strncpy(s_ifr.ifr_name, ifname, sizeof(s_ifr.ifr_name));
+    strncpy(s_ifr.ifr_name, ifname, sizeof(s_ifr.ifr_name)-1);
     if(ioctl(ss, SIOCGIFINDEX, &s_ifr) < 0)
     {
         close(ss);

@@ -864,6 +864,7 @@ extern zipFile ZEXPORT zipOpen3 (const void *pathname, int append, zipcharpc* gl
 
     ziinit.z_filefunc.zseek32_file = NULL;
     ziinit.z_filefunc.ztell32_file = NULL;
+    ziinit.z_filefunc.zopen32_file = NULL;
     if (pzlib_filefunc64_32_def==NULL)
         fill_fopen64_filefunc(&ziinit.z_filefunc.zfile_func64);
     else
@@ -883,6 +884,7 @@ extern zipFile ZEXPORT zipOpen3 (const void *pathname, int append, zipcharpc* gl
 
     ziinit.begin_pos = ZTELL64(ziinit.z_filefunc,ziinit.filestream);
     ziinit.in_opened_file_inzip = 0;
+    memset(&ziinit.ci.stream, '\0', sizeof(ziinit.ci.stream));
     ziinit.ci.stream_initialised = 0;
     ziinit.number_entry = 0;
     ziinit.add_position_when_writing_offset = 0;
@@ -947,6 +949,7 @@ extern zipFile ZEXPORT zipOpen2_64 (const void *pathname, int append, zipcharpc*
         zlib_filefunc64_32_def_fill.zfile_func64 = *pzlib_filefunc_def;
         zlib_filefunc64_32_def_fill.ztell32_file = NULL;
         zlib_filefunc64_32_def_fill.zseek32_file = NULL;
+        zlib_filefunc64_32_def_fill.zopen32_file = NULL;
         return zipOpen3(pathname, append, globalcomment, &zlib_filefunc64_32_def_fill);
     }
     else

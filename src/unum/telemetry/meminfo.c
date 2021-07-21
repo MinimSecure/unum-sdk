@@ -71,6 +71,7 @@ int parse_proc_mem_info(meminfo_t *meminfo)
         return ret;
     }
 
+    meminfo_file[len] = '\0';
     meminfo_total = parse_meminfo_entry(meminfo_file, "MemTotal:");
     meminfo_free = parse_meminfo_entry(meminfo_file, "MemFree:");
     buffers = parse_meminfo_entry(meminfo_file, "Buffers:");
