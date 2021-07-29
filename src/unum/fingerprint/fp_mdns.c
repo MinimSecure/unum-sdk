@@ -360,6 +360,7 @@ int cmd_mdns_discovery(char *cmd, char *s, int s_len)
             int i;
             payload.len = 12; // DNS header length
             memset(queries, 0, payload.len);
+            remainder -= payload.len;
 
             for(i = 0; i < array_length; i++)
             {
@@ -378,7 +379,7 @@ int cmd_mdns_discovery(char *cmd, char *s, int s_len)
 
                 // We need 5 extra chars; one for the string null terminator,
                 // two for the type, and two for the class
-                if(len + 5 < remainder) {
+                if(len + 5 <= remainder) {
                     int index = payload.len;
                     int ptr = 0;
                     while (ptr < len) {

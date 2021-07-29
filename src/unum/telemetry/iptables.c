@@ -108,6 +108,7 @@ static char* read_iptables_rules_cmd(char *cmd, char *cmd_prefix,
                 // Read the remaining data to clear the buffers
                 while(fgets(rule, sizeof(rule), fp) != NULL);
                 pclose(fp);
+                fp = NULL;
                 data_error = TRUE;
                 *buf = 0;
                 i = 0;
@@ -141,12 +142,15 @@ static char* read_iptables_rules_cmd(char *cmd, char *cmd_prefix,
         memcpy(&buf[i], rule, rule_len);
         i += rule_len;
     }
-    int status = pclose(fp);
-    if(status < 0 || !(WIFEXITED(status) && WEXITSTATUS(status) ==0)) {
-        log("%s: error collecting iptable rules, status: 0x%x\n",
-            __func__, status);
-        // Setting this flag will prevent us from using the bad data
-        data_error = TRUE;
+
+    if(fp) {
+        int status = pclose(fp);
+        if(status < 0 || !(WIFEXITED(status) && WEXITSTATUS(status) ==0)) {
+            log("%s: error collecting iptable rules, status: 0x%x\n",
+                    __func__, status);
+            // Setting this flag will prevent us from using the bad data
+            data_error = TRUE;
+        }
     }
 
     // Update the length of the string

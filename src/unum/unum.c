@@ -310,6 +310,9 @@ static void do_daemon(void)
         exit(EXIT_FAILURE);
     }
 
+    // Close fd as 2 & 1 point there now
+    close(fd);
+
     // Ignore SIGINT, SIGQUIT and SIGPIPE
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;

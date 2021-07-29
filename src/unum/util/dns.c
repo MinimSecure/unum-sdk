@@ -6971,7 +6971,6 @@ _error:
 	return 0;
 } /* dns_res_open() */
 
-
 struct dns_resolver *dns_res_stub(const struct dns_options *opts, int *error) {
 	struct dns_resolv_conf *resconf	= 0;
 	struct dns_hosts *hosts		= 0;
@@ -6984,10 +6983,18 @@ struct dns_resolver *dns_res_stub(const struct dns_options *opts, int *error) {
 	if (!(hosts = dns_hosts_local(error)))
 		goto epilog;
 
-	if (!(hints = dns_hints_local(resconf, error)))
-		goto epilog;
+	// dns_hints_local always calls dns_resconf_close
+	// this decrements the ref count and then frees
+	// resconf as long as resconf is a valid pointer and decrementing
+	// the ref count is successful. This implies that resconf
+	// is never useable after calling this function.
+	if (!(hints = dns_hints_local(resconf, error))) {
+		dns_hosts_close(hosts);
+		dns_hints_close(hints);
+		return res;
+	}
 
-	if (!(res = dns_res_open(resconf, hosts, hints, NULL, opts, error)))
+ 	if (!(res = dns_res_open(NULL, hosts, hints, NULL, opts, error)))
 		goto epilog;
 
 epilog:

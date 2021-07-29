@@ -240,7 +240,9 @@ static http_rsp *http_req(char *url, char *headers,
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, write_func);
-    curl_easy_setopt(ch, CURLOPT_WRITEDATA, &rsp);
+
+    void *rsp_vp = (void *)&rsp;
+    curl_easy_setopt(ch, CURLOPT_WRITEDATA, rsp_vp);
     curl_easy_setopt(ch, CURLOPT_ERRORBUFFER, err_buf);
     if((type & HTTP_REQ_FLAGS_SHORT_TIMEOUT) != 0) {
         curl_easy_setopt(ch, CURLOPT_TIMEOUT, REQ_API_TIMEOUT_SHORT);
@@ -251,7 +253,7 @@ static http_rsp *http_req(char *url, char *headers,
         curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, REQ_CONNECT_TIMEOUT);
     }
     if((type & HTTP_REQ_FLAGS_CAPTURE_HEADERS) != 0) {
-        curl_easy_setopt(ch, CURLOPT_HEADERDATA, &rsp);
+        curl_easy_setopt(ch, CURLOPT_HEADERDATA, rsp_vp);
     }
     if((type & HTTP_REQ_FLAGS_NO_SSL_VERIFYHOST) != 0) {
         curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0);
@@ -520,7 +522,9 @@ int http_download_test(char *ifname, char *url,
     curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, speedtest_chunk);
-    curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *)&total_size);
+    
+    void * total_size_vp = (void *)&total_size;
+    curl_easy_setopt(ch, CURLOPT_WRITEDATA, total_size_vp);
     curl_easy_setopt(ch, CURLOPT_USERAGENT, "unum/v3 (libcurl; minim.co)");
     curl_easy_setopt(ch, CURLOPT_TIMEOUT, timeout_in_sec);
 
@@ -597,7 +601,9 @@ int http_upload_test(char *ifname, char *url,
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(ch, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(ch, CURLOPT_READFUNCTION, random_data_reader);
-    curl_easy_setopt(ch, CURLOPT_READDATA, (void *)&ts);
+
+    void * ts_vp = (void *)&ts;
+    curl_easy_setopt(ch, CURLOPT_READDATA, ts_vp);
     curl_easy_setopt(ch, CURLOPT_USERAGENT, "unum/v3 (libcurl; minim.co)");
     curl_easy_setopt(ch, CURLOPT_TIMEOUT, timeout_in_sec);
 
