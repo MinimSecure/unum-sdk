@@ -858,9 +858,11 @@ int LoadCentralDirectoryRecord(zip64_internal* pziinit)
 /************************************************************/
 extern zipFile ZEXPORT zipOpen3 (const void *pathname, int append, zipcharpc* globalcomment, zlib_filefunc64_32_def* pzlib_filefunc64_32_def)
 {
-    zip64_internal ziinit = {0};
+    zip64_internal ziinit;
     zip64_internal* zi;
     int err=ZIP_OK;
+
+    memset(&ziinit, 0, sizeof(zip64_internal));
 
     ziinit.z_filefunc.zseek32_file = NULL;
     ziinit.z_filefunc.ztell32_file = NULL;
