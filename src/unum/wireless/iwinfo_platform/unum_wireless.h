@@ -15,7 +15,8 @@
 #define WIRELESS_MAX_RADIOS 3
 
 // Max VAPs per radio we can report (used in wireless_common.h)
-#define WIRELESS_MAX_VAPS 4
+// For some platforms we support these many
+#define WIRELESS_MAX_VAPS 8
 
 
 // Common header shared across all platforms
