@@ -7060,7 +7060,18 @@ void dns_res_reset(struct dns_resolver *R) {
 	for (i = 0; i < lengthof(R->stack); i++)
 		dns_res_frame_destroy(R, &R->stack[i]);
 
-	memset(&R->qname, '\0', sizeof *R - offsetof(struct dns_resolver, qname));
+	// individual memsets to avoid report of out of bounds access
+	// by static analysis 
+	memset(&R->qname,   '\0', sizeof(R->qname));
+	memset(&R->qlen,    '\0', sizeof(R->qlen));
+	memset(&R->qtype,   '\0', sizeof(R->qtype));
+	memset(&R->qclass,  '\0', sizeof(R->qclass));
+	memset(&R->elapsed, '\0', sizeof(R->elapsed));
+	memset(&R->search,  '\0', sizeof(R->search));
+	memset(&R->smart,   '\0', sizeof(R->smart));
+	memset(&R->nodata,  '\0', sizeof(R->nodata));
+	memset(&R->sp,      '\0', sizeof(R->sp));
+	memset(&R->stack,   '\0', sizeof(R->stack));
 
 	for (i = 0; i < lengthof(R->stack); i++)
 		dns_res_frame_init(R, &R->stack[i]);
