@@ -103,7 +103,7 @@ int test_zip(void)
     int err = 0;
  
     printf("Enter the directory name\n");
-    scanf("%s", dir);
+    scanf("%256s", dir);
 
     if(!util_path_exists(dir)) {
         printf("The directory %s does n't exit\n", dir);

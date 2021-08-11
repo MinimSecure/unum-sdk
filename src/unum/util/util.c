@@ -258,6 +258,10 @@ int util_cmp_files_match(char *file1, char *file2, int must_exist)
     long file1_len, file2_len;
     
     file1_len = file2_len = 0;
+        
+    // open files    
+    FILE *fd1 = fopen(file1, "r");
+    FILE *fd2 = fopen(file2, "r");    
     
     if(stat(file1, &st1) == 0) {
         file1_len = st1.st_size;
@@ -278,28 +282,28 @@ int util_cmp_files_match(char *file1, char *file2, int must_exist)
     }
     
     do{
-        // open files    
-        FILE *fd1 = fopen(file1, "r");
-        FILE *fd2 = fopen(file2, "r");    
         int status = 0;    
 
-        // read files into memory
-        int len1 = fread(buf1, sizeof(char), file1_len, fd1);
-        int len2 = fread(buf2, sizeof(char), file2_len, fd2);
+        if (fd1 != NULL && fd2 != NULL)
+        {
+            // read files into memory
+            int len1 = fread(buf1, sizeof(char), file1_len, fd1);
+            int len2 = fread(buf2, sizeof(char), file2_len, fd2);
+            
+            // finish with null terminator
+            buf1[++len1] = '\0';
+            buf2[++len2] = '\0';
 
-        // finish with null terminator
-        buf1[++len1] = '\0';
-        buf2[++len2] = '\0';
+            // close files
+            fclose(fd1);
+            fclose(fd2);
 
-        // close files
-        fclose(fd1);
-        fclose(fd2);
+            // compare buffers
+            status = memcmp(buf1, buf2, 512);
 
-        // compare buffers
-        status = memcmp(buf1, buf2, 512);
-
-        if(status == 0) {
-            return TRUE;
+            if(status == 0) {
+                return TRUE;
+            }
         }
 
         return FALSE;
