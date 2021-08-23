@@ -69,5 +69,13 @@
 #define UTIL_NET_DEV_CNTRS_FORMAT \
   "%llu%llu%lu%lu%lu%lu%lu%lu%llu%llu%lu%lu%lu%lu%lu%lu"
 #define UTIL_NET_DEV_CNTRS_FORMAT_COUNT 16
+// Get Interface kind
+// Parameters:
+// ifname - The name of the interface
+int util_get_interface_kind(char *ifname);
+// Get Radio kind
+// Returns Radio kind
+// -1 if the Radio name is not found
+int util_get_radio_kind(char *ifname);
 
 #endif // _UTIL_H

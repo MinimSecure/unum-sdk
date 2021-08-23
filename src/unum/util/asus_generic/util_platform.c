@@ -2,6 +2,32 @@
 // unum helper platform specific utils code
 
 #include "unum.h"
+#include "../util_kind.h"
+
+// Wireless Interface name to util kind mapping for Root
+static WIRELESS_KIND_t util_kind[] =
+        {
+            {PLATFORM_GET_MAIN_WAN_NET_DEV(), UNUM_INTERFACE_KIND_WAN},
+            {PLATFORM_GET_MAIN_LAN_NET_DEV(), UNUM_INTERFACE_KIND_LAN},
+            {"ath0", UNUM_INTERFACE_KIND_HOME2},
+            {"ath001", UNUM_INTERFACE_KIND_GUEST2},
+            {"ath002", UNUM_INTERFACE_KIND_GUEST2},
+            {"ath003", UNUM_INTERFACE_KIND_GUEST2},
+            {"ath1", UNUM_INTERFACE_KIND_HOME5},
+            {"ath101", UNUM_INTERFACE_KIND_GUEST5},
+            {"ath102", UNUM_INTERFACE_KIND_GUEST5},
+            {"ath103", UNUM_INTERFACE_KIND_GUEST5},
+            {"ath101", UNUM_INTERFACE_KIND_GUEST5},
+            {"", -1}
+        };
+
+// Wireless Interface name to util kind mapping
+static WIRELESS_KIND_t util_radio_kind[] =
+        {
+            {"wifi0", UNUM_RADIO_KIND_2},
+            {"wifi1", UNUM_RADIO_KIND_5},
+            {"", -1}
+        };
 
 // Factory reset, should never return
 int util_platform_factory_reset(void)
@@ -112,4 +138,17 @@ int platform_release_renew(void)
 
     return result;
 
+}
+// -1 if the interface name is not found
+int util_get_interface_kind(char *ifname)
+{
+    return  _util_get_interface_kind(ifname, util_kind);
+}
+
+// Get interface kind
+// Returns Radio kind
+// -1 if the Radio name is not found
+int util_get_radio_kind(char *ifname)
+{
+    return _util_get_interface_kind(ifname, util_radio_kind);
 }

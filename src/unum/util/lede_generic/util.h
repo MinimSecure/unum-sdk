@@ -118,5 +118,9 @@ char *platform_fw_version(void);
 
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
 char *util_base_mac_file_name(void);
+// Get Radio kind
+// Returns Radio kind
+// -1 if the Radio name is not found
+int util_get_radio_kind(char *ifname);
 
 #endif // _UTIL_H

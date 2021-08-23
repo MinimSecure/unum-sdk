@@ -420,3 +420,103 @@ int platform_release_renew(void)
     return result;
 
 }
+
+// Returns network type,ie home or guest or other
+// Return 0 for home network, 1 for guest
+// and 2 for other
+static int get_network_type(char *ifname)
+{
+    char br_path[64];
+    struct stat st;
+
+    // Check if the interface is associated with home network
+    snprintf(br_path, sizeof(br_path) - 1,
+                            "/sys/class/net/br-lan/brif/%s", ifname);
+    if (stat(br_path, &st) == 0) {
+        return 0;
+    }
+
+    // Check if the interface is associated with guest network
+    snprintf(br_path, sizeof(br_path) - 1,
+                            "/sys/class/net/br-guest/brif/%s", ifname);
+    if (stat(br_path, &st) == 0) {
+        return 1;
+    }
+    return 2;
+}
+
+// Get interface kind
+// Returns Radio kind
+// -1 if the interface name is not found
+int util_get_interface_kind(char *ifname)
+{
+    int chan;
+    int mode;
+
+    // Check if the interface name is lan or wan
+    if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
+        return UNUM_INTERFACE_KIND_LAN;
+    } else if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
+        return UNUM_INTERFACE_KIND_WAN;
+    }
+
+    // Get channel and use it to determine 2.4Ghz vs 5Ghz
+    chan = wt_iwinfo_get_channel(ifname);
+    if (chan < 0) {
+        // Error is logged in wt_iwinfo_get_channel
+        return -1;
+    }
+
+    if (wt_iwinfo_get_mode(ifname, &mode) == NULL) {
+        // Error is logged in wt_iwinfo_get_mode_id
+        return -1;
+    }
+
+    // Check 2.4Ghz vs 5Ghz
+    if (chan >= 1 && chan <= 14) {
+        if (mode == IWINFO_OPMODE_MESHPOINT) {
+            return UNUM_INTERFACE_KIND_MESH2;
+        } else if (mode == IWINFO_OPMODE_MASTER) {
+            int type = get_network_type(ifname);
+            // Check home vs guest network
+            if (type == 0) {
+                return UNUM_INTERFACE_KIND_HOME2;
+            } else if (type == 1) {
+                return UNUM_INTERFACE_KIND_GUEST2;
+            }
+        }
+        // Server is handling mesh and master modes only for now
+    } else if (chan >= 36 && chan <= 196) {
+        if (mode == IWINFO_OPMODE_MESHPOINT) {
+            return UNUM_INTERFACE_KIND_MESH5;
+        } else if (mode == IWINFO_OPMODE_MASTER) {
+            // Check home vs guest network
+            int type = get_network_type(ifname);
+            if (type == 0) {
+                return UNUM_INTERFACE_KIND_HOME5;
+            } else if (type == 1) {
+                return UNUM_INTERFACE_KIND_GUEST5;
+            }
+        }
+        // Server is handling mesh and master modes only for now
+    }
+    // ToDo: Handle 6Ghz channel list when it is available
+    return -1;
+}
+
+// Get interface kind
+// Returns Radio kind
+// -1 if the Radio name is not found
+int util_get_radio_kind(char *ifname)
+{
+    // Get channel and use it to determine 2.4Ghz vs 5Ghz
+    int chan = wt_iwinfo_get_channel(ifname);
+
+    if (chan >= 1 && chan <= 14) {
+        return UNUM_RADIO_KIND_2;
+    } else if (chan >= 36 && chan <= 196) {
+        return UNUM_RADIO_KIND_5;
+    }
+    // ToDo: Handle 6Ghz channel list when it is available
+    return -1;
+}

@@ -37,10 +37,12 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     // radio extras values and template
     static char mode[32];   // The name of the hardware mode (11a, 11bg, ...)
     static char country[4]; // 3-digit country code
+    static int kind;
     static JSON_OBJ_TPL_t extras_obj = {
       // HW mode should be at [0]
       { "hwmode", { .type = JSON_VAL_STR, .s = mode }},
       { "country", { .type = JSON_VAL_STR, .s  = country }},
+      { "kind",    { .type = JSON_VAL_PINT, {.pi = &kind   }}},
       { NULL }
     };
     const char *cc;
@@ -87,6 +89,12 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     if(phyidx < 0) {
         log("%s: invalid phy name <%s>\n", __func__, phyname);
         return -3;
+    }
+
+    if(util_get_radio_kind != NULL) {
+        kind = util_get_radio_kind(phyname);
+    } else {
+        kind = -1; // Not supported yet on this platform
     }
     int count = 0;
     int idx = -1;
@@ -197,6 +205,12 @@ int wt_tpl_fill_vap_info(WT_JSON_TPL_RADIO_STATE_t *rinfo,
     } else if (id == IWINFO_OPMODE_CLIENT) {
         strncpy(vinfo->mode, WIRELESS_OPMODE_STA, sizeof(vinfo->mode));
         vinfo->mode[sizeof(vinfo->mode) - 1] = 0;
+    }
+
+    if(util_get_interface_kind != NULL) {
+        vinfo->kind = util_get_interface_kind(ifname);
+    } else {
+        vinfo->kind = -1; // Not supported yet on this platform
     }
 
     int extras_count = 0;
