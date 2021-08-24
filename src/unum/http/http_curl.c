@@ -92,6 +92,12 @@ int http_get_file(char *url, char *headers, char *file)
             curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, REQ_CONNECT_TIMEOUT);
             curl_easy_setopt(ch, CURLOPT_TIMEOUT, REQ_FILE_TIMEOUT);
             curl_easy_setopt(ch, CURLOPT_HTTPGET, 1);
+            // If it is less than just 1 byte per second for 60 seconds
+            // then something wrong with the network. Abort the download
+            // This will handle a case to timeout the transfer
+            // on an erred network instead of waiting for full REQ_FILE_TIMEOUT
+            curl_easy_setopt(ch, CURLOPT_LOW_SPEED_TIME, 60L);
+            curl_easy_setopt(ch, CURLOPT_LOW_SPEED_LIMIT, 1L);
             if(slhdr) {
                 curl_easy_setopt(ch, CURLOPT_HTTPHEADER, slhdr);
             }
