@@ -799,6 +799,10 @@ static void conncheck(THRD_PARAM_t *p)
     for(;;sleep(CONNCHECK_LOOP_DELAY), util_wd_poll())
     {
         unsigned long cur_t;
+        int platform_conncheck;
+        int recover_attempt;
+
+        platform_conncheck = 0;
 
         // Get current time for the loop run
         cur_t = util_time(1);
@@ -918,12 +922,24 @@ static void conncheck(THRD_PARAM_t *p)
             break;
         }
 
+#ifdef PLATFORM_CONNCHECK
+        // Override quiet period.
+        // Useful in some special cases where the connecheck has to be 
+        // aggressive or in scenarios where the current incremental logic 
+        // of quiet period is not applicable.
+        if(util_path_exists(PLATFORM_CONNCHECK)) {
+            platform_conncheck = 1;
+        }
+#endif // PLATFORM_CONNCHECK
         // We failed to connect within the grace time, so run the troubleshooter
         // and if it was able to recover try the connectivity test again.
         // Keeping the cc_st state unchaged so troubleshooter can see what it
         // has tried already.
-
-        int recover_attempt = conncheck_troubleshooter();
+        if (!platform_conncheck) {
+            recover_attempt = conncheck_troubleshooter();
+        } else {
+            recover_attempt = 0;
+        }
 
         // If we are attempting a recovery the troubleshooting data might
         // not yet contain all the discovered info. Since the troubleshooter
@@ -948,6 +964,12 @@ static void conncheck(THRD_PARAM_t *p)
         } else if(quiet_period < CONNCHECK_QUIET_TIME_MAX) {
             quiet_period += CONNCHECK_QUIET_TIME_INC;
         }
+#ifdef PLATFORM_CONNCHECK
+        // Override the quiet_period with the one specified by the platform
+        if (platform_conncheck) {
+            quiet_period = CONNCHECK_QUIET_TIME_PLATFORM;
+        }
+#endif
 
         // If we can recover, attempt it immediately
         if(recover_attempt) {
@@ -963,6 +985,11 @@ static void conncheck(THRD_PARAM_t *p)
         // Troubleshoot at CONNCHECK_START_GRACE_TIME after the wakeup if still
         // not connected
         start_tb_t = wake_up_t + CONNCHECK_RETRY_GRACE_TIME;
+#ifdef PLATFORM_CONNCHECK
+        if(platform_conncheck) {
+            start_tb_t = wake_up_t + CONNCHECK_RETRY_GRACE_TIME_PLATFORM;
+        }
+#endif // PLATFORM_CONNCHECK
 
         log("%s: cannot connect to cloud, retry in %ldsec\n",
             __func__, quiet_period);
