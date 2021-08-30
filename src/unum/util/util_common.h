@@ -358,6 +358,14 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
 // doesn't support this, it should return without doing anything.
 int __attribute__((weak)) platform_release_renew(void);
 
+// These functions indicate if a platform supports the luci rpc
+// mechanism and, if so, which WAN interface configuration mechanisms
+// are supported.
+int __attribute__((weak)) platform_luci_rpc_supported(void);
+int __attribute__((weak)) platform_luci_rpc_wan_dhcpv4_supported(void);
+int __attribute__((weak)) platform_luci_rpc_wan_pppoe_supported (void);
+int __attribute__((weak)) platform_luci_rpc_wan_static_supported(void);
+
 // Match pattern to a string
 // ptr - pointer to the pattern, the pattern can contain following
 //       special symbols:

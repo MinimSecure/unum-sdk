@@ -151,6 +151,14 @@ static void conncheck_mk_info_file(void)
     char *no_dns = cc_st.no_dns ? "1" : NULL;
     char *no_servers = cc_st.no_servers ? "1" : NULL;
     char *slist_ready = cc_st.slist_ready ? "1" : NULL;
+    char *luci_rpc_supported = platform_luci_rpc_supported
+        && platform_luci_rpc_supported() ? "1" : "0";
+    char *luci_rpc_wan_dhcpv4_supported = platform_luci_rpc_wan_dhcpv4_supported
+        && platform_luci_rpc_wan_dhcpv4_supported() ? "1" : NULL;
+    char *luci_rpc_wan_pppoe_supported = platform_luci_rpc_wan_pppoe_supported
+        && platform_luci_rpc_wan_pppoe_supported() ? "1" : NULL;
+    char *luci_rpc_wan_static_supported = platform_luci_rpc_wan_static_supported
+        && platform_luci_rpc_wan_static_supported() ? "1" : NULL;
 
     unsigned long *p_connect_uptime = NULL;
     unsigned long *p_cloud_utc = NULL;
@@ -247,11 +255,20 @@ static void conncheck_mk_info_file(void)
         p_conncheck_obj = tpl_conncheck;
     }
 
+    JSON_OBJ_TPL_t tpl_system = {
+      { "luci_rpc_supported",            {.type = JSON_VAL_STR, {.s = luci_rpc_supported}}},
+      { "luci_rpc_wan_dhcpv4_supported", {.type = JSON_VAL_STR, {.s = luci_rpc_wan_dhcpv4_supported}}},
+      { "luci_rpc_wan_pppoe_supported",  {.type = JSON_VAL_STR, {.s = luci_rpc_wan_pppoe_supported}}},
+      { "luci_rpc_wan_static_supported", {.type = JSON_VAL_STR, {.s = luci_rpc_wan_static_supported}}},
+      { NULL }
+    };
+
     JSON_OBJ_TPL_t tpl = {
       { "mac_address",    {.type = JSON_VAL_STR, {.s = mac_addr}}},
       { "cstate",         {.type = JSON_VAL_STR, {.s = cstate_str}}},
       { "cstate_progress",{.type = JSON_VAL_PINT,{.pi = p_cstate_progress}}},
       { "conncheck",      {.type = JSON_VAL_OBJ, {.o = p_conncheck_obj}}},
+      { "system",         {.type = JSON_VAL_OBJ, {.o = tpl_system}}},
       { NULL }
     };
 
