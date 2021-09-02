@@ -107,6 +107,9 @@ typedef struct {
 // Logging configuration and control structure (see log_platform.c)
 extern LOG_CONFIG_t log_cfg[];
 
+// Optional platform function to get runtime logs dir
+char * __attribute__((weak)) get_platform_logs_dir(void);
+
 // Log print function
 void unum_log(LOG_DST_t dst, char *str, ...);
 // Set/clear default log destination for the process (until cleared overrides

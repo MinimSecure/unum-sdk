@@ -166,7 +166,20 @@ static int init_log_entry(LOG_DST_t dst)
         if(!lc->f && (lc->flags & mask) != 0)
         {
             char fn[LOG_MAX_PATH + 1];
-            int fn_len = 
+            int fn_len;
+
+            // Check for a platform specific runtime defined
+            // logs directory
+            if(get_platform_logs_dir != NULL) {
+                char * logs_dir = get_platform_logs_dir();
+                if(logs_dir) {
+                    unum_config.logs_dir = logs_dir;
+                } else {
+                    unum_config.logs_dir = LOG_PATH_PREFIX;
+                }
+            }
+
+            fn_len =
                 snprintf(fn, sizeof(fn), "%s/%s",
                      ((*(lc->name) != '/') ? unum_config.logs_dir : ""),
                      lc->name);
