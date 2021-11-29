@@ -624,11 +624,12 @@ static int wt_handle_scan_results(struct nl_msg *msg, void *arg)
     int crypto = 0;
     uint16_t caps;
 
-    if ((sizeof(struct nl80211_scanlist_entry) * scan_index) > 
-                                SCANLIST_BUF_SIZE) {
-        log("%s: Can't handle these many entries for now. %d\n", scan_index);
+    // round down in case SCANLIST_BUF_SIZE is not a multiple of the struct size
+    if (scan_index ==  SCANLIST_BUF_SIZE/sizeof(struct nl80211_scanlist_entry)-1) {
+        log("%s: Can't handle this many entries. scan_index=%d\n", __func__, scan_index);
         return NL_SKIP;
     }
+
     entry = (struct nl80211_scanlist_entry *)
               (scanbuf + (sizeof(struct nl80211_scanlist_entry) * scan_index));
     // Parse and error check.

@@ -181,6 +181,7 @@ static JSON_VAL_TPL_t *wt_tpl_scanlist_array_f(char *key, int ii)
 
     // Check if the current index is within the number of entries we have
     if(ii >= wt_scan_radio.scan_entries) {
+        log("%s: test %d >= %d - is not within the number of entries we have\n", __func__, ii, wt_scan_radio.scan_entries);
         return NULL;
     }
 
@@ -445,6 +446,8 @@ static void wireless_do_scan_report(void)
     http_rsp *rsp = NULL;
     char *my_mac = util_device_mac();
     char url[256];
+
+    log("%s: started\n", __func__);
 
     for(;;) {
 
