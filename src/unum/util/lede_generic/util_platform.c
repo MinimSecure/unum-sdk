@@ -36,7 +36,7 @@ char *util_main_lan_ifname(void)
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
 char *util_base_mac_file_name(void)
 {
-    char *device = "br-lan";
+    char *device = "down1v0";
     static char fname[128] = "";
     int err;
     struct stat st;
@@ -223,7 +223,7 @@ int util_platform_init(int level)
 
         // Get main LAN interface name (for TPCAP etc, has to have IP address)
         if(IS_OPM(UNUM_OPM_AP)) {
-            val = "br-lan";
+            val = "down1v0";
         } else {
             val = uci_get_str(ctx, "network.lan.ifname");
             if(val == NULL) {
@@ -250,7 +250,7 @@ int util_platform_init(int level)
                 break;
             }
         }
-        strncpy(wan_ifname, val, sizeof(wan_ifname) - 1);
+        strncpy(wan_ifname, "up0v0", sizeof(wan_ifname) - 1);
 
         break;
     }
@@ -431,7 +431,7 @@ static int get_network_type(char *ifname)
 
     // Check if the interface is associated with home network
     snprintf(br_path, sizeof(br_path) - 1,
-                            "/sys/class/net/br-lan/brif/%s", ifname);
+                            "/sys/class/net/down1v0/brif/%s", ifname);
     if (stat(br_path, &st) == 0) {
         return 0;
     }
