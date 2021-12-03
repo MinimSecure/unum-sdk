@@ -456,8 +456,10 @@ int util_get_interface_kind(char *ifname)
     // Check if the interface name is lan or wan
     if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
         return UNUM_INTERFACE_KIND_LAN;
-    } else if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
+    } else if (strncmp(wan_ifname, ifname, IFNAMSIZ) == 0) {
         return UNUM_INTERFACE_KIND_WAN;
+    } else if (strncmp("eth", ifname, 3) == 0) {
+        return UNUM_INTERFACE_KIND_ETHERNET;
     }
 
     // Get channel and use it to determine 2.4Ghz vs 5Ghz
