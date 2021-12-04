@@ -36,7 +36,7 @@ char *util_main_lan_ifname(void)
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
 char *util_base_mac_file_name(void)
 {
-    char *device = "down1v0";
+    char *device = "down2v0";
     static char fname[128] = "";
     int err;
     struct stat st;
@@ -156,7 +156,7 @@ int util_platform_init(int level)
             static int lan_up = FALSE;
             static int wan_up = FALSE;
 
-            val = uci_get_str(ctx, "network.lan.up");
+            val = uci_get_str(ctx, "network.down2v0.up");
             if(!lan_up && val && *val == '1') {
                 log("%s: LAN is up\n", __func__);
                 lan_up = TRUE;
@@ -168,7 +168,7 @@ int util_platform_init(int level)
                 wan_up = TRUE;
             } else {
                 // In non-AP mode do real check if WAN is up
-                val = uci_get_str(ctx, "network.wan.up");
+                val = uci_get_str(ctx, "network.up0v0.up");
             }
             if(!wan_up && val && *val == '1')
             {
@@ -190,14 +190,6 @@ int util_platform_init(int level)
             }
         }
 
-        // Get main routing LAN interface type
-        val = uci_get_str(ctx, "network.lan.type");
-        if(val && strcmp(val, "bridge") != 0) {
-            log("%s: error, LAN inteface type <%s> is not supported\n",
-                __func__, val);
-            ret = -2;
-            break;
-        }
 
         err = stat(DEVICEID_FILE, &st);
         if (err != 0) {
@@ -205,7 +197,7 @@ int util_platform_init(int level)
             // Get main LAN ethernet device (used to get base MAC address)
             // Note: this doesn't work at all in 18.06.5, keeping it here
             //       for backward compatibility only.
-            val = uci_get_str(ctx, "network.lan.device");
+            val = uci_get_str(ctx, "network.up0v0.ifname");
             if(val == NULL) {
                 log("%s: error, no LAN device found\n", __func__);
                 ret = -2;
@@ -223,9 +215,9 @@ int util_platform_init(int level)
 
         // Get main LAN interface name (for TPCAP etc, has to have IP address)
         if(IS_OPM(UNUM_OPM_AP)) {
-            val = "down1v0";
+            val = "down2v0";
         } else {
-            val = uci_get_str(ctx, "network.lan.ifname");
+            val = uci_get_str(ctx, "network.up0v0.ifname");
             if(val == NULL) {
                 log("%s: error, no LAN intrface name found\n", __func__);
                 ret = -3;
@@ -238,17 +230,12 @@ int util_platform_init(int level)
         if(IS_OPM(UNUM_OPM_AP)) {
             val = "lo"; // Use loopback to bypass getting WAN name in AP mode
         } else {
-            val = uci_get_str(ctx, "network.wan.ifname");
+            val = uci_get_str(ctx, "network.up0v0.ifname");
         }
         if(val == NULL) {
-            log("%s: error, no WAN inteface name found, trying device name\n",
-                __func__);
-            val = uci_get_str(ctx, "network.wan.device");
-            if(val == NULL) {
-                log("%s: error, no WAN device found\n", __func__);
-                ret = -4;
-                break;
-            }
+            log("%s: error, no WAN device found\n", __func__);
+            ret = -4;
+            break;
         }
         strncpy(wan_ifname, "up0v0", sizeof(wan_ifname) - 1);
 
@@ -397,7 +384,7 @@ int platform_release_renew(void)
     }
 
     // Get WAN Protocol & Check for DHCP
-    char * wan_proto = uci_get_str(ctx, "network.wan.proto");
+    char * wan_proto = uci_get_str(ctx, "network.up0v0.proto");
     if((wan_proto == NULL) || (0 != strcmp(wan_proto,"dhcp"))) {
         log("%s: WAN interface is not configured for DHCP.\n", __func__);
         uci_free_context(ctx);
@@ -431,7 +418,7 @@ static int get_network_type(char *ifname)
 
     // Check if the interface is associated with home network
     snprintf(br_path, sizeof(br_path) - 1,
-                            "/sys/class/net/down1v0/brif/%s", ifname);
+                            "/sys/class/net/down2v0/brif/%s", ifname);
     if (stat(br_path, &st) == 0) {
         return 0;
     }
