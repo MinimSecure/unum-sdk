@@ -102,7 +102,20 @@ static char *uci_get_str(struct uci_context *ctx, char *name)
 //       has to be revisited and done correctly
 int util_platform_init(int level)
 {
+#define MAX_LAN_NAMES 3
+#define MAX_WAN_NAMES 2
     struct uci_context *ctx = NULL;
+    static char lan_names[MAX_LAN_NAMES][IFNAMSIZ + 1] =
+                                    {
+                                        "lan",
+                                        "down2v0",
+                                        "down1v0"
+                                    };
+    static char wan_names[MAX_LAN_NAMES][IFNAMSIZ + 1] =
+                                    {
+                                        "wan",
+                                        "up0v0",
+                                    };
 
     // Currently only need it to set up things that might vary
     // between LEDE firmware images
@@ -119,8 +132,6 @@ int util_platform_init(int level)
     for(;;)
     {
         char *val;
-        int err;
-        struct stat st;
 
         if(!ctx) {
             ctx = uci_alloc_context();
@@ -156,10 +167,22 @@ int util_platform_init(int level)
             static int lan_up = FALSE;
             static int wan_up = FALSE;
 
-            val = uci_get_str(ctx, "network.down2v0.up");
-            if(!lan_up && val && *val == '1') {
-                log("%s: LAN is up\n", __func__);
-                lan_up = TRUE;
+            for (int ii = 0; ii < MAX_LAN_NAMES; ii++) {
+                char uci_var[256];
+                snprintf(uci_var, sizeof(uci_var),  "network.%s.up", lan_names[ii]);
+
+                val = uci_get_str(ctx, uci_var);
+                if(!lan_up && val && *val == '1') {
+                    log("%s: LAN is up\n", __func__);
+                    lan_up = TRUE;
+                    if (strncmp(lan_names[ii], "lan", 3) == 0) {
+                        strncpy(lan_device, "br-lan", 6);
+                    } else {
+                        strncpy(lan_device, lan_names[ii], IFNAMSIZ);
+                    }
+                    strncpy(lan_ifname, lan_device, sizeof(lan_ifname) - 1);
+                    break;
+                }
             }
 
 #ifndef FEATURE_LAN_ONLY
@@ -168,7 +191,16 @@ int util_platform_init(int level)
                 wan_up = TRUE;
             } else {
                 // In non-AP mode do real check if WAN is up
-                val = uci_get_str(ctx, "network.up0v0.up");
+                for (int ii = 0; ii < MAX_LAN_NAMES; ii++) {
+                    char uci_var[256];
+                    snprintf(uci_var, sizeof(uci_var), "network.%s.up", wan_names[ii]);
+
+                    val = uci_get_str(ctx, uci_var);
+                    if (val && *val == '1') {
+                        strncpy(wan_ifname, wan_names[ii], sizeof(wan_ifname) - 1);
+                        break;
+                    }
+                }
             }
             if(!wan_up && val && *val == '1')
             {
@@ -189,56 +221,6 @@ int util_platform_init(int level)
                 continue;
             }
         }
-
-
-        err = stat(DEVICEID_FILE, &st);
-        if (err != 0) {
-            // DeviceID file does n't exist. Get the LAN device name here
-            // Get main LAN ethernet device (used to get base MAC address)
-            // Note: this doesn't work at all in 18.06.5, keeping it here
-            //       for backward compatibility only.
-            val = uci_get_str(ctx, "network.up0v0.ifname");
-            if(val == NULL) {
-                log("%s: error, no LAN device found\n", __func__);
-                ret = -2;
-                break;
-            }
-            // The device field might contains a list, pick the first one
-            int ii = 0;
-            while(*val && *val != ' ') {
-                lan_device[ii] = *val;
-                ++val;
-                ++ii;
-            }
-            lan_device[ii] = 0;
-        }
-
-        // Get main LAN interface name (for TPCAP etc, has to have IP address)
-        if(IS_OPM(UNUM_OPM_AP)) {
-            val = "down2v0";
-        } else {
-            val = uci_get_str(ctx, "network.up0v0.ifname");
-            if(val == NULL) {
-                log("%s: error, no LAN intrface name found\n", __func__);
-                ret = -3;
-                break;
-            }
-        }
-        strncpy(lan_ifname, val, sizeof(lan_ifname) - 1);
-
-        // Get WAN interface name (used for stats and WAN IP address reporting)
-        if(IS_OPM(UNUM_OPM_AP)) {
-            val = "lo"; // Use loopback to bypass getting WAN name in AP mode
-        } else {
-            val = uci_get_str(ctx, "network.up0v0.ifname");
-        }
-        if(val == NULL) {
-            log("%s: error, no WAN device found\n", __func__);
-            ret = -4;
-            break;
-        }
-        strncpy(wan_ifname, "up0v0", sizeof(wan_ifname) - 1);
-
         break;
     }
     uci_free_context(ctx);
@@ -443,7 +425,7 @@ int util_get_interface_kind(char *ifname)
     // Check if the interface name is lan or wan
     if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
         return UNUM_INTERFACE_KIND_LAN;
-    } else if (strncmp(lan_ifname, ifname, IFNAMSIZ) == 0) {
+    } else if (strncmp(wan_ifname, ifname, IFNAMSIZ) == 0) {
         return UNUM_INTERFACE_KIND_WAN;
     }
 
