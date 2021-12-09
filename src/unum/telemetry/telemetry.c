@@ -23,12 +23,6 @@ typedef struct {
   char wan_mac[MAC_ADDRSTRLEN];
   int mem_info_update_num;      // mem info number (used to track which is sent)
   int cpu_info_update_num;      // CPU info number (used to track which is sent)
-  int first_ipt_diff_count;     // Counter included w/ initial diff chunks
-  int ipt_seq_num;              // Monotonic counter included w/ all diffs
-  int ipt_diff_complete;        // Flag indicating we are reporting that
-                                // sending the diff chunk set is complete
-  int ipt_diff_plus_offset;     // Offset for diff "add" to report
-  int ipt_diff_minus_offset;    // Offset for diff "remove" to report
 } TELEMETRY_DATA_t;
 
 // Telemetry data we've successfully sent
@@ -63,12 +57,7 @@ static char *router_telemetry_json()
     char *wan_mac = NULL;
     JSON_VAL_PFINT_t cpu_pfint_ptr = NULL;
     JSON_VAL_PFINT_t mem_pfint_ptr = NULL;
-    JSON_KEYVAL_TPL_t *ipt_info_tpl_ptr = NULL;
     static long last_sysinfo_telemetry = 0;
-    static long last_ipt_telemetry = 0;
-    static int include_ipt_fist_diff_count = TRUE;
-    static int ipt_reporting_diffs = FALSE;
-    static int ipt_check_diffs = FALSE;
 
     // Init the new data set by copying over the last sent data
     memcpy(&new_data, &last_sent, sizeof(new_data));
@@ -135,102 +124,6 @@ static char *router_telemetry_json()
         cpu_pfint_ptr = NULL;
     }
 
-    // Check if it is time to update iptables telemetry
-    if(IS_OPM(UNUM_OPM_GW) && !ipt_check_diffs && unum_config.ipt_period > 0 &&
-       ((last_ipt_telemetry == 0) ||
-        ((util_time(1) - last_ipt_telemetry) >= unum_config.ipt_period)))
-    {
-        // If it's not the first diff we send, stop including the 
-        // first_diff_count field.
-        if(include_ipt_fist_diff_count && last_ipt_telemetry != 0) {
-            include_ipt_fist_diff_count = FALSE;
-        }
-
-        // Collect iptables data
-        ipt_diffs_colect_data();
-
-        // Reset the reported offsets and force the run of the diff
-        last_sent.ipt_diff_plus_offset = 0;
-        last_sent.ipt_diff_minus_offset = 0;
-        new_data.ipt_diff_plus_offset = 0;
-        new_data.ipt_diff_minus_offset = 0;
-        ipt_reporting_diffs = FALSE;
-        ipt_check_diffs = TRUE;
-
-        // Update the last iptables report time
-        last_ipt_telemetry = util_time(1);
-    }
-    // Do we have ipt diffs to send? If yes prepare the offsets for the
-    // JSON generation callback function to know what entries to report.
-    if(ipt_check_diffs)
-    {
-        static JSON_OBJ_TPL_t tpl_tbl_ipt_obj = {
-          {"ipt_initial_diff",
-            {.type = JSON_VAL_PINT,   {.pi = NULL}}},
-          {"ipt_diff_complete",
-            {.type = JSON_VAL_PINT,   {.pi = NULL}}},
-          {"ipt_seq_num",
-            {.type = JSON_VAL_PINT,   {.pi = &new_data.ipt_seq_num}}},
-          {"ipt_filter_diff", 
-            {.type = JSON_VAL_FARRAY, {.fa = ipt_diffs_array_f}}},
-          {"ipt_nat_diff",    
-            {.type = JSON_VAL_FARRAY, {.fa = ipt_diffs_array_f}}},
-          { NULL }
-        };
-
-        // This handles "ipt_initial_diff" counter (it's included while we are
-        // sending initial table state after startup)
-        if(include_ipt_fist_diff_count) {
-            new_data.first_ipt_diff_count = last_sent.first_ipt_diff_count + 1;
-            tpl_tbl_ipt_obj[0].val.pi = &new_data.first_ipt_diff_count;
-        } else {
-            tpl_tbl_ipt_obj[0].val.pi = NULL;
-        }
-
-        // This handles (prepares) the rule arrays data for sending
-        if(ipt_diffs_prep_to_send(last_sent.ipt_diff_plus_offset,
-                                  last_sent.ipt_diff_minus_offset,
-                                  &new_data.ipt_diff_plus_offset,
-                                  &new_data.ipt_diff_minus_offset))
-        {
-            ipt_check_diffs = TRUE;
-            tpl_tbl_ipt_obj[1].val.pi = NULL;
-            // We have diffs to send, set the flag so we know that after done
-            // sending we need to report that diff sending is complete.
-            ipt_reporting_diffs = TRUE;
-            new_data.ipt_diff_complete = FALSE;
-            // Add ipt info object to telemetry
-            ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
-            // Update the IPT telemetry global sequence number
-            new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
-        }
-        else if(ipt_reporting_diffs && !last_sent.ipt_diff_complete)
-        {
-            // We were reporting diffs. The last ipt diff has to report diff
-            // complete flag (it will contain empty diff arrays though).
-            // We have not reported it yet, so adding it now.
-            ipt_check_diffs = TRUE;
-            new_data.ipt_diff_complete = TRUE;
-            tpl_tbl_ipt_obj[1].val.pi = &new_data.ipt_diff_complete;
-            // Add ipt info object to telemetry
-            ipt_info_tpl_ptr = tpl_tbl_ipt_obj;
-            // Update the IPT telemetry global sequence number
-            new_data.ipt_seq_num = last_sent.ipt_seq_num + 1;
-        }
-        else if(ipt_reporting_diffs && last_sent.ipt_diff_complete)
-        {
-            // Diff complete has been reported successfully.
-            // No longer need to send ipt info object.
-            ipt_check_diffs = FALSE;
-            ipt_reporting_diffs = FALSE;
-            new_data.ipt_diff_complete = FALSE;
-            tpl_tbl_ipt_obj[1].val.pi = NULL;
-        } else {
-            ipt_check_diffs = FALSE;
-        }
-
-    }
-
     JSON_OBJ_TPL_t tpl = {
       {"lan_ip_address",     {.type = JSON_VAL_STR, {.s = lan_ip }}},
       {"wan_ip_address",     {.type = JSON_VAL_STR, {.s = wan_ip }}},
@@ -243,7 +136,6 @@ static char *router_telemetry_json()
       {"cpu_softirq",        {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
       {"cpu_max_usage",      {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
       {"cpu_max_softirq",    {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
-      {"ipt_diff",           {.type = JSON_VAL_OBJ, {.o = ipt_info_tpl_ptr}}},
       {"seq_num",            {.type = JSON_VAL_UL,  {.ul = telemetry_seq_num}}},
       {NULL}
     };

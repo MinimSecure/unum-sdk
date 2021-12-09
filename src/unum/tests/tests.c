@@ -88,6 +88,8 @@ static void print_tests_info()
            "- test dns subsystem\n");
     printf(UTIL_STR(U_TEST_ZIP)
            "- test zip subsystem\n");
+    printf(UTIL_STR(U_TEST_IPTABLES)
+           "- test iptables telemetry\n");
     printf(UTIL_STR(U_TEST_UNUSED)
            "- unused\n");
     printf("...\n");
@@ -177,6 +179,10 @@ static int run_platform_tests(int test_num, char *test_num_str)
                 return test_zip();
             }
             printf("This test is not supported on this platform\n");
+            return 0;
+
+        case U_TEST_IPTABLES:
+            test_iptables();
             return 0;
 
         default:

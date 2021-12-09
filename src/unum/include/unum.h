@@ -78,6 +78,7 @@
 #include "security.h"
 #include "monitor.h"
 #include "conncheck.h"
+#include "iptables.h"
 
 #ifdef DEBUG
 #  include "tests.h"
