@@ -619,10 +619,6 @@ static int resolve_server_addr()
         endpoint = &settings.endpoints[0];
     }
 
-    if(endpoint->domain == NULL) {
-        return -1;
-    }
-
     if(util_get_ip4_addr(endpoint->domain, &s_addr) < 0 ||
          s_addr.sa_family != AF_INET)
     {
@@ -993,7 +989,7 @@ static int get_conn_time(struct sockaddr *sa, short port)
         if(so_error == 0) {
             retval = util_time(1000) - before;
         } else {
-            log("%s: Error: Could not connect to server! %d\n", __func__, strerror(so_error));
+            log("%s: Error: Could not connect to server! %s\n", __func__, strerror(so_error));
         }
 
     } else {

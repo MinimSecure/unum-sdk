@@ -535,7 +535,7 @@ static inline unsigned dns_k_permutor_powof(unsigned n) {
 	unsigned m, i = 0;
 
 	for (m = 1; m < n; m <<= 1, i++)
-		;;
+		;
 
 	return i;
 } /* dns_k_permutor_powof() */
@@ -1008,7 +1008,7 @@ size_t dns_strlcpy(char *dst, const char *src, size_t lim) {
 	}
 
 	while (*s++ != '\0')
-		;;
+		;
 
 	return s - src - 1;
 } /* dns_strlcpy() */
@@ -1032,7 +1032,7 @@ size_t dns_strlcat(char *dst, const char *src, size_t lim) {
 	p = s;
 
 	while (*s++ != '\0')
-		;;
+		;
 
 	return lim + (s - p - 1);
 } /* dns_strlcat() */

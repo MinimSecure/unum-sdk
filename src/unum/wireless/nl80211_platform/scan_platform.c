@@ -137,7 +137,7 @@ int wt_tpl_fill_scan_entry_info(WT_JSON_TPL_SCAN_RADIO_t *rscan,
     memset(ch_width, 0, sizeof(ch_width));
     if(e->vht_chwidth == 0) {
         // If VHT width is 0, consider it as HT
-        if(e->ht_chwidth == 0 || e->ht_chwidth == 1) {
+        if(e->ht_chwidth < ARRAY_SIZE(ht_chanwidth)) {
             // Populate secondary channel
             char sc = 0;
             switch(e->ht_secondary) {
@@ -159,9 +159,10 @@ int wt_tpl_fill_scan_entry_info(WT_JSON_TPL_SCAN_RADIO_t *rscan,
             strcpy(ch_width, "unknown");
         }
     } else if(e->vht_chwidth >= 1 &&
-               e->vht_chwidth < (sizeof(vht_chanwidth)/sizeof(vht_chanwidth[0]))) {
+              e->vht_chwidth < ARRAY_SIZE(vht_chanwidth)) {
         // Populate Channel width
-        strcpy(ch_width, vht_chanwidth[e->vht_chwidth]);
+        strncpy(ch_width, vht_chanwidth[e->vht_chwidth], sizeof(ch_width));
+        ch_width[sizeof(ch_width)-1] = '\0';
         // Populate secondary channels if they exist
         extras_obj[0].val.s = chanspec;
         if(e->vht_secondary1 != 0 &&  e->vht_secondary2 != 0) {

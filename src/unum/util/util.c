@@ -221,7 +221,7 @@ int util_buf_to_file(char *file, void *buf, int len, mode_t crmode)
 //                     buf_size was not large enough to read all
 size_t util_file_to_buf(char *file, char *buf, size_t buf_size)
 {
-    size_t len = 0;
+    int len = 0;
     int fd = open(file, O_RDONLY);
     if(fd < 0) {
         return -1;
@@ -259,10 +259,6 @@ int util_cmp_files_match(char *file1, char *file2, int must_exist)
     
     file1_len = file2_len = 0;
         
-    // open files    
-    FILE *fd1 = fopen(file1, "r");
-    FILE *fd2 = fopen(file2, "r");    
-    
     if(stat(file1, &st1) == 0) {
         file1_len = st1.st_size;
     } else if(must_exist || errno != ENOENT) {
@@ -283,6 +279,9 @@ int util_cmp_files_match(char *file1, char *file2, int must_exist)
     
     do{
         int status = 0;    
+        // open files
+        FILE *fd1 = fopen(file1, "r");
+        FILE *fd2 = fopen(file2, "r");
 
         if (fd1 != NULL && fd2 != NULL)
         {
@@ -294,18 +293,21 @@ int util_cmp_files_match(char *file1, char *file2, int must_exist)
             buf1[++len1] = '\0';
             buf2[++len2] = '\0';
 
-            // close files
-            fclose(fd1);
-            fclose(fd2);
-
             // compare buffers
             status = memcmp(buf1, buf2, 512);
 
             if(status == 0) {
+                // close files
+                fclose(fd1);
+                fclose(fd2);
+
                 return TRUE;
             }
         }
 
+        // close files
+        if (fd1) fclose(fd1);
+        if (fd2) fclose(fd2);
         return FALSE;
 
     } while(0);

@@ -28,7 +28,7 @@ static json_t *util_tpl_to_json_val(JSON_VAL_TPL_t *val, char *key, int *perr)
         case JSON_VAL_STR:
             if(val->s && !(jval = json_string(val->s))) {
                 log("%s: error adding '%s' value '%.*s%s'\n", __func__,
-                    key, val->s, MAX_JSON_VAL_LOG,
+                    key, MAX_JSON_VAL_LOG, val->s,
                     (strlen(val->s) > MAX_JSON_VAL_LOG ? "..." : ""));
                 *perr = -1;
             }
@@ -84,13 +84,13 @@ static json_t *util_tpl_to_json_val(JSON_VAL_TPL_t *val, char *key, int *perr)
             }
             break;
         case JSON_VAL_FSTR:
-            if(val->fs != NULL) {
+            if(val->fs == NULL) {
                 break;
             }
             s = val->fs(key);
             if(s && !(jval = json_string(s))) {
                 log("%s: error adding '%s' value '%.*s%s'\n", __func__,
-                    key, s, MAX_JSON_VAL_LOG,
+                    key, MAX_JSON_VAL_LOG, s, 
                     (strlen(s) > MAX_JSON_VAL_LOG ? "..." : ""));
                 *perr = -1;
             }
@@ -247,7 +247,6 @@ json_t *util_tpl_to_json_obj(JSON_OBJ_TPL_t tpl)
     // Loop through all keyvalue pairs of the object
     for(kv = tpl; kv && kv->key; kv++)
     {
-        int err = 0;
         char *key = kv->key;
         JSON_VAL_TPL_t *val = &kv->val;
 

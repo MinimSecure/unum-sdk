@@ -410,10 +410,6 @@ static void wireless_do_radio_telemetry(void)
                         "Accept: application/json\0",
                         jstr, strlen(jstr));
 
-        // No longer need the JSON string
-        util_free_json_str(jstr);
-        jstr = NULL;
-
         if(rsp == NULL || (rsp->code / 100) != 2) {
             log("%s: request error, code %d%s\n",
                 __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
@@ -485,10 +481,6 @@ static void wireless_do_scan_report(void)
                         "Content-Type: application/json\0"
                         "Accept: application/json\0",
                         jstr, strlen(jstr));
-
-        // No longer need the JSON string
-        util_free_json_str(jstr);
-        jstr = NULL;
 
         if(rsp == NULL || (rsp->code / 100) != 2) {
             log("%s: request error, code %d%s\n",
