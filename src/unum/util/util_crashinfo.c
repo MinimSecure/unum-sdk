@@ -141,7 +141,9 @@ static int crashinfo_maps(char *buf, int buf_len,
             if(r_start <= pr->ip && pr->ip < r_end) {
                 pr->ip_r_start = r_start;
                 pr->ip_r_end = r_end;
-                strncpy(pr->ip_r_name, name, sizeof(pr->ip_r_name));
+                if (name) {
+                    strncpy(pr->ip_r_name, name, sizeof(pr->ip_r_name));
+                }
                 pr->ip_r_name[sizeof(pr->ip_r_name) - 1] = 0;
                 PRNBUF(" ip@%p+%p", r_start, (void *)(pr->ip - r_start));
                 pr->flags |= UTIL_REGINFO_IP_MAPS;

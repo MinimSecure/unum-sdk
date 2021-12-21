@@ -189,11 +189,6 @@ static void config(THRD_PARAM_t *p)
                             "Accept: application/json\0",
                             cstr, cstr_len);
 
-            // No longer need the JSON string
-            platform_cfg_free(cstr);
-            cstr = NULL;
-            cstr_len = 0;
-
             if(rsp == NULL || (rsp->code / 100) != 2) {
                 log("%s: request error, code %d%s\n",
                     __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");

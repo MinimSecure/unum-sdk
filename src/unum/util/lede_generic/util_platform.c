@@ -374,7 +374,7 @@ char *platform_fw_version(void)
                 *end = 0;
             }
         }
-        if(val && strlen(val) > 0) {
+        if(strlen(val) > 0) {
             strncpy(owrt_version, val, sizeof(owrt_version) - 1);
             ret = owrt_version;
         }

@@ -557,7 +557,7 @@ void wt_get_ies(unsigned char *ie, int ielen,
 
     while (ielen >= 2 && ielen >= ie[1]) {
         // A value of 0 ie[0] (type) is SSID
-        if (ie[0] == 0 && ie[1] >= 0 && ie[1] <= 32) {
+        if (ie[0] == 0 && ie[1] <= 32) {
             len = ie[1];
             data = ie + 2;
             if (len > 64) {

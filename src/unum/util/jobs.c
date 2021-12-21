@@ -156,7 +156,7 @@ int util_set_main_thrd()
         thrd_ptr = (UTIL_THRD_t *)pthread_getspecific(thrd_key);
         if(thrd_ptr != NULL) {
             log("%s: error, pointer for key %p is not NULL (%p)\n",
-                __func__, thrd_key, thrd_ptr);
+                __func__, (void*) thrd_key, thrd_ptr);
             ret = -1;
             break;
         }

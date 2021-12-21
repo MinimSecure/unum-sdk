@@ -9,7 +9,10 @@ void util_event_init(UTIL_EVENT_t *e)
 {
     pthread_mutex_init(&e->m, 0);
     pthread_cond_init(&e->c, 0);
+
+    pthread_mutex_lock(&e->m);
     e->is_set = FALSE;
+    pthread_mutex_unlock(&e->m);
 }
 
 // Signal an event (unblocks one or all threads waiting,

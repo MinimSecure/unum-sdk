@@ -152,7 +152,7 @@ static int report_device_scan(json_t *device, const char *mac,
         }
 #endif // DEBUG
 
-        http_rsp *rsp = http_post(url, NULL, json, strlen(json));
+        rsp = http_post(url, NULL, json, strlen(json));
         if(rsp == NULL) {
             ret = -2;
         } else {

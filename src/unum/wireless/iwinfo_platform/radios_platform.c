@@ -60,6 +60,7 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
         extras_obj[0].val.s = NULL;
     } else {
         strncpy(mode, hw_mode, sizeof(mode));
+        mode[sizeof(mode)-1] = '\0';
         extras_obj[0].val.s = mode;
     }
 

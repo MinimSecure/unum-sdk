@@ -228,10 +228,6 @@ static void telemetry(THRD_PARAM_t *p)
                                      "Accept: application/json\0",
                                      jstr, strlen(jstr));
 
-            // No longer need the JSON string
-            util_free_json_str(jstr);
-            jstr = NULL;
-
             // While the sequence number is 0 we will not bump it up until
             // know that the request is processed by the server. After that
             // bump it up after each attempt to send the router telemetry.

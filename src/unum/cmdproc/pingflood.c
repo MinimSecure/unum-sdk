@@ -274,7 +274,8 @@ static int do_flood(unsigned char *mac,
         return -3;
     }
     if((W_COUNTERS_MIF & wc_after.flags) != 0) {
-        log("%s: warning, " MAC_PRINTF_FMT_TPL " \n",
+        log("%s: warning, " MAC_PRINTF_FMT_TPL
+            " mac was seen on multiple intefaces %s/%s\n",
             __func__, MAC_PRINTF_ARG_TPL(mac),
             wc_before.ifname, wc_after.ifname);
     }

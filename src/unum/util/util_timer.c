@@ -42,7 +42,7 @@ TIMER_HANDLE_t util_timer_set(unsigned int msecs, const char *name,
 {
     TIMER_HANDLE_t th = 0;
 
-    if(msecs < 0 || !f || !name) {
+    if(!f || !name) {
         log("%s: invalid parameters\n", __func__);
         return th;
     }

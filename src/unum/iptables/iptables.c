@@ -89,10 +89,6 @@ static void iptables_telemetry(THRD_PARAM_t *p)
                                      "Accept: application/json\0",
                                      jstr, strlen(jstr));
 
-            // No longer need the JSON string
-            util_free_json_str(jstr);
-            jstr = NULL;
-
             if(rsp == NULL || (rsp->code / 100) != 2) {
                 log("%s: request error, code %d%s\n",
                     __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");

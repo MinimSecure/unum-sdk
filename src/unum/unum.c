@@ -278,7 +278,7 @@ static void do_daemon(void)
     // Change the working directory to the root
     int res = chdir("/");
     if(res != 0) {
-        log("%s: chdir() failed: %s\n", __func__, strerror(res));
+        log("%s: chdir() failed: %s\n", __func__, strerror(errno));
     }
 
     // Close all open file descriptors

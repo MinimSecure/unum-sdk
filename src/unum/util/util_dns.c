@@ -648,7 +648,7 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
     if(unum_config.url_prefix) {
         // Unum Config Contains Custom URL Prefix
         count = snprintf(url, length, "%s", unum_config.url_prefix);
-    } else if(servers[type]) {
+    } else if(servers[type][0] != '\0') {
         // Use URL Mapping
         count = snprintf(url, length, "%s://%s", proto, servers[type]);
     } else {

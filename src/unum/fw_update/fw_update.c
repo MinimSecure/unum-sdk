@@ -258,7 +258,7 @@ static void fw_update(void)
                 if(!have_fw_storage_addr && conncheck_no_dns())
                 {
                     log("%s: no IP for %s during DNS outage, restarting...\n",
-                        __func__);
+                        __func__, download_url);
                     // In updater mode the agent runs under monitor and
                     // util_restart() works
                     util_restart(UNUM_START_REASON_FW_CONN_FAIL);
