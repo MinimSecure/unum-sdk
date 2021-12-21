@@ -124,11 +124,11 @@ static int init_log_entry(LOG_DST_t dst)
     }
 
     // Quick check if we should even try to take mutex
-    if((lc->flags & (LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL)) != 0) {
+    if(lc && (lc->flags & (LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL)) != 0) {
         return 0;
     }
 
-    if((lc->flags & LOG_FLAG_MUTEX) != 0) {
+    if(lc && (lc->flags & LOG_FLAG_MUTEX) != 0) {
         UTIL_MUTEX_TAKE(&(lc->m));
         mutex_taken = TRUE;
     }
@@ -136,13 +136,13 @@ static int init_log_entry(LOG_DST_t dst)
     for(;;)
     {
         // MT safe check if init is done
-        if((lc->flags & (LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL)) != 0) {
+        if(lc && (lc->flags & (LOG_FLAG_INIT_DONE | LOG_FLAG_INIT_FAIL)) != 0) {
             break;
         }
 
 #ifdef LOG_FLAG_FILE
         // Cleanup stale log files if the log settings change between images
-        if(lc->max_size && lc->max && (lc->flags & LOG_FLAG_FILE) != 0)
+        if(lc && lc->max_size && lc->max && (lc->flags & LOG_FLAG_FILE) != 0)
         {
             int ii;
             for(ii = lc->max + 1; ii <= LOG_ROTATE_CLEANUP_MAX; ii++)
@@ -163,7 +163,7 @@ static int init_log_entry(LOG_DST_t dst)
         mask |= LOG_FLAG_TTY;
 #endif // LOG_FLAG_TTY
 
-        if(!lc->f && (lc->flags & mask) != 0)
+        if(lc && !lc->f && (lc->flags & mask) != 0)
         {
             char fn[LOG_MAX_PATH + 1];
             int fn_len;
@@ -202,14 +202,14 @@ static int init_log_entry(LOG_DST_t dst)
 
         // If init is still not done, then either the platform does not support
         // the entry's type of logging or the init has failed.
-        if((lc->flags & LOG_FLAG_INIT_DONE) == 0)
+        if(lc && (lc->flags & LOG_FLAG_INIT_DONE) == 0)
         {
             ret = -2;
             break;
         }
 
         // Log startup message
-        if((lc->flags & LOG_FLAG_INIT_MSG) != 0 &&
+        if(lc && (lc->flags & LOG_FLAG_INIT_MSG) != 0 &&
            (lc->flags & LOG_FLAG_INIT_DONE) != 0)
         {
             // Make sure this call is made only if the init function
@@ -237,8 +237,6 @@ void unum_log(LOG_DST_t dst, char *str, ...)
     long fpos;
     va_list ap;
 
-    va_start(ap, str);
-
     // If process log destination override is set, use it
     if(proc_log_dst_id >= LOG_DST_STDOUT && proc_log_dst_id < LOG_DST_MAX) {
         dst = proc_log_dst_id;
@@ -248,6 +246,8 @@ void unum_log(LOG_DST_t dst, char *str, ...)
         return;
     }
 
+    va_start(ap, str);
+
     // leave lc == NULL if unknown destination or logging to stdout
     if(dst > LOG_DST_STDOUT && dst < LOG_DST_MAX) {
         lc = &(log_cfg[dst]);
@@ -256,6 +256,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
     // If no dst or if logging to stdout printf and leave
     if(!lc || (lc->flags & LOG_FLAG_STDOUT) != 0) {
         vprintf(str, ap);
+        va_end(ap);
         return;
     }
 
@@ -265,6 +266,7 @@ void unum_log(LOG_DST_t dst, char *str, ...)
     // If logging entry failed to init, just printf and leave
     if((lc->flags & LOG_FLAG_INIT_FAIL) != 0) {
         vprintf(str, ap);
+        va_end(ap);
         return;
     }
 
@@ -365,6 +367,8 @@ void unum_log(LOG_DST_t dst, char *str, ...)
 #endif // LOG_FLAG_FILE
         break;
     }
+
+    va_end(ap);
 
     if(mutex_taken) {
         UTIL_MUTEX_GIVE(&(lc->m));

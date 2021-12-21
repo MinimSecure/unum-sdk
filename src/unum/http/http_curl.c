@@ -216,14 +216,14 @@ static http_rsp *http_req(char *url, char *headers,
 
     rsp = alloc_rsp(NULL, RSP_BUF_SIZE);
     if(!rsp) {
-        log("%s: url <%s>, error allocating response buffer\n");
+        log("%s: url <%s>, error allocating response buffer\n", __func__, url);
         return NULL;
     }
 
     ch = curl_easy_init();
     if(!ch) {
         free_rsp(rsp);
-        log("%s: url <%s>, error curl_easy_init() has failed\n");
+        log("%s: url <%s>, error curl_easy_init() has failed\n", __func__, url);
         return NULL;
     }
 
@@ -240,7 +240,7 @@ static http_rsp *http_req(char *url, char *headers,
         typestr = "UNKNOWN";
     }
 
-    log("%s: %08x %s url <%s>\n", __func__, ch, typestr, url);
+    log("%s: %p %s url <%s>\n", __func__, ch, typestr, url);
 
     curl_easy_setopt(ch, CURLOPT_URL, url);
     curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
@@ -296,7 +296,7 @@ static http_rsp *http_req(char *url, char *headers,
         struct curl_slist *slold = NULL;
         for(hdr = headers; hdr && *hdr != 0; hdr += strlen(hdr) + 1)
         {
-            log("%s: %08x hdr: '%s'\n", __func__, ch, hdr);
+            log("%s: %p hdr: '%s'\n", __func__, ch, hdr);
             slold = slhdr;
             if((slhdr = curl_slist_append(slhdr, hdr)) == NULL) {
                 break;
@@ -307,7 +307,7 @@ static http_rsp *http_req(char *url, char *headers,
             slhdr = curl_slist_append(slold, "Content-Encoding: gzip");
         }
         if(slhdr == NULL) {
-            log("%s: %08x failed to add headers, ignoring\n", __func__, ch);
+            log("%s: %p failed to add headers, ignoring\n", __func__, ch);
             if(slold) {
                 curl_slist_free_all(slold);
             }
@@ -347,7 +347,7 @@ static http_rsp *http_req(char *url, char *headers,
     if(((type & HTTP_REQ_TYPE_MASK) == HTTP_REQ_TYPE_POST) ||
        ((type & HTTP_REQ_TYPE_MASK) == HTTP_REQ_TYPE_PUT))
     {
-        log("%s: %08x len%s: %d, ptr: '%.*s%s'\n",
+        log("%s: %p len%s: %d, ptr: '%.*s%s'\n",
             __func__, ch, (compressed ? "(gzip)" : ""), dlen,
             (len > MAX_LOG_DATA_LEN ? MAX_LOG_DATA_LEN : len), data,
             (len > MAX_LOG_DATA_LEN ? "..." : ""));
@@ -367,9 +367,9 @@ static http_rsp *http_req(char *url, char *headers,
     {
         err = curl_easy_perform(ch);
         if(err) {
-            log("%s: %08x error (%d) %s\n",
+            log("%s: %p error (%d) %s\n",
                 __func__, ch, err, curl_easy_strerror(err));
-            log("%s: %08x error info: %s\n", __func__, ch, err_buf);
+            log("%s: %p error info: %s\n", __func__, ch, err_buf);
             // Refresh DNS servers, it might help with libc stale/cached DNS servers
             res_init();
             continue;
@@ -377,17 +377,17 @@ static http_rsp *http_req(char *url, char *headers,
 
         err = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &resp_code);
         if(err) {
-            log("%s: %08x getinfo error (%d) %s\n",
+            log("%s: %p getinfo error (%d) %s\n",
                 __func__, ch, err, curl_easy_strerror(err));
-            log("%s: %08x getinfo error info: %s\n", __func__, ch, err_buf);
+            log("%s: %p getinfo error info: %s\n", __func__, ch, err_buf);
             break;
         }
 
-        log("%s: %08x OK, reply: '%.*s%s'\n", __func__, ch,
+        log("%s: %p OK, reply: '%.*s%s'\n", __func__, ch,
             (rsp->len > MAX_LOG_DATA_LEN ? MAX_LOG_DATA_LEN : rsp->len),
             rsp->data,
             (rsp->len > MAX_LOG_DATA_LEN ? "..." : ""));
-        log("%s: %08x rsp code: %ld\n", __func__, ch, resp_code);
+        log("%s: %p rsp code: %ld\n", __func__, ch, resp_code);
         rsp->code = resp_code;
 
         break;
