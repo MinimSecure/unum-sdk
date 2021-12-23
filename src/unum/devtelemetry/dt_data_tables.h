@@ -32,9 +32,17 @@ struct _DT_COUNTERS;
 
 // Connection information structure header
 struct _DT_CONN_HDR {
-    IPV4_ADDR_t ipv4;    // Peer's IPv4 address
-    unsigned char proto; // Connection IP protocol (0 - unrecognized)
-    unsigned char rev;   // TRUE if reporting reverse TCP/UDP port
+    union {
+        IPV4_ADDR_t ipv4;    // Peer's IPv4 address
+#ifdef FEATURE_IPV6_TELEMETRY
+        IPV6_ADDR_t ipv6;    // Peer's IPv6 address
+#endif
+    } ip;
+    unsigned char ip_proto; // Connection IP protocol (0 - unrecognized)
+    struct {
+        unsigned char rev : 1;     // TRUE if reporting reverse TCP/UDP port
+        unsigned char version : 4; // As per ip header, 4=V4, 6=V6
+    } flags;
     uint16_t port; // Peer's TCP/UDP port (device port if rev is TRUE)
     struct _DT_DEVICE *dev; // Ptr to the device owning the connection
 } __attribute__((packed));

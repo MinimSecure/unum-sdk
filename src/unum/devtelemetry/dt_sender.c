@@ -125,8 +125,8 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
 
     // Prepare the template data
     snprintf(con_ip, sizeof(con_ip), IP_PRINTF_FMT_TPL,
-             IP_PRINTF_ARG_TPL(p_con->hdr.ipv4.b));
-    proto = p_con->hdr.proto;
+             IP_PRINTF_ARG_TPL(p_con->hdr.ip.ipv4.b));
+    proto = p_con->hdr.ip_proto;
     tpl_tbl_con_obj[0].val.pul = tpl_tbl_con_obj[1].val.pul = NULL;
     tpl_tbl_con_obj[2].val.pul = NULL;
 #ifdef REPORT_CURRENT_TCP_WIN_SIZE
@@ -134,7 +134,7 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
 #endif // REPORT_CURRENT_TCP_WIN_SIZE
     if(proto == 6 || proto == 17) {
         port = p_con->hdr.port;
-        if(p_con->hdr.rev) { // device's port
+        if(p_con->hdr.flags.rev) { // device's port
             tpl_tbl_con_obj[0].val.pul = &port;
         } else {             // peer's port
             tpl_tbl_con_obj[1].val.pul = &port;

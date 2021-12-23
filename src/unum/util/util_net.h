@@ -124,6 +124,15 @@ typedef union {
     unsigned int  i;
 } IPV4_ADDR_t;
 
+// IPv6 internal address data type
+typedef union {
+    unsigned char b[16];
+    struct {
+        uint64_t h;
+        uint64_t l;
+    } __attribute__((packed)) i;
+} IPV6_ADDR_t;
+
 // IP configuration structure describing device IP settings
 typedef struct _DEV_IP_CFG {
     IPV4_ADDR_t ipv4; // byte order is the same as in struct sockaddr

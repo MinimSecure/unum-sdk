@@ -475,9 +475,10 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 
     // Prepare header for the connection info table entry
     DT_CONN_HDR_t hdr;
-    hdr.ipv4.i = peer_ipv4.i;
-    hdr.proto = iph->protocol;
-    hdr.rev = FALSE;
+    hdr.ip.ipv4.i = peer_ipv4.i;
+    hdr.ip_proto = iph->protocol;
+    hdr.flags.rev = FALSE;
+    hdr.flags.version = 4;
     hdr.port = 0;
     hdr.dev = dev;
 
@@ -487,14 +488,14 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     // Work out tcp/udp and what port to report. If the device port is
     // less than 1024 we report it, otherwise report peer's port.
     // If the packet is corrupt override protocol w/ 0.
-    if(hdr.proto == 6 || hdr.proto == 17) {
+    if(hdr.ip_proto == IPPROTO_TCP || hdr.ip_proto == IPPROTO_UDP) {
         struct tcphdr* tcph = ((void *)iph) + sizeof(struct iphdr);
         struct udphdr* udph = ((void *)iph) + sizeof(struct iphdr);
         int have_net_len = thdr->tp_snaplen - (thdr->tp_net - thdr->tp_mac);
         int need_net_len = sizeof(struct iphdr);
-        if(hdr.proto == 6) {
+        if(hdr.ip_proto == IPPROTO_TCP) {
             need_net_len += sizeof(*tcph);
-        } else if(hdr.proto == 17) {
+        } else if(hdr.ip_proto == IPPROTO_UDP) {
             need_net_len += sizeof(*udph);
         }
         if(need_net_len <= have_net_len) {
@@ -502,13 +503,13 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
             uint16_t sp = ntohs(udph->source);
             uint16_t dp = ntohs(udph->dest);
             if(to_rtr) {
-                hdr.rev = (sp < 1024 && dp >= 1024);
-                hdr.port = hdr.rev ? sp : dp;
+                hdr.flags.rev = (sp < 1024 && dp >= 1024);
+                hdr.port = hdr.flags.rev ? sp : dp;
             } else { // pkt from the router
-                hdr.rev = (dp < 1024 && sp >= 1024);
-                hdr.port = hdr.rev ? dp : sp;
+                hdr.flags.rev = (dp < 1024 && sp >= 1024);
+                hdr.port = hdr.flags.rev ? dp : sp;
             }
-            if(hdr.proto == 6) {
+            if(hdr.ip_proto == IPPROTO_TCP) {
                 cur_tcp_win_size = ntohs(tcph->window);
                 // Only capture win size if SYN or SYN|ACK pkt from the device
                 if(tcph->syn && to_rtr) {
@@ -517,8 +518,8 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
             }
         } else {
             hdr.port = 0;
-            hdr.proto = 0;
-            hdr.rev = FALSE;
+            hdr.ip_proto = 0;
+            hdr.flags.rev = FALSE;
         }
     }
 
@@ -578,10 +579,11 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
 
     // Prepare the dev telemetry connection header from fe connection header
     DT_CONN_HDR_t hdr;
-    hdr.ipv4.i = fe_conn->hdr.peer_ipv4.i;
-    hdr.proto = fe_conn->hdr.proto;
-    hdr.rev = fe_conn->hdr.rev;
-    hdr.port = (hdr.rev ? fe_conn->hdr.dev_port : fe_conn->hdr.peer_port);
+    hdr.ip.ipv4.i = fe_conn->hdr.peer_ipv4.i;
+    hdr.ip_proto = fe_conn->hdr.proto;
+    hdr.flags.rev = fe_conn->hdr.rev;
+    hdr.flags.version = 4;
+    hdr.port = (hdr.flags.rev ? fe_conn->hdr.dev_port : fe_conn->hdr.peer_port);
     hdr.dev = dev;
 
     // Adding/updating the connection common info (i.e. the info updated
@@ -604,7 +606,7 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
     DPRINTF("%s: fe%s connection p:%d "
             IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu "
             "cur in/from:%u out/to:%u\n",
-            __func__, (fe_conn->hdr.rev ? " rev" : ""), fe_conn->hdr.proto,
+            __func__, (fe_conn->hdr.flags.rev ? " rev" : ""), fe_conn->hdr.proto,
             IP_PRINTF_ARG_TPL(fe_conn->hdr.dev_ipv4.b),
             fe_conn->hdr.dev_port,
             IP_PRINTF_ARG_TPL(fe_conn->hdr.peer_ipv4.b),
@@ -929,7 +931,7 @@ static void print_test_conn_info(DT_CONN_t *conn)
            conn->hdr.proto, proto_name(conn->hdr.proto),
            IP_PRINTF_ARG_TPL(conn->hdr.ipv4.b));
     if(conn->hdr.proto == 6 || conn->hdr.proto == 17) {
-        printf(" p:%u(%s)", conn->hdr.port, conn->hdr.rev ? "our" : "their");
+        printf(" p:%u(%s)", conn->hdr.port, conn->hdr.flags.rev ? "our" : "their");
     }
     if(conn->hdr.proto == 6) {
         printf(" syn_ws:%d ws:%d",
