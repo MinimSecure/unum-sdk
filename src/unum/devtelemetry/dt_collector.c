@@ -303,7 +303,7 @@ static void ip_pkt_upd_conn(DT_DEVICE_t *dev,
         DPRINTF("%s: unable to add IP pkt connection "
                 IP_PRINTF_FMT_TPL " <-> " IP_PRINTF_FMT_TPL " \n",
                 __func__, IP_PRINTF_ARG_TPL(dev->ipv4.b),
-                IP_PRINTF_ARG_TPL(hdr->ipv4.b));
+                IP_PRINTF_ARG_TPL(hdr->ip.ipv4.b));
         return;
     }
 
@@ -606,7 +606,7 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
     DPRINTF("%s: fe%s connection p:%d "
             IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu "
             "cur in/from:%u out/to:%u\n",
-            __func__, (fe_conn->hdr.flags.rev ? " rev" : ""), fe_conn->hdr.proto,
+            __func__, (fe_conn->hdr.rev ? " rev" : ""), fe_conn->hdr.proto,
             IP_PRINTF_ARG_TPL(fe_conn->hdr.dev_ipv4.b),
             fe_conn->hdr.dev_port,
             IP_PRINTF_ARG_TPL(fe_conn->hdr.peer_ipv4.b),
@@ -928,12 +928,12 @@ static void print_test_conn_info(DT_CONN_t *conn)
 #endif // DT_CONN_MAP_IP_TO_DNS
 
     printf(" %3u/%.8s to " IP_PRINTF_FMT_TPL,
-           conn->hdr.proto, proto_name(conn->hdr.proto),
-           IP_PRINTF_ARG_TPL(conn->hdr.ipv4.b));
-    if(conn->hdr.proto == 6 || conn->hdr.proto == 17) {
+           conn->hdr.ip_proto, proto_name(conn->hdr.ip_proto),
+           IP_PRINTF_ARG_TPL(conn->hdr.ip.ipv4.b));
+    if(conn->hdr.ip_proto == IPPROTO_TCP || conn->hdr.ip_proto == IPPROTO_UDP) {
         printf(" p:%u(%s)", conn->hdr.port, conn->hdr.flags.rev ? "our" : "their");
     }
-    if(conn->hdr.proto == 6) {
+    if(conn->hdr.ip_proto == IPPROTO_TCP) {
         printf(" syn_ws:%d ws:%d",
                conn->syn_tcp_win_size, conn->cur_tcp_win_size);
     }
