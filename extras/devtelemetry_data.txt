@@ -67,6 +67,82 @@ Device telemetry JSON:
           ]
         }
       ]
+    },
+    {
+      "mac": "c0:a8:00:67:62:72",
+      "ifname": "br0",
+      "ip": "2001:470:e8d9:64:54ea:4aad:a263:8599",
+      "conn": [
+        {
+          "r_ip": "2a04:4e42:400::323",
+          "r_port": 443,           // remote (peer's) port the connection is to
+          "proto": 6,
+          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
+          "b_in": [
+            45293,
+            9788,
+            34149
+          ],
+          "b_out": [
+            10534,
+            4853,
+            13603
+          ]
+        },
+        {
+          "r_ip": "2607:f8b0:400a:80a::200e",
+          "r_port": 443,
+          "proto": 6,
+          "b_in": [
+            0,
+            0,
+            66
+          ],
+          "b_out": [
+            0,
+            0,
+            54
+          ]
+        }
+      ]
+    },
+    {
+      "mac": "c0:a8:00:67:62:72",
+      "ifname": "br0",
+      "ip": "2001:470:e8d9:64::8599",
+      "conn": [
+        {
+          "r_ip": "2a04:4e42:400::323",
+          "r_port": 443,           // remote (peer's) port the connection is to
+          "proto": 6,
+          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
+          "b_in": [
+            45293,
+            9788,
+            34149
+          ],
+          "b_out": [
+            10534,
+            4853,
+            13603
+          ]
+        },
+        {
+          "r_ip": "2607:f8b0:400a:80a::200f",
+          "r_port": 443,
+          "proto": 6,
+          "b_in": [
+            0,
+            0,
+            66
+          ],
+          "b_out": [
+            0,
+            0,
+            54
+          ]
+        }
+      ]
     }
   ],
   "dns": [                         // discovered (during the telemetry time period)
@@ -83,8 +159,8 @@ Device telemetry JSON:
       "ip": "173.194.205.106"
     },
     {
-      "name": "www.amazon.com",
-      "ip": "54.230.38.134"
+      "name": "www.cnn.com",
+      "ip": "2a04:4e42:400::323"
     },
     {
       "name": "www.google.com",
@@ -96,7 +172,7 @@ Device telemetry JSON:
     },
     {
       "name": "www.google.com",
-      "ip": "173.194.205.147"
+      "ip": "2607:f8b0:400a:80a::200e"
     },
     {
       "name": "www.amazon.com",
@@ -124,6 +200,10 @@ Device telemetry JSON:
       "ifname": "br0",             // interface name
       "ip": "192.168.0.1",         // interface IP addr at the end of ther time slice
       "mask": "255.255.255.0",     // interface IP mask at the end of ther time slice
+      "primary_ipv6_address": "2001:470:e8d9:66:54ea:4aad:a263:8599/64",  // primary ipv6 address
+      "other_ipv6_addresses": [    // non-primary ipv6 addresses
+        "fe80::d395:426:a3dc:f4fd/64"
+      ],
       "wan": 0,                    // is this WAN interface (1 - yes, 0 - no)
       "bytes_in": 24354,           // interface bytes received
       "bytes_out": 67390,          // interface bytes sent
@@ -137,6 +217,7 @@ Device telemetry JSON:
       "ifname": "eth0.2",
       "ip": "10.4.1.114",
       "mask": "255.255.0.0",
+      "primary_ipv6_address": "2001:470:e8d9:64:54ea:4aad:a263:8599/64",  // primary ipv6 address
       "len_msec": 10007,
       "wan": 1,
       "slice": 0,
@@ -152,6 +233,9 @@ Device telemetry JSON:
       "ifname": "br0",
       "ip": "192.168.0.1",
       "mask": "255.255.255.0",
+      "other_ipv6_addresses": [    // non-primary ipv6 addresses
+        "fe80::d395:426:a3dc:f4fd/64"
+      ],
       "len_msec": 10004,
       "wan": 0,
       "slice": 1,
@@ -167,6 +251,7 @@ Device telemetry JSON:
       "ifname": "eth0.2",
       "ip": "10.4.1.114",
       "mask": "255.255.0.0",
+      "primary_ipv6_address": "2001:470:e8d9:64:54ea:4aad:a263:8599/64",  // primary ipv6 address
       "len_msec": 10004,
       "wan": 1,
       "slice": 1,
@@ -182,6 +267,9 @@ Device telemetry JSON:
       "ifname": "br0",
       "ip": "192.168.0.1",
       "mask": "255.255.255.0",
+      "other_ipv6_addresses": [    // non-primary ipv6 addresses
+        "fe80::d395:426:a3dc:f4fd/64"
+      ],
       "len_msec": 10004,
       "wan": 0,
       "slice": 2,
