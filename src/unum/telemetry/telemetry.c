@@ -132,8 +132,10 @@ static char *router_telemetry_json()
     memset(wan_ipv6_addresses, '\0', sizeof(wan_ipv6_addresses));
     unsigned int wan_primary_ipv6_address_valid = 0;
     unsigned int wan_other_ipv6_addresses_valid = 0;
+    int ix = 0;
+    int iy = 0;
     if (util_get_ipv6cfg(GET_MAIN_WAN_NET_DEV(), wan_ipv6_addresses) == 0) {
-        for (int ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
+        for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
             if (wan_ipv6_addresses[ix].addr.b[0] != '\0') {
                 char buf[INET6_ADDRSTRLEN] = {'\0'};
                 inet_ntop(AF_INET6, wan_ipv6_addresses[ix].addr.b, buf, sizeof(buf));
@@ -170,7 +172,7 @@ static char *router_telemetry_json()
     unsigned int lan_primary_ipv6_address_valid = 0;
     unsigned int lan_other_ipv6_addresses_valid = 0;
     if (util_get_ipv6cfg(GET_MAIN_LAN_NET_DEV(), lan_ipv6_addresses) == 0) {
-        for (int ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
+        for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
             if (lan_ipv6_addresses[ix].addr.b[0] != '\0') {
                 char buf[INET6_ADDRSTRLEN] = {'\0'};
                 inet_ntop(AF_INET6, lan_ipv6_addresses[ix].addr.b, buf, sizeof(buf));
