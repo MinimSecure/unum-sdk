@@ -36,7 +36,7 @@ char *util_main_lan_ifname(void)
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
 char *util_base_mac_file_name(void)
 {
-    char *device = "down2v0";
+    char *device = "down1v0";
     static char fname[128] = "";
     int err;
     struct stat st;
@@ -400,7 +400,7 @@ static int get_network_type(char *ifname)
 
     // Check if the interface is associated with home network
     snprintf(br_path, sizeof(br_path) - 1,
-                            "/sys/class/net/down2v0/brif/%s", ifname);
+                            "/sys/class/net/down1v0/brif/%s", ifname);
     if (stat(br_path, &st) == 0) {
         return 0;
     }
