@@ -58,7 +58,7 @@ char *util_base_mac_file_name(void)
         } else {
             device = lan_device;
         }
-        if(strncmp(wan_ifname, "down", 4) == 0) {
+        if(strncmp(lan_ifname, "down", 4) == 0) {
             // OpenWiFi interface
             snprintf(fname, sizeof(fname), "/sys/class/net/%s/address", wan_ifname);
         } else {
