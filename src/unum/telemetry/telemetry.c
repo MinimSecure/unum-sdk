@@ -124,104 +124,19 @@ static char *router_telemetry_json()
         cpu_pfint_ptr = NULL;
     }
 
-    static JSON_VAL_TPL_t wan_ipv6_address_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
-    static char wan_primary_ipv6_address_str[INET6_ADDRSTRLEN + 4]; // 4 for prefix eg. /128
-    static char wan_other_ipv6_addresses_str[MAX_IPV6_ADDRESSES_PER_MAC * sizeof(wan_primary_ipv6_address_str)];
-    memset(wan_other_ipv6_addresses_str, '\0', sizeof(wan_other_ipv6_addresses_str));
-    DEV_IPV6_CFG_t wan_ipv6_addresses[MAX_IPV6_ADDRESSES_PER_MAC];
-    memset(wan_ipv6_addresses, '\0', sizeof(wan_ipv6_addresses));
-    unsigned int wan_primary_ipv6_address_valid = 0;
-    unsigned int wan_other_ipv6_addresses_valid = 0;
-    int ix = 0;
-    int iy = 0;
-    if (util_get_ipv6cfg(GET_MAIN_WAN_NET_DEV(), wan_ipv6_addresses) == 0) {
-        for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
-            if (wan_ipv6_addresses[ix].addr.b[0] != '\0') {
-                char buf[INET6_ADDRSTRLEN] = {'\0'};
-                inet_ntop(AF_INET6, wan_ipv6_addresses[ix].addr.b, buf, sizeof(buf));
-                if (wan_ipv6_addresses[ix].flags == DEV_IPV6_CFG_FLAG_PRIMARY) {
-                    snprintf(wan_primary_ipv6_address_str,
-                             sizeof(wan_primary_ipv6_address_str),
-                             "%s/%d",
-                             buf,
-                             (wan_ipv6_addresses[ix].prefix_len) & 127);
-                    wan_primary_ipv6_address_valid = 1;
-                } else {
-                    snprintf(&wan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)],
-                             (INET6_ADDRSTRLEN + 4),
-                             "%s/%d",
-                             buf,
-                             (wan_ipv6_addresses[ix].prefix_len) & 127);
-                    wan_ipv6_address_tpl[iy].s = &wan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)];
-                    wan_ipv6_address_tpl[iy].type = JSON_VAL_STR;
-                    wan_other_ipv6_addresses_valid = 1;
-                    iy++;
-                }
-            } else {
-                wan_ipv6_address_tpl[iy].type = JSON_VAL_END;
-                break;
-            }
-        }
-    }
-    static JSON_VAL_TPL_t lan_ipv6_address_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
-    static char lan_primary_ipv6_address_str[INET6_ADDRSTRLEN + 4]; // 4 for prefix eg. /128
-    static char lan_other_ipv6_addresses_str[MAX_IPV6_ADDRESSES_PER_MAC * sizeof(lan_primary_ipv6_address_str)];
-    memset(lan_other_ipv6_addresses_str, '\0', sizeof(lan_other_ipv6_addresses_str));
-    DEV_IPV6_CFG_t lan_ipv6_addresses[MAX_IPV6_ADDRESSES_PER_MAC];
-    memset(lan_ipv6_addresses, '\0', sizeof(lan_ipv6_addresses));
-    unsigned int lan_primary_ipv6_address_valid = 0;
-    unsigned int lan_other_ipv6_addresses_valid = 0;
-    if (util_get_ipv6cfg(GET_MAIN_LAN_NET_DEV(), lan_ipv6_addresses) == 0) {
-        for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
-            if (lan_ipv6_addresses[ix].addr.b[0] != '\0') {
-                char buf[INET6_ADDRSTRLEN] = {'\0'};
-                inet_ntop(AF_INET6, lan_ipv6_addresses[ix].addr.b, buf, sizeof(buf));
-                if (lan_ipv6_addresses[ix].flags == DEV_IPV6_CFG_FLAG_PRIMARY) {
-                    snprintf(lan_primary_ipv6_address_str,
-                             sizeof(lan_primary_ipv6_address_str),
-                             "%s/%d",
-                             buf,
-                             (lan_ipv6_addresses[ix].prefix_len) & 127);
-                    lan_primary_ipv6_address_valid = 1;
-                } else {
-                    snprintf(&lan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)],
-                             (INET6_ADDRSTRLEN + 4),
-                             "%s/%d",
-                             buf,
-                             (lan_ipv6_addresses[ix].prefix_len) & 127);
-                    lan_ipv6_address_tpl[iy].s = &lan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)];
-                    lan_ipv6_address_tpl[iy].type = JSON_VAL_STR;
-                    lan_other_ipv6_addresses_valid = 1;
-                    iy++;
-                }
-            } else {
-                lan_ipv6_address_tpl[iy].type = JSON_VAL_END;
-                break;
-            }
-        }
-    }
-
     JSON_OBJ_TPL_t tpl = {
-      {"lan_ip_address",           {.type = JSON_VAL_STR,   {.s = lan_ip }}},
-      {"lan_primary_ipv6_address", {.type = JSON_VAL_STR,
-                                    {.s = lan_primary_ipv6_address_valid ? lan_primary_ipv6_address_str : NULL}}},
-      {"lan_other_ipv6_addresses", {.type = JSON_VAL_ARRAY,
-                                    {.a = lan_other_ipv6_addresses_valid ? lan_ipv6_address_tpl : NULL}}},
-      {"wan_ip_address",           {.type = JSON_VAL_STR,   {.s = wan_ip }}},
-      {"wan_primary_ipv6_address", {.type = JSON_VAL_STR,
-                                    {.s = wan_primary_ipv6_address_valid ? wan_primary_ipv6_address_str : NULL}}},
-      {"wan_other_ipv6_addresses", {.type = JSON_VAL_ARRAY,
-                                    {.a = wan_other_ipv6_addresses_valid ? wan_ipv6_address_tpl : NULL}}},
-      {"wan_mac_address",          {.type = JSON_VAL_STR, {.s = wan_mac}}},
-      {"no_dns",                   {.type = JSON_VAL_STR, {.s = no_dns }}},
-      {"no_time",                  {.type = JSON_VAL_STR, {.s = no_time}}},
-      {"mem_free",                 {.type = JSON_VAL_PFINT,{.fpi = mem_pfint_ptr}}},
-      {"mem_available",            {.type = JSON_VAL_PFINT,{.fpi = mem_pfint_ptr}}},
-      {"cpu_usage",                {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
-      {"cpu_softirq",              {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
-      {"cpu_max_usage",            {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
-      {"cpu_max_softirq",          {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
-      {"seq_num",                  {.type = JSON_VAL_UL,  {.ul = telemetry_seq_num}}},
+      {"lan_ip_address",     {.type = JSON_VAL_STR, {.s = lan_ip }}},
+      {"wan_ip_address",     {.type = JSON_VAL_STR, {.s = wan_ip }}},
+      {"wan_mac_address",    {.type = JSON_VAL_STR, {.s = wan_mac}}},
+      {"no_dns",             {.type = JSON_VAL_STR, {.s = no_dns }}},
+      {"no_time",            {.type = JSON_VAL_STR, {.s = no_time}}},
+      {"mem_free",           {.type = JSON_VAL_PFINT,{.fpi = mem_pfint_ptr}}},
+      {"mem_available",      {.type = JSON_VAL_PFINT,{.fpi = mem_pfint_ptr}}},
+      {"cpu_usage",          {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
+      {"cpu_softirq",        {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
+      {"cpu_max_usage",      {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
+      {"cpu_max_softirq",    {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
+      {"seq_num",            {.type = JSON_VAL_UL,  {.ul = telemetry_seq_num}}},
       {NULL}
     };
 

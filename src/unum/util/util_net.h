@@ -7,11 +7,6 @@
 // Length of the MAC address string (do we have a standard define for that?)
 #define MAC_ADDRSTRLEN 18
 
-// Maximum number of ipv6 addresses we support per mac
-#ifndef MAX_IPV6_ADDRESSES_PER_MAC
-#define MAX_IPV6_ADDRESSES_PER_MAC 4
-#endif // MAX_IPV6_ADDRESSES_PER_MAC
-
 // Format string and argument macros for printing MAC addresses
 // from printf style functions
 #define MAC_PRINTF_FMT_TPL "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -144,15 +139,6 @@ typedef struct _DEV_IP_CFG {
     IPV4_ADDR_t ipv4mask; // byte order is the same as in struct sockaddr
 } DEV_IP_CFG_t;
 
-#define DEV_IPV6_CFG_FLAG_PRIMARY 1
-
-// IP configuration structure describing device IPv6 settings
-typedef struct _DEV_IPV6_CFG {
-    IPV6_ADDR_t addr; // byte order is the same as in struct sockaddr_in6
-    uint8_t     prefix_len;
-    uint8_t     flags;
-} DEV_IPV6_CFG_t;
-
 // Netlink socket structure
 typedef struct _NL_SOCK {
     int s;            // socket descriptor
@@ -250,12 +236,6 @@ int util_get_mac(char *dev, unsigned char *mac);
 // Returns 0 if successful, error code if fails.
 int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg);
 
-// Get the IPv6 configuration of a network device.
-// Requires a pointer to an array with room for
-// MAX_IPV6_ADDRESSES_PER_MAC addresses
-// Returns 0 if successful, error code if fails.
-int util_get_ipv6cfg(char *dev, DEV_IPV6_CFG_t *ipcfg);
-
 // Get device base MAC (format xx:xx:xx:xx:xx:xx, stored at a static location)
 char *util_device_mac();
 
@@ -263,7 +243,7 @@ char *util_device_mac();
 // The buf length should be at least INET_ADDRSTRLEN bytes
 // If buf is NULL it is not used.
 // Returns 0 if successful, error code if fails.
-int util_get_ipv4(const char *dev, char *buf);
+int util_get_ipv4(char *dev, char *buf);
 
 // Using getaddrinfo we do a name lookup and then
 // *res will be set to the first ip4 sockaddr (or ignored if NULL)
