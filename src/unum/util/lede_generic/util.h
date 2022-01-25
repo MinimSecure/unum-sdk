@@ -52,7 +52,7 @@
 // as the firmware version # for identification and upgrade
 // purposes. The platforms that do not use agent version here
 // should implement platform_fw_version() function.
-//#define AGENT_VERSION_IS_FW_VERSION
+#define AGENT_VERSION_IS_FW_VERSION
 
 // Base MAC file (name of the file to read the device base
 // MAC address from). This should be the MAC address that never
