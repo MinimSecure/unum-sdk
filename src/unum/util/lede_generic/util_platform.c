@@ -36,7 +36,7 @@ char *util_main_lan_ifname(void)
 // Get base MAC file name, it's the file w/ the MAC of the main LAN interface
 char *util_base_mac_file_name(void)
 {
-    char *device = "down1v0";
+    char *device = "br-lan";
     static char fname[128] = "";
     int err;
     struct stat st;
