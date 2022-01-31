@@ -59,6 +59,24 @@ int util_net_dev_link_is_up(char *ifname)
     return FALSE;
 }
 
+// Checks if the interface is a bridge
+// ifname - the interface name
+// Returns: TRUE - interface is a bridge, FALSE - not a bridge
+int util_net_dev_is_bridge(char *ifname)
+{
+    char br_path[IFNAMSIZ + 20];
+    struct stat st;
+
+    // Check if the interface has bridge ports
+    snprintf(br_path, sizeof(br_path) - 1,
+                            "/sys/class/net/%s/brif", ifname);
+    if (stat(br_path, &st) == 0) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 // Calculates the checksum to be used with TCP & IP packets
 unsigned short util_ip_cksum(unsigned short *addr, int len)
 {

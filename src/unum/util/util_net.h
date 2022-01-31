@@ -198,6 +198,11 @@ int util_net_dev_is_up(char *ifname);
 // Returns: TRUE - interface link is up, FALSE - down or error
 int util_net_dev_link_is_up(char *ifname);
 
+// Checks if the interface is a bridge
+// ifname - the interface name
+// Returns: TRUE - interface is a bridge, FALSE - not a bridge
+int util_net_dev_is_bridge(char *ifname);
+
 // Enumerite the list of the IP interfaces. For each interface a caller's
 // callback is invoked until all the interfaces are enumerated.
 // Returns: 0 - success, number of times the callback has failed
