@@ -460,6 +460,9 @@ int util_get_interface_kind(char *ifname)
         return UNUM_INTERFACE_KIND_WAN;
     } else if (strncmp("eth", ifname, 3) == 0) {
         return UNUM_INTERFACE_KIND_ETHERNET;
+    } else if(util_net_dev_is_bridge(ifname)) {
+        // if this a bridge just ignore it
+        return -1;
     }
 
     // Get channel and use it to determine 2.4Ghz vs 5Ghz
