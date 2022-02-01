@@ -23,6 +23,7 @@ motorola,mh7020)
 			set wireless.default_radio${devidx}.key=$key
 			set wireless.default_radio${devidx}.disabled=0
 			set wireless.radio${devidx}.disabled=0
+			set wireless.radio${devidx}.country=US
 
 EOF
 	done
