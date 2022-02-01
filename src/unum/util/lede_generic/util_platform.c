@@ -198,11 +198,24 @@ int util_platform_init(int level)
                 // In non-AP mode do real check if WAN is up
                 for (int ii = 0; ii < MAX_LAN_NAMES; ii++) {
                     char uci_var[256];
+                    char *wan_name;
                     snprintf(uci_var, sizeof(uci_var), "network.%s.up", wan_names[ii]);
 
                     val = uci_get_str(ctx, uci_var);
                     if (val && *val == '1') {
-                        strncpy(wan_ifname, wan_names[ii], sizeof(wan_ifname) - 1);
+                        // If the network name is wan (openwrt), get wan interface name
+                        if (strncmp(wan_names[ii], "wan", 3) == 0) {
+                            snprintf(uci_var, sizeof(uci_var), "network.%s.device", wan_names[ii]);
+    			    wan_name = uci_get_str(ctx, uci_var);
+                            if (wan_name) {
+                                strncpy(wan_ifname, wan_name, sizeof(wan_ifname) - 1);
+                            } else {
+                               //log error. but continue
+                               log("%s: Unable to get Wan interface name\n", __func__);
+                           }
+                        } else {
+                            strncpy(wan_ifname, wan_names[ii], sizeof(wan_ifname) - 1);
+                        }
                         break;
                     }
                 }
