@@ -3,3 +3,4 @@ telnet-passwords
 port_scanning
 rescan_devices
 hardware_content_filtering
+ipv6_telemetry

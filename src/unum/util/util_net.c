@@ -3,6 +3,8 @@
 
 #include "unum.h"
 
+static int nl_sock(NL_SOCK_t *s, int type);
+static int nl_recv(NL_SOCK_t *s, char *buf, unsigned int len, int seq_num, int tout);
 
 // Get interface flags
 // ifname - the interface name
@@ -150,7 +152,7 @@ char *util_device_mac()
 // The buf length should be at least INET_ADDRSTRLEN bytes.
 // If buf is NULL it is not used.
 // Returns 0 if successful, error code if fails.
-int util_get_ipv4(char *dev, char *buf)
+int util_get_ipv4(const char *dev, char *buf)
 {
     struct ifreq ifr;
     int fd = -1;
@@ -414,6 +416,99 @@ int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg)
 
     return ret;
 }
+
+// Get the IPv6 configuration of a network device.
+// Requires a pointer to an array with room for
+// MAX_IPV6_ADDRESSES_PER_MAC addresses
+// Returns 0 if successful, error code if fails.
+int util_get_ipv6cfg(char *dev, DEV_IPV6_CFG_t *ipcfg) {
+    int ret = -1;
+#ifdef FEATURE_IPV6_TELEMETRY
+    // Create socket
+    NL_SOCK_t nl_socket = { .s = -1 };
+    void *req = NULL;
+    int buf_index = 0;
+    int if_index = if_nametoindex(dev);
+    if (if_index == 0) {
+            log("%s: invalid interface %s\n", __func__, dev);
+            return -1;
+    }
+
+    for(;;) {
+        char resp[1024] = {'\0'};
+        int resp_len = 0;
+        const int msg_seq = 1;
+        const struct nlmsghdr *retmsg = NULL;
+        struct {
+            struct nlmsghdr nlh;
+            struct ifaddrmsg ifm;
+            char buf[128];
+        } req;
+
+        // reference implementation at
+        // https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/tree/lib/libnetlink.c#n311
+        if(nl_sock(&nl_socket, NETLINK_ROUTE) < 0) {
+            log("%s: socket() error: %s\n", __func__, strerror(errno));
+            ret = -1;
+            break;
+        }
+        req.nlh.nlmsg_len   = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+        req.nlh.nlmsg_type  = RTM_GETADDR;
+        req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_REQUEST;
+        req.nlh.nlmsg_seq   = msg_seq;
+        req.ifm.ifa_family  = AF_INET6;
+
+        // send the request
+        if(send(nl_socket.s, &req, sizeof(req), 0) < 0) {
+            log("%s: socket() error: %s\n", __func__, strerror(errno));
+            ret = -4;
+            break;
+        }
+
+        // Read the response, allow 10sec till timeout
+        resp_len = nl_recv(&nl_socket, resp, sizeof(resp), msg_seq, 10);
+        if(resp_len < 0) {
+            // nl_recv() logs the error message
+            ret = -5;
+            break;
+        }
+
+        // parse the response
+        retmsg = (struct nlmsghdr *)resp;
+        while (NLMSG_OK(retmsg, resp_len) && buf_index < MAX_IPV6_ADDRESSES_PER_MAC)  {
+            struct ifaddrmsg *retaddr = (struct ifaddrmsg *) NLMSG_DATA(retmsg);
+            struct rtattr *retrta     = (struct rtattr *) IFA_RTA(retaddr);
+
+            // extract address strings from attribute list
+            int att_len = IFA_PAYLOAD(retmsg);
+            while RTA_OK(retrta, att_len) {
+                    if (retrta->rta_type == IFA_ADDRESS && retaddr->ifa_index == if_index) {
+                        memcpy(&ipcfg[buf_index].addr, RTA_DATA(retrta), sizeof(ipcfg[buf_index].addr));
+                        ipcfg[buf_index].prefix_len = retaddr->ifa_prefixlen;
+                        // TODO, determine the primary TK Jan 2022
+                        ipcfg[buf_index].flags = (buf_index == 0) ? DEV_IPV6_CFG_FLAG_PRIMARY : 0;
+                        buf_index++;
+                    }
+                    retrta = RTA_NEXT(retrta, att_len);
+                }
+            retmsg = NLMSG_NEXT(retmsg, resp_len);
+        }
+        ret = 0;
+        break;
+    } // for(;;)
+
+    if(req) {
+        UTIL_FREE(req);
+        req = NULL;
+    }
+    if(nl_socket.s >= 0) {
+        close(nl_socket.s);
+    }
+#endif /* FEATURE_IPV6_TELEMETRY */
+
+    return ret;
+}
+
 
 // Get network device statistics/counters.
 // Returns 0 if successful, error code if fails.
