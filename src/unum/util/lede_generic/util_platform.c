@@ -552,14 +552,18 @@ int util_get_interface_kind(char *ifname)
 // -1 if the Radio name is not found
 int util_get_radio_kind(char *ifname)
 {
-    // Get channel and use it to determine 2.4Ghz vs 5Ghz
-    int chan = wt_iwinfo_get_channel(ifname);
+    // Get frequency and use it to determine 2.4Ghz vs 5Ghz vs 6Ghz
+    int freq = wt_iwinfo_get_frequency(ifname);
 
-    if (chan >= 1 && chan <= 14) {
+    // Check 2.4Ghz
+    if (IS_24GHZ_FREQ(freq)) {
         return UNUM_RADIO_KIND_2;
-    } else if (chan >= 36 && chan <= 196) {
+    // Check 5Ghz
+    } else if (IS_5GHZ_FREQ(freq)) {
         return UNUM_RADIO_KIND_5;
+    // Check 6Ghz
+    } else if (IS_6GHZ_FREQ(freq)) {
+        return UNUM_RADIO_KIND_6;
     }
-    // ToDo: Handle 6Ghz channel list when it is available
     return -1;
 }
