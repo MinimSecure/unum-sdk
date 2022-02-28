@@ -83,6 +83,9 @@ enum INTERFACE_KIND {
     UNUM_INTERFACE_KIND_LAN_BRIDGE  = 9,       // LAN Bridge
     UNUM_INTERFACE_KIND_ETHERNET    = 10,      // Ethernet
     UNUM_INTERFACE_KIND_MESH2       = 11,      // 2.4Ghz Mesh Network
+    UNUM_INTERFACE_KIND_HOME6       = 12,      // 6Ghz Home Network
+    UNUM_INTERFACE_KIND_GUEST6      = 13,      // 6Ghz Guest Network
+    UNUM_INTERFACE_KIND_MESH6       = 14,      // 6Ghz Mesh Network
     UNUM_INTERFACE_KIND_MAX,                   // For max size
 };
 
