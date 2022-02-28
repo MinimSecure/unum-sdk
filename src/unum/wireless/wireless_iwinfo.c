@@ -337,6 +337,27 @@ int wt_iwinfo_get_channel(char *ifname)
     return ch;
 }
 
+// Get the frequency
+int wt_iwinfo_get_frequency(char *ifname)
+{
+    if (wt_platform_iwinfo_get_frequency != NULL) {
+        return wt_platform_iwinfo_get_frequency(ifname);
+    }
+    int freq;
+    const struct iwinfo_ops *iw = iwinfo_backend(ifname);
+
+    if(!iw) {
+        log("%s: no backend for %s\n", __func__, ifname);
+        return -1;
+    }
+    if(iw->frequency(ifname, &freq) != 0) {
+        log_dbg("%s: failed to get frequency for %s\n", __func__, ifname);
+        return -2;
+    }
+
+    return freq;
+}
+
 // Get the hardware mode the interface or phy is in
 char *wt_iwinfo_get_hwmode(char *ifname)
 {

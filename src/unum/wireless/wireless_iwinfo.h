@@ -81,6 +81,9 @@ char *wt_iwinfo_get_country(char *ifname);
 // Get the channel
 int wt_iwinfo_get_channel(char *ifname);
 
+// Get the frequency
+int wt_iwinfo_get_frequency(char *ifname);
+
 // Get the hardware mode the interface or phy is in
 char *wt_iwinfo_get_hwmode(char *ifname);
 
@@ -126,6 +129,11 @@ int __attribute__((weak)) wt_platform_iwinfo_mk_if_list(
 // On iw drivers the channel number is fetched on phy
 // However on QCA drivers it should be fetched on VAPs
 int __attribute__((weak)) wt_platform_iwinfo_get_channel(char *phyname);
+
+// This function is used for QCA interfaces to get the frequency
+// On iw drivers the frequency is fetched on phy
+// However on QCA drivers it should be fetched on VAPs
+int __attribute__((weak)) wt_platform_iwinfo_get_frequency(char *phyname);
 
 // Get the first VAP name
 char* __attribute__((weak)) wt_platform_iwinfo_get_vap(char *phyname);
