@@ -3,6 +3,31 @@
 
 #include "unum.h"
 
+// 2.4 Ghz frequencies are 2412 - 2482
+#define FREQ_24_CHANNEL_1     2412
+#define FREQ_24_CHANNEL_14    2482
+#define IS_24GHZ_FREQ(x)      (x >= FREQ_24_CHANNEL_1 && x <= FREQ_24_CHANNEL_14)
+
+// 5 Ghz frequencies are 5180 - 5885, which slightly overlaps with the bottom
+// of 6ghz spectrum, so check for channels 192 and 196 specifically
+#define FREQ_5_CHANNEL_36     5180
+#define FREQ_5_CHANNEL_189    5945
+#define FREQ_5_CHANNEL_192    5960
+#define FREQ_5_CHANNEL_196    5980
+#define IS_5GHZ_FREQ(x)       ((x >= FREQ_5_CHANNEL_36 && x <= FREQ_5_CHANNEL_189) || \
+                               (x == FREQ_5_CHANNEL_192) || \
+                               (x == FREQ_5_CHANNEL_196))
+
+// 6 Ghz frequencies are 5955 - 7115, which slightly overlaps with the top
+// of 5ghz spectrum, so check for channels 1 and 5 specifically
+#define FREQ_6_CHANNEL_1      5955
+#define FREQ_6_CHANNEL_5      5975
+#define FREQ_6_CHANNEL_9      5995
+#define FREQ_6_CHANNEL_233    7115
+#define IS_6GHZ_FREQ(x)       ((x >= FREQ_6_CHANNEL_9 && x <= FREQ_6_CHANNEL_233) || \
+                               (x == FREQ_6_CHANNEL_1) || \
+                               (x == FREQ_6_CHANNEL_5))
+
 // Main WAN interface name (retrieved at startup only)
 static char wan_ifname[IFNAMSIZ] = "";
 
@@ -450,7 +475,7 @@ static int get_network_type(char *ifname)
 // -1 if the interface name is not found
 int util_get_interface_kind(char *ifname)
 {
-    int chan;
+    int freq;
     int mode;
 
     // Check if the interface name is lan or wan
@@ -465,10 +490,10 @@ int util_get_interface_kind(char *ifname)
         return -1;
     }
 
-    // Get channel and use it to determine 2.4Ghz vs 5Ghz
-    chan = wt_iwinfo_get_channel(ifname);
-    if (chan < 0) {
-        // Error is logged in wt_iwinfo_get_channel
+    // Get frequency and use it to determine 2.4Ghz vs 5Ghz vs 6Ghz
+    freq = wt_iwinfo_get_frequency(ifname);
+    if (freq < 0) {
+        // Error is logged in wt_iwinfo_get_frequency
         return -1;
     }
 
@@ -477,8 +502,8 @@ int util_get_interface_kind(char *ifname)
         return -1;
     }
 
-    // Check 2.4Ghz vs 5Ghz
-    if (chan >= 1 && chan <= 14) {
+    // Check 2.4Ghz
+    if (IS_24GHZ_FREQ(freq)) {
         if (mode == IWINFO_OPMODE_MESHPOINT) {
             return UNUM_INTERFACE_KIND_MESH2;
         } else if (mode == IWINFO_OPMODE_MASTER) {
@@ -491,7 +516,8 @@ int util_get_interface_kind(char *ifname)
             }
         }
         // Server is handling mesh and master modes only for now
-    } else if (chan >= 36 && chan <= 196) {
+    // Check 5Ghz
+    } else if (IS_5GHZ_FREQ(freq)) {
         if (mode == IWINFO_OPMODE_MESHPOINT) {
             return UNUM_INTERFACE_KIND_MESH5;
         } else if (mode == IWINFO_OPMODE_MASTER) {
@@ -504,8 +530,20 @@ int util_get_interface_kind(char *ifname)
             }
         }
         // Server is handling mesh and master modes only for now
+    // Check 6Ghz
+    } else if (IS_6GHZ_FREQ(freq)) {
+        if (mode == IWINFO_OPMODE_MESHPOINT) {
+            return UNUM_INTERFACE_KIND_MESH6;
+        } else if (mode == IWINFO_OPMODE_MASTER) {
+            // Check home vs guest network
+            int type = get_network_type(ifname);
+            if (type == 0) {
+                return UNUM_INTERFACE_KIND_HOME6;
+            } else if (type == 1) {
+                return UNUM_INTERFACE_KIND_GUEST6;
+            }
+        }
     }
-    // ToDo: Handle 6Ghz channel list when it is available
     return -1;
 }
 
