@@ -189,6 +189,10 @@ static int tpcap_match_packet(TPCAP_IF_t *tpif, struct tpacket2_hdr *thdr,
         m = ((ipf & PKT_MATCH_IP_PROTO) == 0 || iph->protocol == pe->ip.proto);
         // Negate the protocol match
         match &= ((ipf & PKT_MATCH_IP_PROTO_NEG) == 0) ? (m) : (!m);
+        // Match the IP version field
+        m = ((ipf & PKT_MATCH_IP_V6) == 0 || iph->version == 6);
+        // Negate the IPv6 version match
+        match &= ((ipf & PKT_MATCH_IP_V6_NEG) == 0) ? (m) : (!m);
         // return if matching has failed
         if(!match) {
             return FALSE;

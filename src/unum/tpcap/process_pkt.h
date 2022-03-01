@@ -68,9 +68,11 @@ typedef struct _PKT_PROC_ENTRY
 #define PKT_MATCH_IP_RNG_DST   0x00001000 // dst IP in ip.a1-ip.a2 range
 #define PKT_MATCH_IP_RNG_ANY   0x00002000 // dst IP in ip.a1-ip.a2 range
 #define PKT_MATCH_IP_PROTO     0x00004000 // proto = ip.proto
+#define PKT_MATCH_IP_V6        0x00008000 // IPv6 packet version
 // Negations (make filter pass if no specified match)
 #define PKT_MATCH_IP_ADDR_NEG  0x10000000 // negating the addresses match
 #define PKT_MATCH_IP_PROTO_NEG 0x20000000 // negating the IP proto match
+#define PKT_MATCH_IP_V6_NEG    0x40000000 // negating the IPv6 match
     unsigned int flags_ip;
     struct _PKT_PROC_ENTRY_IP_PARAMS {
         union {
