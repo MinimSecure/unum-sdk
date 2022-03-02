@@ -61,6 +61,7 @@ static JSON_OBJ_TPL_t wt_tpl_scan_root = {
 // Radio scan info template
 static JSON_OBJ_TPL_t tpl_tbl_scan_radio_obj = {
   { "name", { .type = JSON_VAL_STR, {.s = wt_scan_radio.name}}},
+  { "kind", { .type = JSON_VAL_PINT, {.pi = &wt_scan_radio.kind}}},
   { "scanlist", { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_scanlist_array_f}}},
   { NULL }
 };
@@ -149,6 +150,8 @@ static JSON_VAL_TPL_t *wt_tpl_scan_radios_array_f(char *key, int ii)
     strncpy(wt_scan_radio.name, radio_name,
             sizeof(wt_scan_radio.name));
     wt_scan_radio.name[sizeof(wt_scan_radio.name) - 1] = 0;
+
+    wt_scan_radio.kind = util_get_radio_kind(radio_name);
 
     // Collect the scan data for the radio
     int rc = wt_tpl_fill_scan_radio_info(&wt_scan_radio);

@@ -68,6 +68,7 @@ typedef struct _WT_JSON_TPL_SCAN_RADIO {
     int num;      // The sequential number of the radio
     char name[IFNAMSIZ]; // The name of the radio interface
     int scan_entries;    // Number of scan entries captured
+    int kind;      // Kind of radio ie. 2.4Ghz, 5Ghz, 6Ghz
     void *data;   // Scan list data (optional, for use by the platform)
 } WT_JSON_TPL_SCAN_RADIO_t;
 
