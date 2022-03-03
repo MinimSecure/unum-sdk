@@ -77,7 +77,7 @@ int wt_iwinfo_get_ifname_phy_num(char *ifname)
 
 // Returns the index of the phy for the given phy name
 // (0, 1, ...), -1 if not found
-int wt_iwinfo_get_phy_num(char *phy)
+int wt_iwinfo_get_phy_num(const char *phy)
 {
     int ii, idx = -1;
     for(ii = 0; ii < phy_idx_next; ++ii) {
