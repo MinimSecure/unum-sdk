@@ -121,7 +121,7 @@ char* wt_iwinfo_get_country(char *ifname)
 }
 
 // Get the channel
-int wt_platform_iwinfo_get_channel(char *phyname)
+int wt_platform_iwinfo_get_channel(const char *phyname)
 {
     int ch;
     int phyidx = wt_iwinfo_get_phy_num(phyname);
@@ -132,19 +132,21 @@ int wt_platform_iwinfo_get_channel(char *phyname)
         log("%s: invalid phy name <%s>\n", __func__, phyname);
         return -3;
     }
-    if ((idx = wt_iwinfo_get_if_num_for_phy(phyidx, idx)) >= 0)
-    {
+
+    if ((idx = wt_iwinfo_get_if_num_for_phy(phyidx, idx)) >= 0) {
         ifname = wt_iwinfo_get_ifname(idx);
     } else {
-        log("%s: Non Interfaces <%s>\n", __func__, phyname);
+        log("%s: Unknown interface for phy <%s>\n", __func__, phyname);
         return -4;
     }
+
     const struct iwinfo_ops *iw = iwinfo_backend(ifname);
 
     if(!iw) {
         log("%s: no backend for %s\n", __func__, ifname);
         return -1;
     }
+
     if(iw->channel(ifname, &ch) != 0) {
         log_dbg("%s: failed to get channel for %s\n", __func__, ifname);
         return -2;

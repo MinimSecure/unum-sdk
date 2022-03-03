@@ -128,7 +128,7 @@ int __attribute__((weak)) wt_platform_iwinfo_mk_if_list(
 // This function is used for QCA interfaces to get the channel number
 // On iw drivers the channel number is fetched on phy
 // However on QCA drivers it should be fetched on VAPs
-int __attribute__((weak)) wt_platform_iwinfo_get_channel(char *phyname);
+int __attribute__((weak)) wt_platform_iwinfo_get_channel(const char *phyname);
 
 // This function is used for QCA interfaces to get the frequency
 // On iw drivers the frequency is fetched on phy
