@@ -133,7 +133,7 @@ int __attribute__((weak)) wt_platform_iwinfo_get_channel(const char *phyname);
 // This function is used for QCA interfaces to get the frequency
 // On iw drivers the frequency is fetched on phy
 // However on QCA drivers it should be fetched on VAPs
-int __attribute__((weak)) wt_platform_iwinfo_get_frequency(char *phyname);
+int __attribute__((weak)) wt_platform_iwinfo_get_frequency(const char *phyname);
 
 // Get the first VAP name
 char* __attribute__((weak)) wt_platform_iwinfo_get_vap(char *phyname);

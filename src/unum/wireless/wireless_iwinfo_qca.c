@@ -155,6 +155,41 @@ int wt_platform_iwinfo_get_channel(const char *phyname)
     return ch;
 }
 
+// Get the frequency
+int wt_platform_iwinfo_get_frequency(const char *phyname)
+{
+    int freq;
+    int phyidx = wt_iwinfo_get_phy_num(phyname);
+    int idx = -1;
+    char *ifname;
+
+    if(phyidx < 0) {
+        log("%s: invalid phy name <%s>\n", __func__, phyname);
+        return -3;
+    }
+
+    if ((idx = wt_iwinfo_get_if_num_for_phy(phyidx, idx)) >= 0) {
+        ifname = wt_iwinfo_get_ifname(idx);
+    } else {
+        log("%s: Unknown interface for phy <%s>\n", __func__, phyname);
+        return -4;
+    }
+
+    const struct iwinfo_ops *iw = iwinfo_backend(ifname);
+
+    if(!iw) {
+        log("%s: no backend for %s\n", __func__, ifname);
+        return -1;
+    }
+
+    if(iw->frequency(ifname, &freq) != 0) {
+        log_dbg("%s: failed to get frequency for %s\n", __func__, ifname);
+        return -2;
+    }
+
+    return freq;
+}
+
 char*
 wt_platform_iwinfo_get_vap(char *phyname)
 {
