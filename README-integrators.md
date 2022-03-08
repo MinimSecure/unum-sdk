@@ -242,3 +242,103 @@ Note: when creating GIT repository for vendor SDK always create the first
 5. Check crash reports for the new hardware type.
 6. Check that the mobile app works with the new hardware kind.
 
+### 6GHz Support
+The unum-sdk code has been updated with changes to support reporting 6Ghz telemetry to the cloud.
+
+New interface kind enums have been added in src/unum/util/util_common.h
+* UNUM_INTERFACE_KIND_HOME6
+* UNUM_INTERFACE_KIND_GUEST6
+* UNUM_INTERFACE_KIND_MESH6
+
+A new radio kind enum has been added in src/unum/util/util_common.h
+* UNUM_RADIO_KIND_6
+
+An agent implementation that runs on a 6Ghz capable device should also add the “6ghz-capable” flag to its features.txt file found under ./files/PLATFORM_NAME in the unum source directory.
+
+An agent implementation must ensure that one of the 6Ghz enums is used to identify telemetry captured from a 6Ghz interface.  In short, this means ensuring that the function util_get_interface_kind() returns the proper interface enum given an interface name.  For an example, see the util_get_interface_kind() implementation in src/unum/util/lede_generic/util_platform.c.
+
+An agent implementation must also ensure that UNUM_RADIO_KIND_6 is used in radio telemetry captured from a 6Ghz radio.  In short, this means ensuring that the function util_get_radio_kind() returns the proper radio enum given the interface name.  For an example, see the util_get_radio_kind() implementation in src/unum/util/lede_generic/util_platform.c.
+
+A good way to test that telemetry is being identified properly is to build and run the agent in debug mode (by adding UNUM_DEBUG=1 to the make invocation) and then running the following test cases:
+
+For ensuring that wireless scan telemetry is properly identified with respect to radio kind run the following command:
+
+unum -m t13
+
+And check to see that the “kind” field reported is correct for each radio entry.  In this example the first radio, phy0, is a 5Ghz radio and so has a kind enum of UNUM_RADIO_KIND_5, which is value 0.  The second radio, phy1, is a 6Ghz radio and so has a kind enum of UNUM_RADIO_KIND_6 which is value 2.
+
+{
+	“radios”: [
+	{
+		“name”: “phy0”,
+		“kind”: 0,
+		“scanlist”: [
+		…
+		…
+		…
+		]
+	},
+		“name”: “phy1”,
+		“kind”: 2,
+		“scanlist”: [
+		…
+		…
+		…
+		]
+	}
+
+Also run the following command to ensure radio kind is properly set in radio telemetry
+
+unum -m t12
+
+{
+	“radio”: [
+	{
+		“name”: “phy0”,
+		“channel”: 36,
+		“extras”: {
+			“hwmode”: “11nac”,
+			“country”, “US”,
+			“kind”, 0
+		},
+	…
+	…
+	…
+	},
+		“name”: “phy1”,
+		“channel”: 5,
+		“extras”: {
+			“hwmode”: “11nac”,
+			“country”, “US”,
+			“kind”, 2
+		},
+	…
+	…
+	…
+
+To check that interface telemetry is properly identified, run the following command and ensure that all interfaces have been identified with the proper interface enum
+
+unum -m t10
+{
+	…
+	…
+	“interfaces”: [
+      {
+	…
+	},
+	{
+		“Ifname”: “wlan0”,
+		…
+		…
+		“kind”: 1,
+		…
+		…
+	},
+		{
+		“Ifname”: “wlan1”,
+		…
+		…
+		“kind”: 12,
+		…
+		…
+	},
