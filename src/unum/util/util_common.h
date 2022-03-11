@@ -10,6 +10,8 @@
 #include "util_dns.h"
 // Zlib wrappers header
 #include "util_zlib.h"
+// stime removed from glibc 2.31 and later
+#include "util_stime.h"
 
 
 // Get number of elements in an array
