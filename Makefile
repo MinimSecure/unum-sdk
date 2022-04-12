@@ -67,6 +67,9 @@ RELEASE_FEATURES := $(shell cat "$(TOP)/files/features-common.txt")
 ifneq ("$(wildcard $(TARGET_FILES)/features.txt)","")
   RELEASE_FEATURES := $(RELEASE_FEATURES) $(shell cat "$(TARGET_FILES)/features.txt")
 endif
+ifneq ("$(wildcard $(TARGET_FILES)/features-$(HARDWARE).txt)","")
+  RELEASE_FEATURES := $(RELEASE_FEATURES) $(shell cat "$(TARGET_FILES)/features-$(HARDWARE).txt")
+endif
 
 # Explicitly set default goal
 all: install
