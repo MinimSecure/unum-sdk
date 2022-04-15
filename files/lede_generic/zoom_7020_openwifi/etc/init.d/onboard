@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# (C) 2018 minim.co
+
+# Start the onboarding station if we are still at defaults
+START=12
+boot() {
+  /sbin/maybe_onboard.sh
+}

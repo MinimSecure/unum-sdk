@@ -1,3 +1,21 @@
+
+function get_mac ()
+{
+	mac=`fw_printenv -n ethaddr`
+	echo $mac
+}
+
+function get_serial_num ()
+{
+	suff=`fw_printenv -n sn`
+	echo $suff
+}
+
+function get_wan_if_name ()
+{
+	echo "eth1"
+}
+
 function handle_switch_config ()
 {
 	mode=$1
@@ -9,8 +27,15 @@ function handle_switch_config ()
 	/sbin/uci commit network
 }
 
-function get_wan_if_name ()
+function get_on_board_ssid ()
 {
-	echo "eth1"
+	mac=$(get_mac)
+	ssid="minim-"$mac
+	echo $ssid
+}
+
+function set_mesh_led_state()
+{
+	# mesh led behavior to be determined
 }
 
