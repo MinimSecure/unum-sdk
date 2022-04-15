@@ -37,5 +37,6 @@ function get_on_board_ssid ()
 function set_mesh_led_state()
 {
 	# mesh led behavior to be determined
+	true
 }
 
