@@ -190,6 +190,8 @@ int wt_platform_iwinfo_get_frequency(const char *phyname)
     return freq;
 }
 
+// Loop through the vaps mapped to the given phy and return the first
+// active one.  To determine whether a vap is active, look for a non-zero bssid.
 char*
 wt_platform_iwinfo_get_vap(char *phyname)
 {
@@ -201,12 +203,28 @@ wt_platform_iwinfo_get_vap(char *phyname)
         log("%s: invalid phy name <%s>\n", __func__, phyname);
         return NULL;
     }
-    if ((idx = wt_iwinfo_get_if_num_for_phy(phyidx, idx)) >= 0)
-    {
-        ifname = wt_iwinfo_get_ifname(idx);
-    } else {
-        log("%s: No Interfaces <%s>\n", __func__, phyname);
-        return NULL;
+
+    while(1) {
+        if ((idx = wt_iwinfo_get_if_num_for_phy(phyidx, idx)) >= 0)
+        {
+            ifname = wt_iwinfo_get_ifname(idx);
+            const char nullmac[] = "00:00:00:00:00:00";
+            char buf[sizeof(nullmac)] = { 0 };
+            const struct iwinfo_ops *iw = iwinfo_backend(ifname);
+
+            // If the vap is active, break and return ifname
+            if(iw && iw->bssid(ifname, buf) == 0 && strcmp(buf, nullmac) != 0) {
+                break;
+            }
+
+            // If we get here, this is a vap for the given phy, but
+            // it isn't active.  So continue the loop looking for the
+            // next vap mapped to the given phy
+
+        } else {
+            log("%s: No Active Interfaces <%s>\n", __func__, phyname);
+            return NULL;
+        }
     }
     return ifname;
 }
