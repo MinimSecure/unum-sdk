@@ -44,11 +44,11 @@ static char *dns_servers[] = { "8.8.8.8", "1.1.1.1", NULL };
 static void util_get_txt_record_static(char *txt, int len)
 {
     strncpy(txt,
-            "api:api.minim.co:80:20.190.254.217;"
-            "api:api.minim.co:443:20.190.254.217;"
-            "my:my.minim.co:443:20.190.254.217;"
-            "releases:releases.minim.co:443:20.190.254.217;"
-            "provision:provision.minim.co:443:20.190.254.217;",
+            "api:api.minim.co:80:18.215.222.49;"
+            "api:api.minim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
             len);
     txt[len - 1] = '\0';
 }
@@ -681,31 +681,31 @@ void util_build_url(char *proto, int type, char *url, unsigned int length,
 static void util_get_txt_record_static_test1(char *txt, int len)
 {
     strncpy(txt,
-    "api.minim.co:80:34.207.26.129;"
-    "api:api.minim.co:443:34.207.26.129;"
-    "my:my.minim.co:443:34.207.26.129;"
-    "releases:releases.minim.co:443:34.207.26.129;"
-    "provision:provision.minim.co:443:34.207.26.129;",
-    len);
+            "api.minim.co:80:18.215.222.49;"
+            "api:api.minim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
+            len);
     txt[len - 1] = '\0';
 }
 
 /***
  * Returns a malformed TXT Record for Testing
  *
- * This TXT record has an invalid second entry, it is missing the "minim:" in
+ * This TXT record has an invalid second entry, it is missing the "api:" in
  *  front of the entry.
  *
  */
 static void util_get_txt_record_static_test2(char *txt, int len)
 {
     strncpy(txt,
-    "api:api.minim.co:80:34.207.26.129;"
-    "minim.co:443:34.207.26.129;"
-    "my:my.minim.co:443:34.207.26.129;"
-    "releases:releases.minim.co:443:34.207.26.129;"
-    "provision:provision.minim.co:443:34.207.26.129;",
-    len);
+            "api:api.minim.co:80:18.215.222.49;"
+            "minim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
+            len);
     txt[len - 1] = '\0';
 }
 
@@ -718,11 +718,11 @@ static void util_get_txt_record_static_test2(char *txt, int len)
 static void util_get_txt_record_static_test3(char *txt, int len)
 {
     strncpy(txt,
-    "api:api.minim.co:80:34.207.26.129\n"
-    "minim.co:443:34.207.26.129\n"
-    "my:my.minim.co:443:34.207.26.129\n"
-    "releases:releases.minim.co:443:34.207.26.129\n"
-    "provision:provision.minim.co:443:34.207.26.129\n",
+            "api:api.minim.co:80:18.215.222.49\n"
+            "minim.co:443:18.215.222.49\n"
+            "my:my.minim.co:443:18.215.222.49\n"
+            "releases:releases.minim.co:443:18.215.222.49\n"
+            "provision:provision.minim.co:443:18.215.222.49\n",
     len);
     txt[len - 1] = '\0';
 }
@@ -736,11 +736,11 @@ static void util_get_txt_record_static_test3(char *txt, int len)
 static void util_get_txt_record_static_test4(char *txt, int len)
 {
     strncpy(txt,
-            "api:api.google.com:80:34.207.26.129;"
-            "api:api.minim.co:443:34.207.26.129;"
-            "my:my.minim.co:443:34.207.26.129;"
-            "releases:releases.minim.co:443:34.207.26.129;"
-            "provision:provision.minim.co:443:34.207.26.129;",
+            "api:api.google.com:80:18.215.222.49;"
+            "api:api.minim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
             len);
     txt[len - 1] = '\0';
 }
@@ -754,11 +754,11 @@ static void util_get_txt_record_static_test4(char *txt, int len)
 static void util_get_txt_record_static_test5(char *txt, int len)
 {
     strncpy(txt,
-            "api:gominim.co:80:34.207.26.129;"
-            "api:gominim.co:443:34.207.26.129;"
-            "my:my.minim.co:443:34.207.26.129;"
-            "releases:releases.minim.co:443:34.207.26.129;"
-            "provision:provision.minim.co:443:34.207.26.129;",
+            "api:gominim.co:80:18.215.222.49;"
+            "api:gominim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
             len);
     txt[len - 1] = '\0';
 }
@@ -772,11 +772,11 @@ static void util_get_txt_record_static_test5(char *txt, int len)
 static void util_get_txt_record_static_test6(char *txt, int len)
 {
     strncpy(txt,
-            "api:test.gominim.co:80:34.207.26.129;"
-            "api:gominim.co:443:34.207.26.129;"
-            "my:my.minim.co:443:34.207.26.129;"
-            "releases:releases.minim.co:443:34.207.26.129;"
-            "provision:provision.minim.co:443:34.207.26.129;",
+            "api:test.gominim.co:80:18.215.222.49;"
+            "api:gominim.co:443:18.215.222.49;"
+            "my:my.minim.co:443:18.215.222.49;"
+            "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:443:18.215.222.49;",
             len);
     txt[len - 1] = '\0';
 }
