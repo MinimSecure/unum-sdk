@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+  aws-s3: circleci/aws-s3@3.0.0
 jobs:
   # Build a .deb package for amd64 platforms.
   build-amd64:
@@ -19,7 +21,8 @@ jobs:
 
   # Build a .deb package for armhf platforms.
   build-armhf:
-    machine: true
+    machine:
+      image: ubuntu-2004:202201-02
     steps:
       - run:
           name: Install qemu-arm-static
@@ -50,7 +53,8 @@ jobs:
   # hostapd, dnsmasq, and the Unum agent installed, unum-builder which can be
   # used to build the Unum agent.
   build-docker:
-    machine: true
+    machine:
+      image: ubuntu-2004:202201-02
     environment:
       DOCKER_TAG: "debian-stretch-slim"
     steps:
@@ -93,7 +97,8 @@ jobs:
   # dependencies for building Unum.
   # TODO: currently builds use armv7 instructions-- possible to limit to Pi 2's strange armv6?
   build-armhf-builder:
-    machine: true
+    machine:
+      image: ubuntu-2004:202201-02
     steps:
       - run:
           name: Install qemu-arm-static
@@ -144,7 +149,8 @@ jobs:
   # Build and publish a Debian 9-based amd64 container with the necessary
   # dependencies for building Unum.
   build-amd64-builder:
-    machine: true
+    machine:
+      image: ubuntu-2004:202201-02
     steps:
       - checkout
       - run:
@@ -165,6 +171,37 @@ jobs:
       - store_artifacts:
           path: out
           destination: build
+
+  publish-ca-bundle:
+    machine:
+      image: ubuntu-2004:202201-02
+    steps:
+    - checkout
+    - run:
+        name: create bundle
+        command: |
+          mkdir files/ca_bundle
+          cat "files/ca/"*.pem > "files/ca_bundle/ca-certificates.crt"
+    - aws-s3/copy:
+        aws-access-key-id: CA_BUNDLE_AWS_ACCESS_KEY_ID
+        aws-region: CA_BUNDLE_AWS_REGION
+        aws-secret-access-key: CA_BUNDLE_AWS_SECRET_ACCESS_KEY
+        from: 's3://minim-unum-ca-bundles/ca-certificates.crt'
+        to: files/ca_bundle/ca-certificates-s3.crt
+    - run:
+        name: upload new bundle if different
+        command: |
+          CA_BUNDLE_SUM=`md5sum files/ca_bundle/ca-certificates.crt | awk '{print $1}'`
+          CA_S3_BUNDLE_SUM=`md5sum files/ca_bundle/ca-certificates-s3.crt | awk '{print $1}'`
+          if [ "${CA_BUNDLE_SUM}" == "${CA_S3_BUNDLE_SUM}" ]
+            then
+              echo "The CA bundles are the same so no need to upload"
+            else
+              echo "The CA bundles are different so uploading new bundle..."
+              echo "Current md5sum = ${CA_S3_BUNDLE_SUM} new md5sum = ${CA_BUNDLE_SUM}"
+              # note: the following relies on credentials loaded in the above aws orb command
+              aws s3 cp files/ca_bundle/ca-certificates.crt s3://minim-unum-ca-bundles/ca-certificates.crt
+          fi
 
 workflows:
   version: 2
@@ -197,3 +234,8 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - publish-ca-bundle:
+          filters:
+            branches:
+              only:
+              - master
