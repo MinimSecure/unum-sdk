@@ -46,7 +46,6 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     int ret, intval, ii;
     char *ifname = rinfo->name;
     static int width;
-    static int kind;
     static int noise;
     static char country[4];
     static char band_str[8];
@@ -58,7 +57,6 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
       { "stats",   { .type = JSON_VAL_STR,  {.s  = NULL    }}},
       { "band",    { .type = JSON_VAL_STR,  {.s  = band_str}}},
       { "width",   { .type = JSON_VAL_PINT, {.pi = &width  }}},
-      { "kind",    { .type = JSON_VAL_PINT, {.pi = &kind   }}},
       { "cspec",   { .type = JSON_VAL_STR,  {.s  = spec_str}}},
       { "noise",   { .type = JSON_VAL_PINT, {.pi = &noise  }}},
       { "country", { .type = JSON_VAL_STR,  {.s  = country }}},
@@ -124,12 +122,6 @@ int wt_tpl_fill_radio_info(WT_JSON_TPL_RADIO_STATE_t *rinfo)
     rinfo->chan = wf_chspec_ctlchan(chspec);
     // width and spec info in Broadcom's format
     width = wl_get_specstr_and_width(chspec, spec_str);
-
-    if(util_get_radio_kind != NULL) {
-        kind = util_get_radio_kind(ifname);
-    } else {
-        kind = -1; // Not supported yet on this platform
-    }
 
     // Get noise level
     noise = bi->phy_noise;

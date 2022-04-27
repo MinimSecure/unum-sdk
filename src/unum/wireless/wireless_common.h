@@ -33,6 +33,7 @@ typedef struct _WT_JSON_TPL_RADIO_STATE {
     JSON_KEYVAL_TPL_t *extras; // Ptr to template for platform extras
     int num_stas; // STAs on the radio (optional, if capturing them per-radio)
     int num_vaps; // VAPs in the 'vaps' array below
+    int kind;      // Kind of radio ie. 2.4Ghz, 5Ghz, or 6Ghz
     char vaps[WIRELESS_MAX_VAPS][IFNAMSIZ]; // interface names of active VAPs
 } WT_JSON_TPL_RADIO_STATE_t;
 

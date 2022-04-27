@@ -85,6 +85,7 @@ static JSON_OBJ_TPL_t wt_tpl_root = {
 // Radio info template
 static JSON_OBJ_TPL_t tpl_tbl_radios_obj = {
   { "name", { .type = JSON_VAL_STR, {.s = wt_radio_state.name}}},
+  { "kind", { .type = JSON_VAL_PINT, {.pi = &wt_radio_state.kind}}},
   { "channel", { .type = JSON_VAL_PINT, {.pi = &wt_radio_state.chan}}},
   { "extras",  { .type = JSON_VAL_FOBJ, {.fo = wt_tpl_radio_extras_f}}},
   { "vaps", { .type = JSON_VAL_FARRAY, {.fa = wt_tpl_vaps_array_f}}},
@@ -347,6 +348,11 @@ static JSON_VAL_TPL_t *wt_tpl_radios_array_f(char *key, int ii)
     strncpy(wt_radio_state.name, radio_name, sizeof(wt_radio_state.name));
     wt_radio_state.name[sizeof(wt_radio_state.name) - 1] = 0;
 
+    if(util_get_radio_kind != NULL) {
+        wt_radio_state.kind = util_get_radio_kind(radio_name);
+    } else {
+        wt_radio_state.kind = -1; // Not supported yet on this platform
+    }
     // Populate the data we need to report for the radio
     int rc = wt_tpl_fill_radio_info(&wt_radio_state);
     if(rc < 0) {
