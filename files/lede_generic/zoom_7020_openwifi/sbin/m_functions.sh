@@ -1,13 +1,13 @@
 
 function get_mac ()
 {
-	mac=`fw_printenv -n ethaddr`
+	mac=`fw_printenv -n ethaddr | tr 'A-F' 'a-f'`
 	echo $mac
 }
 
 function get_serial_num ()
 {
-	suff=`fw_printenv -n sn`
+	suff=`fw_printenv -n sn | tr 'A-Z' 'a-z'`
 	echo $suff
 }
 
