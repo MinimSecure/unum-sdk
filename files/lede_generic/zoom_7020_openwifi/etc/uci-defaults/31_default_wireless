@@ -1,3 +1,6 @@
+# If already configured via the cloud, exit
+uci -q get minim.@unum[0].opmode && exit 0
+
 # SSID
 ssid=`fw_printenv -n backhaul_ssid | awk 'BEGIN{FS="-"} {printf("%s%s\n", $1, $3)}'`
 if [ -z "$ssid" ]; then
