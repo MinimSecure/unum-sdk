@@ -23,7 +23,7 @@ static TPCAP_IF_STATS_t tp_if_stats[TPCAP_STAT_IF_MAX];
 // ii - interface index in the stats table
 // name - interface name
 // Returns: 0 - if successful
-static int tpcap_prep_if_stats(int ii, char *name)
+static int tpcap_prep_if_stats(int ii, const char *name)
 {
     NET_DEV_STATS_t st;
 
@@ -46,7 +46,7 @@ static int tpcap_prep_if_stats(int ii, char *name)
 // Add interface to the tp_ifs array
 // Note: for use in tpcap thread only
 // Returns: 0 - if the interface is added, error code otherwise
-int tpcap_add_if(char *ifname, void *data)
+int tpcap_add_if(const char *ifname, void *data)
 {
     int ii;
     IF_ENUM_CB_EXT_DATA_t *e_data = (IF_ENUM_CB_EXT_DATA_t *)data;

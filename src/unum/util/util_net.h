@@ -76,6 +76,7 @@
     (unum_config.wan_ifcount > 0) ? (unum_config.wan_ifname) :        \
                                     (PLATFORM_GET_MAIN_WAN_NET_DEV()) \
 )
+#define GET_MAIN_WAN_L3_NET_DEV() GET_MAIN_WAN_NET_DEV()
 #define GET_MAIN_LAN_NET_DEV() (                                      \
     (unum_config.lan_ifcount > 0) ? (unum_config.lan_ifname[0]) :     \
                                     (PLATFORM_GET_MAIN_LAN_NET_DEV()) \
@@ -205,17 +206,22 @@ typedef struct _IF_ENUM_CB_EXT_DATA {
 // Checks if the interface is administratively UP
 // ifname - the interface name
 // Returns: TRUE - interface is up, FALSE - down or error
-int util_net_dev_is_up(char *ifname);
+int util_net_dev_is_up(const char *ifname);
 
 // Checks if the interface reports link UP
 // ifname - the interface name
 // Returns: TRUE - interface link is up, FALSE - down or error
-int util_net_dev_link_is_up(char *ifname);
+int util_net_dev_link_is_up(const char *ifname);
+
+// Checks if the interface is point to point (eg. pppoe)
+// ifname - the interface name
+// Returns: TRUE - interface link is pointtopoint, FALSE - interface is not
+int util_net_dev_is_pointtopoint(const char *ifname);
 
 // Checks if the interface is a bridge
 // ifname - the interface name
 // Returns: TRUE - interface is a bridge, FALSE - not a bridge
-int util_net_dev_is_bridge(char *ifname);
+int util_net_dev_is_bridge(const char *ifname);
 
 // Enumerite the list of the IP interfaces. For each interface a caller's
 // callback is invoked until all the interfaces are enumerated.
@@ -226,7 +232,7 @@ int util_net_dev_is_bridge(char *ifname);
 #define UTIL_IF_ENUM_RTR_LAN  0x00000001 // all IP routing LAN interfaces
 #define UTIL_IF_ENUM_RTR_WAN  0x00000002 // IP routing WAN interface
 #define UTIL_IF_ENUM_EXT_DATA 0x00000004 // see IF_ENUM_CB_EXT_DATA_t above
-typedef int (*UTIL_IF_ENUM_CB_t)(char *, void *); // Callback function type
+typedef int (*UTIL_IF_ENUM_CB_t)(const char *, void *); // Callback function type
 int util_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *payload);
 
 // The platform might provide its own interface enumerator that is used
@@ -249,17 +255,17 @@ int util_platform_enum_ifs(int flags, UTIL_IF_ENUM_CB_t f, void *payload);
 // The mac buffer length should be at least 6 bytes.
 // If mac is NULL just executes ioctl and reports success or error.
 // Returns 0 if successful, error code if fails.
-int util_get_mac(char *dev, unsigned char *mac);
+int util_get_mac(const char *dev, unsigned char *mac);
 
 // Get the IPv4 configuration of a network device.
 // Returns 0 if successful, error code if fails.
-int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg);
+int util_get_ipcfg(const char *dev, DEV_IP_CFG_t *ipcfg);
 
 // Get the IPv6 configuration of a network device.
 // Requires a pointer to an array with room for
 // MAX_IPV6_ADDRESSES_PER_MAC addresses
 // Returns 0 if successful, error code if fails.
-int util_get_ipv6cfg(char *dev, DEV_IPV6_CFG_t *ipcfg);
+int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg);
 
 // Get device base MAC (format xx:xx:xx:xx:xx:xx, stored at a static location)
 char *util_device_mac();
@@ -273,7 +279,7 @@ int util_get_ipv4(const char *dev, char *buf);
 // Using getaddrinfo we do a name lookup and then
 // *res will be set to the first ip4 sockaddr (or ignored if NULL)
 // return negative number on error
-int util_get_ip4_addr(char *name, struct sockaddr *res);
+int util_get_ip4_addr(const char *name, struct sockaddr *res);
 
 // Sends out an ICMP packet to a host and waits for a reply
 // If the timeout is set to 0, we do not wait for the reply
@@ -284,10 +290,10 @@ int util_ping(struct sockaddr *s_addr, int timeout_in_sec);
 
 // Get network device statistics/counters.
 // Returns 0 if successful, error code if fails.
-int util_get_dev_stats(char *dev, NET_DEV_STATS_t *st);
+int util_get_dev_stats(const char *dev, NET_DEV_STATS_t *st);
 
 // Send ARP query (just sends the packet)
-int util_send_arp_query(char *ifname, IPV4_ADDR_t *tgt);
+int util_send_arp_query(const char *ifname, IPV4_ADDR_t *tgt);
 
 // Extract a record name from a DNS/mDNS packet
 int extract_dns_name(void *pkt, unsigned char *ptr, int max,
@@ -295,7 +301,7 @@ int extract_dns_name(void *pkt, unsigned char *ptr, int max,
 
 // Send UDP packet
 // Returns: 0 - if successful, or error code
-int send_udp_packet(char *ifname, UDP_PAYLOAD_t *payload);
+int send_udp_packet(const char *ifname, UDP_PAYLOAD_t *payload);
 
 // Calculates the checksum to be used with TCP & IP packets
 unsigned short util_ip_cksum(unsigned short *addr, int len);

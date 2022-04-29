@@ -293,7 +293,7 @@ static int probe_ports(unsigned long scan_delay, unsigned long wait_time,
 // the number of times a non-0 valie was reported by the callback and we
 // will examine that value to find out if the 'ipv4' matched to any of our
 // LAN interface addresses.
-static int check_if_ip(char *ifname, void *ipv4)
+static int check_if_ip(const char *ifname, void *ipv4)
 {
     DEV_IP_CFG_t ipcfg;
     if(util_get_ipcfg(ifname, &ipcfg) != 0) {

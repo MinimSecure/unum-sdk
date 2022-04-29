@@ -201,7 +201,7 @@ static void fe_add_arp_entry(FE_ARP_t *ae)
 
 // Fills in lan_ifnames[][] array with LAN ifnames and the
 // lan_ifcfg[] with the IP configuration of the monitored LAN interfaces.
-static int fe_add_if(char *ifname, void *unused)
+static int fe_add_if(const char *ifname, void *unused)
 {
     DEV_IP_CFG_t *new_ipcfg = &lan_ifcfg[lan_ifcfg_count];
 

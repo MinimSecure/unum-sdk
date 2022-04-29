@@ -10,7 +10,7 @@ static int nl_recv(NL_SOCK_t *s, char *buf, unsigned int len, int seq_num, int t
 // ifname - the interface name
 // flags - pointer to in to fill in with the flags
 // Returns: 0 - success (*flags is set), negative - error
-static int util_net_dev_get_flags(char *ifname, int *flags)
+static int util_net_dev_get_flags(const char *ifname, int *flags)
 {
     int ret, sockfd;
     struct ifreq ifr;
@@ -40,7 +40,7 @@ static int util_net_dev_get_flags(char *ifname, int *flags)
 // Checks if the interface is administratively UP
 // ifname - the interface name
 // Returns: TRUE - interface is up, FALSE - down or error
-int util_net_dev_is_up(char *ifname)
+int util_net_dev_is_up(const char *ifname)
 {
     int flags = 0;
     if(util_net_dev_get_flags(ifname, &flags) == 0) {
@@ -52,7 +52,7 @@ int util_net_dev_is_up(char *ifname)
 // Checks if the interface reports link UP
 // ifname - the interface name
 // Returns: TRUE - interface link is up, FALSE - down or error
-int util_net_dev_link_is_up(char *ifname)
+int util_net_dev_link_is_up(const char *ifname)
 {
     int flags = 0;
     if(util_net_dev_get_flags(ifname, &flags) == 0) {
@@ -61,10 +61,22 @@ int util_net_dev_link_is_up(char *ifname)
     return FALSE;
 }
 
+// Checks if the interface is pointtopoint (eg. pppoe)
+// ifname - the interface name
+// Returns: TRUE - interface link is pointtopoint, FALSE - interface is not
+int util_net_dev_is_pointtopoint(const char *ifname)
+{
+    int flags = 0;
+    if(util_net_dev_get_flags(ifname, &flags) == 0) {
+        return ((flags & IFF_POINTOPOINT) != 0);
+    }
+    return FALSE;
+}
+
 // Checks if the interface is a bridge
 // ifname - the interface name
 // Returns: TRUE - interface is a bridge, FALSE - not a bridge
-int util_net_dev_is_bridge(char *ifname)
+int util_net_dev_is_bridge(const char *ifname)
 {
     char br_path[IFNAMSIZ + 20];
     struct stat st;
@@ -186,7 +198,7 @@ int util_get_ipv4(const char *dev, char *buf)
 // The mac buffer length should be at least 6 bytes.
 // If mac is NULL just executes ioctl and reports success or error.
 // Returns 0 if successful, error code if fails.
-int util_get_mac(char *dev, unsigned char *mac)
+int util_get_mac(const char *dev, unsigned char *mac)
 {
     struct ifreq ifr;
     int fd = -1;
@@ -218,7 +230,7 @@ int util_get_mac(char *dev, unsigned char *mac)
 // Using getaddrinfo we do a name lookup and then
 // *res will be set to the first ip4 sockaddr (or ignored if NULL)
 // return negative number on error
-int util_get_ip4_addr(char *name, struct sockaddr *res)
+int util_get_ip4_addr(const char *name, struct sockaddr *res)
 {
   struct addrinfo *cur_info;
   struct addrinfo *info_list;
@@ -378,7 +390,7 @@ int util_ping(struct sockaddr *s_addr, int timeout_in_sec)
 
 // Get the IP configuration of a network device.
 // Returns 0 if successful, error code if fails.
-int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg)
+int util_get_ipcfg(const char *dev, DEV_IP_CFG_t *ipcfg)
 {
     struct ifreq ifr;
     int fd = -1;
@@ -421,7 +433,7 @@ int util_get_ipcfg(char *dev, DEV_IP_CFG_t *ipcfg)
 // Requires a pointer to an array with room for
 // MAX_IPV6_ADDRESSES_PER_MAC addresses
 // Returns 0 if successful, error code if fails.
-int util_get_ipv6cfg(char *dev, DEV_IPV6_CFG_t *ipcfg) {
+int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
     int ret = -1;
 #ifdef FEATURE_IPV6_TELEMETRY
     // Create socket
@@ -512,7 +524,7 @@ int util_get_ipv6cfg(char *dev, DEV_IPV6_CFG_t *ipcfg) {
 
 // Get network device statistics/counters.
 // Returns 0 if successful, error code if fails.
-int util_get_dev_stats(char *dev, NET_DEV_STATS_t *st)
+int util_get_dev_stats(const char *dev, NET_DEV_STATS_t *st)
 {
     int ret;
     FILE *f;
@@ -669,7 +681,7 @@ int extract_dns_name(void *pkt, unsigned char *ptr, int max,
 }
 
 // Send UDP packet
-int send_udp_packet(char *ifname, UDP_PAYLOAD_t *payload)
+int send_udp_packet(const char *ifname, UDP_PAYLOAD_t *payload)
 {
     // Create UDP socket
     int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -765,7 +777,7 @@ int send_udp_packet(char *ifname, UDP_PAYLOAD_t *payload)
 }
 
 // Send ARP query (just sends the packet)
-int util_send_arp_query(char *ifname, IPV4_ADDR_t *tgt)
+int util_send_arp_query(const char *ifname, IPV4_ADDR_t *tgt)
 {
     unsigned char my_mac[ETHER_ADDR_LEN];
     unsigned char pkt_buf[128];
@@ -1194,7 +1206,7 @@ typedef struct _FIND_IF_IP {
 // non-0 value if device IP belongs to one of the LAN interface subnets.
 // The util_enum_ifs() then returns the number of times a non-0 value
 // was reported by the callback.
-static int find_if_ip(char *ifname, void *ptr)
+static int find_if_ip(const char *ifname, void *ptr)
 {
     FIND_IF_IP_t *pd = (FIND_IF_IP_t *)ptr;
     DEV_IP_CFG_t ipcfg;

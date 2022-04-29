@@ -83,7 +83,7 @@ TPCAP_IF_t *tpcap_get_if_table(void);
 // Add interface to the tp_ifs array
 // Note: for use in tpcap thread only
 // Returns: 0 - if the interface is added, error code otherwise
-int tpcap_add_if(char *ifname, void *_unused);
+int tpcap_add_if(const char *ifname, void *_unused);
 
 // Subsystem init function
 int tpcap_init(int level);
