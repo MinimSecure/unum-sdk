@@ -121,6 +121,179 @@ static char *uci_get_str(struct uci_context *ctx, char *name)
     return o->v.string;
 }
 
+// Given a ucentral interface name string like LAN or WAN, this function returns
+// the uci interface name, like up0v0 or down1v0, if they exist, or NULL if it
+// can't find a ucentral named interface with the given name
+// Example:
+//
+// config interface 'up0v0'
+//         option ucentral_name 'WAN'
+//         option ucentral_path '/interfaces/0'
+//         option ifname 'up0v0'
+//         ...
+//
+//
+static char * util_get_ucentral_name(struct uci_context *ctx, const char * name)
+{
+    struct uci_ptr ptr;
+    struct uci_package *p;
+    struct uci_element *elem = NULL;
+    struct uci_section *s = NULL;
+    const char *ucentral_name;
+
+    if(UCI_OK == uci_lookup_ptr(ctx, &ptr, "network", TRUE)) {
+        p = ptr.p;
+
+        uci_foreach_element(&p->sections, elem) {
+            s = uci_to_section(elem);
+            if(!strcmp(s->type, "interface")) {
+                ucentral_name = uci_lookup_option_string(ctx, s, "ucentral_name");
+                if(ucentral_name && !strcmp(ucentral_name, name))
+                    return s->e.name;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+// Return the uci interface name for the lan interface
+// First, check for a ucentral configured lan interface.  If
+// it doesn't exist, return "lan" as that is what all other
+// openwrt based devices use
+static char * util_get_uci_lan_name(struct uci_context *ctx)
+{
+	char * name = util_get_ucentral_name(ctx, "LAN");
+	return name ? name : "lan";
+}
+
+// Return the uci interface name for the wan interface
+// First, check for a ucentral configured wan interface.  If
+// it doesn't exist, return "wan" as that is what all other
+// openwrt based devices use
+static char * util_get_uci_wan_name(struct uci_context *ctx)
+{
+	char * name = util_get_ucentral_name(ctx, "WAN");
+	return name ? name : "wan";
+}
+
+// Returns true if lan is up
+static int util_lan_up(struct uci_context *ctx)
+{
+    char *val;
+    char buf[64];
+
+    snprintf(buf, sizeof(buf), "network.%s.up", util_get_uci_lan_name(ctx));
+
+    val = uci_get_str(ctx, buf);
+    if(val && *val == '1') {
+        log("%s: LAN is up\n", __func__);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+// Returns true if wan is up
+static int util_wan_up(struct uci_context *ctx)
+{
+    char *val;
+
+#ifndef FEATURE_LAN_ONLY
+    if(IS_OPM(UNUM_OPM_AP)) {
+        // In AP mode set the flag to prevent furhter checking
+        return TRUE;
+    } else {
+        char buf[64];
+
+        snprintf(buf, sizeof(buf), "network.%s.up", util_get_uci_wan_name(ctx));
+
+        // In non-AP mode do real check if WAN is up
+        val = uci_get_str(ctx, buf);
+        if(val && *val == '1') {
+            log("%s: WAN is up\n", __func__);
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+#else  // !FEATURE_LAN_ONLY
+    return TRUE;
+#endif // !FEATURE_LAN_ONLY
+}
+
+// Return the underlying linux network interface for the lan
+// First look for the device uci option.  If that doesn't
+// exist, use ifname.  If neither is found, return NULL
+static char * util_get_lan_device(struct uci_context *ctx)
+{
+    char *val = NULL;
+    char buf[64];
+    char *uci_name = util_get_uci_lan_name(ctx);
+
+    snprintf(buf, sizeof(buf), "network.%s.device", uci_name);
+
+    val = uci_get_str(ctx, buf);
+    if(val == NULL) {
+        snprintf(buf, sizeof(buf), "network.%s.ifname", uci_name);
+        val = uci_get_str(ctx, buf);
+    }
+
+    return val;
+}
+
+// Return the ifname option for the lan interface.  Return NULL
+// if this option can't be read
+static char * util_get_lan_interface_name(struct uci_context *ctx)
+{
+    char *val = NULL;
+    char buf[64];
+
+    snprintf(buf, sizeof(buf), "network.%s.ifname", util_get_uci_lan_name(ctx));
+    val = uci_get_str(ctx, buf);
+
+    return val;
+}
+
+// Return the ifname option for the lan interface.  If it doesn't
+// exist, return the device option.  If neither exist, return NULL
+static char * util_get_wan_interface_name(struct uci_context *ctx)
+{
+    char *val = NULL;
+
+    if(IS_OPM(UNUM_OPM_AP)) {
+        val = "lo"; // Use loopback to bypass getting WAN name in AP mode
+    } else {
+        char buf[64];
+        char *uci_name = util_get_uci_wan_name(ctx);
+
+        snprintf(buf, sizeof(buf), "network.%s.ifname", uci_name);
+        val = uci_get_str(ctx, buf);
+        if(val == NULL) {
+            log("%s: error, no WAN inteface name found, trying device name\n",
+                __func__);
+            snprintf(buf, sizeof(buf), "network.%s.device", uci_name);
+            val = uci_get_str(ctx, buf);
+        }
+    }
+
+    return val;
+}
+
+// Return the netifd protocol name for the wan interface.
+// Return NULL if the proto can't be determined
+static char * util_get_wan_proto(struct uci_context *ctx)
+{
+    char *val = NULL;
+    char buf[64];
+
+    snprintf(buf, sizeof(buf), "network.%s.proto", util_get_uci_wan_name(ctx));
+
+    val = uci_get_str(ctx, buf);
+
+    return val;
+}
+
 // Optional platform init function, returns 0 if successful
 // Note: this is currently used to populate all the necessary interface
 //       names at startup, but the configuration might be changing, this
@@ -181,28 +354,13 @@ int util_platform_init(int level)
             static int lan_up = FALSE;
             static int wan_up = FALSE;
 
-            val = uci_get_str(ctx, "network.lan.up");
-            if(!lan_up && val && *val == '1') {
-                log("%s: LAN is up\n", __func__);
-                lan_up = TRUE;
+            if(!lan_up) {
+                lan_up = util_lan_up(ctx);
             }
 
-#ifndef FEATURE_LAN_ONLY
-            if(IS_OPM(UNUM_OPM_AP)) {
-                // In AP mode set the flag to prevent furhter checking
-                wan_up = TRUE;
-            } else {
-                // In non-AP mode do real check if WAN is up
-                val = uci_get_str(ctx, "network.wan.up");
+            if(!wan_up) {
+                wan_up = util_wan_up(ctx);
             }
-            if(!wan_up && val && *val == '1')
-            {
-                log("%s: WAN is up\n", __func__);
-                wan_up = TRUE;
-            }
-#else  // !FEATURE_LAN_ONLY
-            wan_up = TRUE;
-#endif // !FEATURE_LAN_ONLY
 
             if(!lan_up || !wan_up) {
                 // This code goes away eventually, just reopen context to
@@ -230,7 +388,7 @@ int util_platform_init(int level)
             // Get main LAN ethernet device (used to get base MAC address)
             // Note: this doesn't work at all in 18.06.5, keeping it here
             //       for backward compatibility only.
-            val = uci_get_str(ctx, "network.lan.device");
+            val = util_get_lan_device(ctx);
             if(val == NULL) {
                 log("%s: error, no LAN device found\n", __func__);
                 ret = -2;
@@ -247,33 +405,20 @@ int util_platform_init(int level)
         }
 
         // Get main LAN interface name (for TPCAP etc, has to have IP address)
-        if(IS_OPM(UNUM_OPM_AP)) {
-            val = "br-lan";
-        } else {
-            val = uci_get_str(ctx, "network.lan.ifname");
-            if(val == NULL) {
-                log("%s: error, no LAN intrface name found\n", __func__);
-                ret = -3;
-                break;
-            }
+        val = util_get_lan_interface_name(ctx);
+        if(val == NULL) {
+            log("%s: error, no LAN intrface name found\n", __func__);
+            ret = -3;
+            break;
         }
         strncpy(lan_ifname, val, sizeof(lan_ifname) - 1);
 
         // Get WAN interface name (used for stats and WAN IP address reporting)
-        if(IS_OPM(UNUM_OPM_AP)) {
-            val = "lo"; // Use loopback to bypass getting WAN name in AP mode
-        } else {
-            val = uci_get_str(ctx, "network.wan.ifname");
-        }
+        val = util_get_wan_interface_name(ctx);
         if(val == NULL) {
-            log("%s: error, no WAN inteface name found, trying device name\n",
-                __func__);
-            val = uci_get_str(ctx, "network.wan.device");
-            if(val == NULL) {
-                log("%s: error, no WAN device found\n", __func__);
-                ret = -4;
-                break;
-            }
+            log("%s: error, no WAN device found\n", __func__);
+            ret = -4;
+            break;
         }
         strncpy(wan_ifname, val, sizeof(wan_ifname) - 1);
 
@@ -422,7 +567,7 @@ int platform_release_renew(void)
     }
 
     // Get WAN Protocol & Check for DHCP
-    char * wan_proto = uci_get_str(ctx, "network.wan.proto");
+    char * wan_proto = util_get_wan_proto(ctx);
     if((wan_proto == NULL) || (0 != strcmp(wan_proto,"dhcp"))) {
         log("%s: WAN interface is not configured for DHCP.\n", __func__);
         uci_free_context(ctx);
