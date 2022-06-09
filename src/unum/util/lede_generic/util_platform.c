@@ -197,9 +197,9 @@ static int util_lan_up(struct uci_context *ctx)
 // Returns true if wan is up
 static int util_wan_up(struct uci_context *ctx)
 {
+#ifndef FEATURE_LAN_ONLY
     char *val;
 
-#ifndef FEATURE_LAN_ONLY
     if(IS_OPM(UNUM_OPM_AP)) {
         // In AP mode set the flag to prevent furhter checking
         return TRUE;
