@@ -31,6 +31,9 @@
 // Main WAN interface name (retrieved at startup only)
 static char wan_ifname[IFNAMSIZ] = "";
 
+// L3 WAN interface name
+static char l3_wan_ifname[IFNAMSIZ] = "";
+
 // Main LAN interface name (retrieved at startup only)
 static char lan_ifname[IFNAMSIZ] = "";
 
@@ -292,6 +295,30 @@ static char * util_get_wan_proto(struct uci_context *ctx)
     val = uci_get_str(ctx, buf);
 
     return val;
+}
+
+// Get l3 WAN interface name, NULL if not yet set
+char *util_l3_wan_ifname(void)
+{
+    struct uci_context *ctx = uci_alloc_context();
+
+    if(ctx) {
+        char * wan_proto = util_get_wan_proto(ctx);
+        if(wan_proto && (0 == strcmp(wan_proto,"pppoe"))) {
+            // If the wan is a pppoe interface, the interface name
+            // is "pppoe-" plus the uci interface name
+            snprintf(l3_wan_ifname, sizeof(l3_wan_ifname), "pppoe-%s", util_get_uci_wan_name(ctx));
+        } else {
+            memset(l3_wan_ifname, 0, sizeof(l3_wan_ifname));
+        }
+        uci_free_context(ctx);
+    }
+
+    if(*l3_wan_ifname) {
+        return l3_wan_ifname;
+    }
+
+    return util_main_wan_ifname();
 }
 
 // Optional platform init function, returns 0 if successful

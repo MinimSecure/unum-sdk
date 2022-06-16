@@ -78,6 +78,8 @@
 // Main WAN network device. So far expecting only one WAN device
 // per router. It is used to get device external IP.
 #define PLATFORM_GET_MAIN_WAN_NET_DEV() (util_main_wan_ifname())
+#undef GET_MAIN_WAN_L3_NET_DEV
+#define GET_MAIN_WAN_L3_NET_DEV() (util_l3_wan_ifname())
 
 // Max stack size for the platform threads (unless the system
 // default is not good)
@@ -107,6 +109,8 @@
 // network names are reconfigured the agent should be restarted.
 // Get main WAN interface name, NULL if not yet set
 char *util_main_wan_ifname(void);
+// Get L3 WAN interface name, NULL if not yet set
+char *util_l3_wan_ifname(void);
 // Get main LAN interface name, NULL if not yet set
 char *util_main_lan_ifname(void);
 
