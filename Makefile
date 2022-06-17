@@ -77,6 +77,7 @@ all: install
 # Include the model makefile and prepare global vars
 include $(TARGET_RULES)
 export
+TARGET_INSTALL_LIST += features
 
 # Dependencies for specific software components
 ALL_SOURCE_FOLDERS := $(patsubst %,$(TOP)/src/%,$(TARGET_LIST))
@@ -169,6 +170,14 @@ endif
 ifneq ($(MAKECMDGOALS),clean)
   include $(ALL_INCLUDES)
 endif
+
+# Generate feature shell variables for target
+features.install: $(TARGET_RFS)
+	mkdir -p $(TARGET_RFS)/etc/unum
+	echo '# auto generated file, do not edit' > $(TARGET_RFS)/etc/unum/features.sh
+	echo '# use [ "$$UNUM_FEATURE_BLAH" != "" ] to evaluate, value will always be 1 if present' >> $(TARGET_RFS)/etc/unum/features.sh
+	echo '#' >> $(TARGET_RFS)/etc/unum/features.sh
+	echo $(RELEASE_FEATURES) | awk -F, '{gsub("\"",""); gsub("-","_"); for(i=1;i<=NF;i++) print "export UNUM_FEATURE_" toupper($$i) "=1"}' >> $(TARGET_RFS)/etc/unum/features.sh
 
 build: $(TARGET_LIST)
 
