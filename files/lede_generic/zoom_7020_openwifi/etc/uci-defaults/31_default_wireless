@@ -13,17 +13,27 @@ if [ -z "$key" ]; then
 	exit 0
 fi
 
-#Set the default SSID and Key for both the radios
-for devidx in 0 1 2
-do
-	uci -q batch <<-EOF
-		set wireless.@wifi-iface[${devidx}].ssid=$ssid
-		set wireless.@wifi-iface[${devidx}].encryption="psk2"
-		set wireless.@wifi-iface[${devidx}].key=$key
-		set wireless.@wifi-iface[${devidx}].disabled=0
-		set wireless.radio${devidx}.disabled=0
-		set wireless.radio${devidx}.country=US
-	EOF
-done
-uci -q commit wireless
+if [ -f /etc/ucentral/ucentral.cfg.0000000001 ] ; then
+	#Replace openwifi default cfg with minim default cfg
+	cp /etc/minim/ucentral.cfg.0000000001 /etc/ucentral
+
+	#Set default ssid and key
+	sed -i "s/__DEFAULT_SSID__/$ssid/g" /etc/ucentral/ucentral.cfg.0000000001
+	sed -i "s/__DEFAULT_KEY__/$key/g" /etc/ucentral/ucentral.cfg.0000000001
+else
+	#Set the default SSID and Key for both the radios
+	for devidx in 0 1 2
+	do
+		uci -q batch <<-EOF
+			set wireless.@wifi-iface[${devidx}].ssid=$ssid
+			set wireless.@wifi-iface[${devidx}].encryption="psk2"
+			set wireless.@wifi-iface[${devidx}].key=$key
+			set wireless.@wifi-iface[${devidx}].disabled=0
+			set wireless.radio${devidx}.disabled=0
+			set wireless.radio${devidx}.country=US
+		EOF
+	done
+	uci -q commit wireless
+fi
+
 exit 0
