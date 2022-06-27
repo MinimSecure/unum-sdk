@@ -125,7 +125,7 @@ static inline int util_port_range_op(PORT_RANGE_MAP_t *r_ptr,
 };
 
 // IPv4 internal address data type
-typedef union {
+typedef union __attribute__((packed)) {
     unsigned char b[4];
     unsigned int  i;
 } IPV4_ADDR_t;
