@@ -114,6 +114,12 @@ char *util_l3_wan_ifname(void);
 // Get main LAN interface name, NULL if not yet set
 char *util_main_lan_ifname(void);
 
+// Return the uci interface name for the lan interface
+// First, check for a ucentral configured lan interface.  If
+// it doesn't exist, return "lan" as that is what all other
+// openwrt based devices use
+char * util_get_uci_lan_name(struct uci_context *ctx);
+
 // The function returns the firmware version from /etc/openwrt_release
 // file. The version string is cached on the first run and is returned
 // back from the cache on the subsequent calls. In the case of an error

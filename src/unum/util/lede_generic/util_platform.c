@@ -164,7 +164,7 @@ static char * util_get_ucentral_name(struct uci_context *ctx, const char * name)
 // First, check for a ucentral configured lan interface.  If
 // it doesn't exist, return "lan" as that is what all other
 // openwrt based devices use
-static char * util_get_uci_lan_name(struct uci_context *ctx)
+char * util_get_uci_lan_name(struct uci_context *ctx)
 {
 	char * name = util_get_ucentral_name(ctx, "LAN");
 	return name ? name : "lan";
