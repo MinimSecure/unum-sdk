@@ -23,43 +23,6 @@ struct uci_parse_context {
 // Script applying UCI config changes for LEDE platform
 #define UNUM_RESTART_CONFIG_SCRIPT "/usr/bin/restart_config.sh"
 
-// For any wireless interface with the network option set to 'lan', set
-// the network option to the given name
-static int fixup_wireless_network_name(struct uci_context *ctx, char * name)
-{
-    struct uci_ptr ptr;
-    struct uci_package *p = NULL;
-    struct uci_element *elem = NULL;
-    struct uci_section *s = NULL;
-
-    if(UCI_OK == uci_lookup_ptr(ctx, &ptr, "wireless", TRUE)) {
-        p = ptr.p;
-
-        uci_foreach_element(&p->sections, elem) {
-            s = uci_to_section(elem);
-            if(s && !strcmp(s->type, "wifi-iface")) {
-                const char * network_name = uci_lookup_option_string(ctx, s, "network");
-
-                if(network_name && !strcmp(network_name, "lan")) {
-                    struct uci_ptr uptr;
-
-                    uptr.p = s->package;
-                    uptr.s = s;
-                    uptr.option = "network";
-                    uptr.value = name;
-
-                    uci_lookup_ptr(ctx, &uptr, NULL, false);
-                    if(!uptr.o)
-                        return 0;
-
-                    uci_set(ctx, &uptr);
-                }
-            }
-        }
-    }
-
-    return 0;
-}
 
 // Get device config
 // Returns: pointer to the 0-terminated config string or NULL if fails,
@@ -272,14 +235,6 @@ int platform_apply_cloud_cfg(char *cfg, int cfg_len)
         ret = uci_import(ctx, input, NULL, &package, FALSE);
         switch(ret) {
             case UCI_OK: 
-
-                // The current uci codec assumes that the openwrt network name
-                // that the wireless interfaces should be bridged to is called
-                // 'lan'.  However, this isn't the case for openwifi devices
-                // so we manually fix it up here before applying the wireless
-                // config
-                fixup_wireless_network_name(ctx, util_get_uci_lan_name(ctx));
-
                 // loop through all config sections and overwrite existing data
                 uci_foreach_element(&ctx->root, e) {
                     struct uci_package *p = uci_to_package(e);
