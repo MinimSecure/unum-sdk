@@ -13,16 +13,6 @@ if [ -z "$key" ]; then
 	exit 0
 fi
 
-sn=`/sbin/get_serial_num.sh`
-if [ -z "$sn" ]; then
-	exit 0
-fi
-
-mac=`fw_printenv -n ethaddr | tr 'A-F' 'a-f'`
-if [ -z "$mac" ]; then
-	exit 0
-fi
-
 if [ -f /etc/ucentral/ucentral.cfg.0000000001 ] ; then
 	#Replace openwifi default cfg with minim default cfg
 	cp /etc/minim/ucentral.cfg.0000000001 /etc/ucentral
@@ -30,11 +20,6 @@ if [ -f /etc/ucentral/ucentral.cfg.0000000001 ] ; then
 	#Set default ssid and key
 	sed -i "s/__DEFAULT_SSID__/$ssid/g" /etc/ucentral/ucentral.cfg.0000000001
 	sed -i "s/__DEFAULT_KEY__/$key/g" /etc/ucentral/ucentral.cfg.0000000001
-	sed -i "s/__ONBOARDING_KEY__/$sn/g" /etc/ucentral/ucentral.cfg.0000000001
-	sed -i "s/__ONBOARDING_SSID__/minim-$mac/g" /etc/ucentral/ucentral.cfg.0000000001
-
-	# this is only needed for non-openwifi style onboarding
-	/etc/init.d/onboard disable
 else
 	#Set the default SSID and Key for both the radios
 	for devidx in 0 1 2

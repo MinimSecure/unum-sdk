@@ -69,29 +69,6 @@
 					]
 				}
 			]
-		},
-		{
-			"name": "WAN-onboarding",
-			"role": "upstream",
-			"ipv4": {
-				"addressing": "dynamic"
-			},
-			"metric": 6,
-			"services": [],
-			"ssids": [
-				{
-					"bss-mode": "sta",
-					"encryption": {
-						"ieee80211w": "optional",
-						"key": "__ONBOARDING_KEY__",
-						"proto": "psk2"
-					},
-					"name": "__ONBOARDING_SSID__",
-					"wifi-bands": [
-						"5G-lower"
-					]
-				}
-			]
 		}
 	],
 	"services": {
