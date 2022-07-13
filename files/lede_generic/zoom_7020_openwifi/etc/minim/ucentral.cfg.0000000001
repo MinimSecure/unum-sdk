@@ -7,12 +7,7 @@
 			"channel-mode": "HE",
 			"channel-width": 40
 		}, {
-			"band": "5G-upper",
-			"country": "US",
-			"channel-mode": "HE",
-			"channel-width": 80
-		}, {
-			"band": "5G-lower",
+			"band": "5G",
 			"country": "US",
 			"channel-mode": "HE",
 			"channel-width": 80
