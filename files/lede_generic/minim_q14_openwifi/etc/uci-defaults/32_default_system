@@ -1,0 +1,18 @@
+# Use the default ssid as the hostname
+# so it is unique
+hostname=q14-`fw_printenv -n ethaddr | tr 'A-F' 'a-f' | awk 'BEGIN{FS=":"} {printf("%s%s\n", $5, $6)}'`
+if [ -z "$hostname" ]; then
+	exit 0
+fi
+
+uci -q batch <<-EOF
+	delete system.ntp.server
+	add_list system.ntp.server="pool.ntp.org"
+	add_list system.ntp.server="time.google.com"
+	set system.@system[0].hostname=$hostname
+	set system.@system[0].log_size="64"
+	set system.@system[0].log_file="/var/log/messages"
+	set system.@system[0].log_remote="0"
+	commit system
+EOF
+exit 0
