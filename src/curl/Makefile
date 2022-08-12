@@ -42,7 +42,7 @@ all: .compiled
 	cd "$(SUBDIR)" && \
 	./configure --build=x86_64-pc-linux-gnu --host=$(TARGET_PLATFORM_ARCH) \
                     --disable-debug --enable-shared --disable-manual \
-                    --without-nss --without-libmetalink --without-librtmp \
+                    --without-nss --without-librtmp \
                     --without-axtls --without-cyassl --without-gnutls --without-polarssl \
                     --without-libidn --without-libssh2 --without-zlib \
                     --disable-ipv6 --enable-pthreads \
@@ -52,6 +52,7 @@ all: .compiled
                     --disable-telnet --disable-tftp --disable-cookies --disable-crypto-auth \
                     --disable-libcurl-option --disable-proxy --disable-threaded-resolver \
                     --disable-tls-srp --disable-unix-sockets --disable-verbose \
+                    --without-libpsl --without-libgsasl \
                     $(CONFIG_OPTIONS)
 	touch $@
 
