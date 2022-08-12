@@ -447,7 +447,7 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
     }
 
     for(;;) {
-        char resp[1024] = {'\0'};
+        char resp[8192] = {'\0'};
         int resp_len = 0;
         const int msg_seq = 1;
         const struct nlmsghdr *retmsg = NULL;

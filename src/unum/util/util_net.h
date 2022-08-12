@@ -9,7 +9,7 @@
 
 // Maximum number of ipv6 addresses we support per mac
 #ifndef MAX_IPV6_ADDRESSES_PER_MAC
-#define MAX_IPV6_ADDRESSES_PER_MAC 4
+#define MAX_IPV6_ADDRESSES_PER_MAC 8
 #endif // MAX_IPV6_ADDRESSES_PER_MAC
 
 // Format string and argument macros for printing MAC addresses
