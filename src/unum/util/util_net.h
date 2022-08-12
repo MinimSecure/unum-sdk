@@ -136,7 +136,13 @@ typedef union {
     struct {
         uint64_t h;
         uint64_t l;
-    } __attribute__((packed)) i;
+    } __attribute__((packed)) l;
+    struct {
+        uint32_t h;
+        uint32_t m1;
+        uint32_t m2;
+        uint64_t l;
+    } __attribute__((packed)) s;
 } IPV6_ADDR_t;
 
 // IP configuration structure describing device IP settings
@@ -152,6 +158,8 @@ typedef struct _DEV_IPV6_CFG {
     IPV6_ADDR_t addr; // byte order is the same as in struct sockaddr_in6
     uint8_t     prefix_len;
     uint8_t     flags;
+    uint32_t    ifa_valid;
+    uint32_t    ifa_preferred;
 } DEV_IPV6_CFG_t;
 
 // Netlink socket structure

@@ -6,6 +6,12 @@
 static int nl_sock(NL_SOCK_t *s, int type);
 static int nl_recv(NL_SOCK_t *s, char *buf, unsigned int len, int seq_num, int tout);
 
+#define	INFINITY_LIFE_TIME	0xFFFFFFFF
+#define IS_ADDR_LINKLOCAL(a) (((a) & htonl(0xffc00000)) == htonl(0xfe800000))
+#define IS_ADDR_SITELOCAL(a) (((a) & htonl(0xffc00000)) == htonl(0xfec00000))
+// https://en.wikipedia.org/wiki/Unique_local_address
+#define IS_ADDR_ULA(a)       (((a) & htonl(0xfc000000)) == htonl(0xfc000000))
+
 // Get interface flags
 // ifname - the interface name
 // flags - pointer to in to fill in with the flags
@@ -491,23 +497,53 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
             struct ifaddrmsg *retaddr = (struct ifaddrmsg *) NLMSG_DATA(retmsg);
             struct rtattr *retrta     = (struct rtattr *) IFA_RTA(retaddr);
 
-            // extract address strings from attribute list
-            int att_len = IFA_PAYLOAD(retmsg);
-            while RTA_OK(retrta, att_len) {
-                    if (retrta->rta_type == IFA_ADDRESS && retaddr->ifa_index == if_index) {
-                        memcpy(&ipcfg[buf_index].addr, RTA_DATA(retrta), sizeof(ipcfg[buf_index].addr));
-                        ipcfg[buf_index].prefix_len = retaddr->ifa_prefixlen;
-                        // TODO, determine the primary TK Jan 2022
-                        ipcfg[buf_index].flags = (buf_index == 0) ? DEV_IPV6_CFG_FLAG_PRIMARY : 0;
-                        buf_index++;
+            if (retaddr->ifa_index == if_index) {
+                // extract address strings from attribute list
+                int att_len = IFA_PAYLOAD(retmsg);
+                struct ifa_cacheinfo* cache_info = NULL;
+                while RTA_OK(retrta, att_len) {
+                        switch(retrta->rta_type) {
+                            case IFA_ADDRESS:
+                                memcpy(&ipcfg[buf_index].addr, RTA_DATA(retrta), sizeof(ipcfg[buf_index].addr));
+                                ipcfg[buf_index].prefix_len = retaddr->ifa_prefixlen;
+                                break;
+                            case IFA_CACHEINFO:
+                                cache_info = (struct ifa_cacheinfo *)RTA_DATA(retrta);
+                                ipcfg[buf_index].ifa_preferred = cache_info->ifa_prefered;
+                                ipcfg[buf_index].ifa_valid = cache_info->ifa_valid;
+                                break;
+                            default:
+                                break;
+                        }
+                        retrta = RTA_NEXT(retrta, att_len);
                     }
-                    retrta = RTA_NEXT(retrta, att_len);
-                }
+                buf_index++;
+            }
             retmsg = NLMSG_NEXT(retmsg, resp_len);
         }
         ret = 0;
         break;
     } // for(;;)
+
+    // flag first address with longest but limited lifetime as primary
+    uint32_t longest_lifetime_secs  = 0;
+    int      longest_lifetime_index = -1;
+
+    for(unsigned ix=0; ipcfg[ix].addr.b[0] != 0; ix++) {
+        if (!IS_ADDR_SITELOCAL(ipcfg[ix].addr.s.h) &&
+            !IS_ADDR_LINKLOCAL(ipcfg[ix].addr.s.h) &&
+            !IS_ADDR_ULA(ipcfg[ix].addr.s.h)) {
+            if (ipcfg[ix].ifa_preferred != INFINITY_LIFE_TIME &&
+                ipcfg[ix].ifa_preferred > longest_lifetime_secs) {
+                longest_lifetime_secs = ipcfg[ix].ifa_preferred;
+                longest_lifetime_index = ix;
+            }
+        }
+    }
+    if (longest_lifetime_index != -1) {
+        // add primary flag to appropriate address
+        ipcfg[longest_lifetime_index].flags |= DEV_IPV6_CFG_FLAG_PRIMARY;
+    }
 
     if(req) {
         UTIL_FREE(req);
