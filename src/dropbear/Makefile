@@ -5,7 +5,7 @@ ifeq ($(VERSION),)
   $(error Please chose VERSION to build in the platform rule file)
 endif
 
-SUBDIR := $(VERSION)
+SUBDIR := dropbear-$(VERSION)
 MYSRCDIR := $(TOP)/src/dropbear/$(SUBDIR)
 CPPFLAGS += -Wall -I.
 
@@ -15,7 +15,7 @@ all: .compiled
 
 # Dropbear requires clean if options change
 .compiled:: options_$(MODEL).h .configured
-	ln -sf ../options_$(MODEL).h $(SUBDIR)/options.h
+	ln -sf ../options_$(MODEL).h $(SUBDIR)/localoptions.h
 	cd "$(SUBDIR)" && $(MAKE) clean
 
 .compiled:: $(wildcard $(MYSRCDIR)/**) options_$(MODEL).h .configured Makefile
