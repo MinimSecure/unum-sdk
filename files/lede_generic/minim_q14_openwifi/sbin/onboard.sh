@@ -4,7 +4,7 @@ function create_onboard_sta ()
 {
 	create=$1
 	ssid=$(get_on_board_ssid) # This is per platform
-	key=$(get_serial_num) # This is per platform
+	key=$(get_serial_num)-$(fw_printenv -n minim_key) # This is per platform
 
 	if [ $create -eq 1 ]; then
 		/sbin/uci set network.wwan=interface
