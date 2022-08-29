@@ -24,7 +24,7 @@ typedef struct {
 #ifdef FEATURE_IPV6_TELEMETRY
   DEV_IPV6_CFG_t wan_ipv6[MAX_IPV6_ADDRESSES_PER_MAC];
   DEV_IPV6_CFG_t lan_ipv6[MAX_IPV6_ADDRESSES_PER_MAC];
-#endif
+#endif // FEATURE_IPV6_TELEMETRY
   int mem_info_update_num;      // mem info number (used to track which is sent)
   int cpu_info_update_num;      // CPU info number (used to track which is sent)
 } TELEMETRY_DATA_t;
@@ -142,6 +142,11 @@ static char *router_telemetry_json()
     DEV_IPV6_CFG_t* wan_ipv6_addresses = new_data.wan_ipv6;
     memset(wan_ipv6_addresses, '\0', sizeof(new_data.wan_ipv6));
     if (util_get_ipv6cfg(GET_MAIN_WAN_L3_NET_DEV(), wan_ipv6_addresses) == 0) {
+        for (ix = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
+            // mask out address lifetimes for cache check, report only when addresses change
+            last_sent.wan_ipv6[ix].ifa_valid     = new_data.wan_ipv6[ix].ifa_valid;
+            last_sent.wan_ipv6[ix].ifa_preferred = new_data.wan_ipv6[ix].ifa_preferred;
+        }
         if (memcmp(last_sent.wan_ipv6, wan_ipv6_addresses, sizeof(new_data.wan_ipv6))) {
             for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
                 if (wan_ipv6_addresses[ix].addr.b[0] != '\0') {
@@ -172,7 +177,7 @@ static char *router_telemetry_json()
             }
         }
     }
-#endif
+#endif // FEATURE_IPV6_TELEMETRY
     static JSON_VAL_TPL_t lan_ipv6_address_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
     static char lan_primary_ipv6_address_str[INET6_ADDRSTRLEN + 4]; // 4 for prefix eg. /128
     memset(lan_primary_ipv6_address_str, '\0', sizeof(lan_primary_ipv6_address_str));
@@ -184,6 +189,11 @@ static char *router_telemetry_json()
     DEV_IPV6_CFG_t* lan_ipv6_addresses = new_data.lan_ipv6;
     memset(lan_ipv6_addresses, '\0', sizeof(new_data.lan_ipv6));
     if (util_get_ipv6cfg(GET_MAIN_LAN_NET_DEV(), lan_ipv6_addresses) == 0) {
+        for (ix = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
+            // mask out address lifetimes for cache check, report only when addresses change
+            last_sent.lan_ipv6[ix].ifa_valid     = new_data.lan_ipv6[ix].ifa_valid;
+            last_sent.lan_ipv6[ix].ifa_preferred = new_data.lan_ipv6[ix].ifa_preferred;
+        }
         if (memcmp(last_sent.lan_ipv6, lan_ipv6_addresses, sizeof(new_data.lan_ipv6))) {
             for (ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
                 if (lan_ipv6_addresses[ix].addr.b[0] != '\0') {
@@ -214,7 +224,7 @@ static char *router_telemetry_json()
             }
         }
     }
-#endif
+#endif // FEATURE_IPV6_TELEMETRY
     JSON_OBJ_TPL_t tpl = {
       {"lan_ip_address",           {.type = JSON_VAL_STR,   {.s = lan_ip }}},
       {"lan_primary_ipv6_address", {.type = JSON_VAL_STR,
