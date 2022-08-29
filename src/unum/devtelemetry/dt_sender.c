@@ -322,9 +322,16 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
     static char ip[INET_ADDRSTRLEN];
     static char mask[INET_ADDRSTRLEN];
     static char mac[MAC_ADDRSTRLEN];
+#define IFNAME_INDEX 0
+#define PRIMARY_IPV6_ADDRESS_INDEX 1
+#define OTHER_IPV6_ADDRESSES_INDEX 2
     // Template for generating interfaces JSON.
     static JSON_OBJ_TPL_t tpl_tbl_interfaces_obj = {
       { "ifname", { .type = JSON_VAL_STR, {.s = NULL}}}, // has to be first
+      { "primary_ipv6_address", {.type = JSON_VAL_STR, // has to be second
+                                {.s = NULL}}},
+      { "other_ipv6_addresses", {.type = JSON_VAL_ARRAY, // has to be third
+                                {.a = NULL}}},
       { "mac", { .type = JSON_VAL_STR, {.s = mac}}},
       { "ip", { .type = JSON_VAL_STR, {.s = ip}}},
       { "mask", { .type = JSON_VAL_STR, {.s = mask}}},
@@ -356,7 +363,7 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
         return &tpl_tbl_skip_val;
     }
 
-    tpl_tbl_interfaces_obj[0].val.s = pdtst[ii].name;
+    tpl_tbl_interfaces_obj[IFNAME_INDEX].val.s = pdtst[ii].name;
     memcpy(&dtst, &(pdtst[ii]), sizeof(dtst));
     *mac = 0;
     char null_mac[6] = {};
@@ -371,7 +378,38 @@ static JSON_VAL_TPL_t *tpl_interfaces_array_f(char *key, int ii)
         snprintf(mask, sizeof(mask), IP_PRINTF_FMT_TPL,
                  IP_PRINTF_ARG_TPL(dtst.ipcfg.ipv4mask.b));
     }
-
+#ifdef FEATURE_IPV6_TELEMETRY
+    static char primary_ipv6_address_str[INET6_ADDRSTRLEN + 4]; // 4 for prefix eg. /128
+    static JSON_VAL_TPL_t other_ipv6_address_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
+    static char other_ipv6_addresses_str[MAX_IPV6_ADDRESSES_PER_MAC * sizeof(primary_ipv6_address_str)];
+    for (unsigned ix = 0, iy = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
+        if (dtst.ipv6cfg[ix].addr.b[0] != '\0') {
+            char buf[INET6_ADDRSTRLEN] = {'\0'};
+            inet_ntop(AF_INET6, dtst.ipv6cfg[ix].addr.b, buf, sizeof(buf));
+            if (dtst.ipv6cfg[ix].flags == DEV_IPV6_CFG_FLAG_PRIMARY) {
+                snprintf(primary_ipv6_address_str,
+                         sizeof(primary_ipv6_address_str),
+                         "%s/%d",
+                         buf,
+                         (dtst.ipv6cfg[ix].prefix_len) & 127);
+                tpl_tbl_interfaces_obj[PRIMARY_IPV6_ADDRESS_INDEX].val.s = primary_ipv6_address_str;
+            } else {
+                snprintf(&other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)],
+                         (INET6_ADDRSTRLEN + 4),
+                         "%s/%d",
+                         buf,
+                         (dtst.ipv6cfg[ix].prefix_len) & 127);
+                other_ipv6_address_tpl[iy].s = &other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)];
+                other_ipv6_address_tpl[iy].type = JSON_VAL_STR;
+                iy++;
+                tpl_tbl_interfaces_obj[OTHER_IPV6_ADDRESSES_INDEX].val.a = other_ipv6_address_tpl;
+            }
+        } else {
+            other_ipv6_address_tpl[iy].type = JSON_VAL_END;
+            break;
+        }
+    }
+#endif // FEATURE_IPV6_TELEMETRY
     return &tpl_tbl_interfaces_obj_val;
 }
 

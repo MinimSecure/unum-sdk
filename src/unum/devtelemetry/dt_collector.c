@@ -704,6 +704,11 @@ static void stats_ready_cb(TPCAP_IF_STATS_t *st)
         if(util_get_mac(dtst->name, dtst->mac) != 0) {
             memset(&dtst->mac, 0, sizeof(dtst->mac));
         }
+#ifdef FEATURE_IPV6_TELEMETRY
+        if(util_get_ipv6cfg(dtst->name, dtst->ipv6cfg) != 0) {
+            memset(&dtst->ipv6cfg, 0, sizeof(dtst->ipv6cfg));
+        }
+#endif
         ste->len_t = 0;
         ++st_if_num;
     }

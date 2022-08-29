@@ -127,6 +127,9 @@ typedef struct _DT_IF_STATS {
     int wan;                 // TRUE if wan interface
     int kind;                // Interface kind
     DEV_IP_CFG_t ipcfg;      // IP configuration of the interface
+#ifdef FEATURE_IPV6_TELEMETRY
+    DEV_IPV6_CFG_t ipv6cfg[MAX_IPV6_ADDRESSES_PER_MAC];  // IPv6 configuration of the interface
+#endif
     unsigned char mac[6];    // interface MAC address
 } DT_IF_STATS_t;
 
