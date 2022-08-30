@@ -253,7 +253,7 @@ static JSON_VAL_TPL_t *tpl_dns_array_f(char *key, int idx)
 {
     int ii;
     // Buffer for DNS IP address string
-    static char dns_ip[INET_ADDRSTRLEN];
+    static char dns_ip[INET6_ADDRSTRLEN];
     // Template for generating dns mappings JSON.
     static JSON_OBJ_TPL_t tpl_tbl_dns_obj = {
       { "name", { .type = JSON_VAL_STR, {.s = NULL}}}, // has to be first
@@ -282,7 +282,7 @@ static JSON_VAL_TPL_t *tpl_dns_array_f(char *key, int idx)
     // Continue searching from where we ended last +1
     for(ii = last_ii + 1; ii < DTEL_MAX_DNS_IPS; ii++) {
         DT_DNS_IP_t *ip_item = &(p_ip[ii]);
-        if(ip_item->ipv4.i == 0) {
+        if (!dt_dns_check_in_use(ip_item)) {
             continue;
         }
         DT_DNS_NAME_t *n_item = ip_item->dns;
@@ -292,8 +292,14 @@ static JSON_VAL_TPL_t *tpl_dns_array_f(char *key, int idx)
         if(!n_item) {
             continue;
         }
-        snprintf(dns_ip, sizeof(dns_ip), IP_PRINTF_FMT_TPL,
-                 IP_PRINTF_ARG_TPL(ip_item->ipv4.b));
+        if (ip_item->af == AF_INET) {
+            snprintf(dns_ip, sizeof(dns_ip), IP_PRINTF_FMT_TPL,
+                     IP_PRINTF_ARG_TPL(ip_item->u.ipv4.b));
+#ifdef FEATURE_IPV6_TELEMETRY
+        } else if (ip_item->af == AF_INET6) {
+            inet_ntop(AF_INET6, ip_item->u.ipv6.b, dns_ip, sizeof(dns_ip));
+#endif // FEATURE_IPV6_TELEMETRY
+        }
         tpl_tbl_dns_obj[0].val.s = n_item->name;
         break;
     }

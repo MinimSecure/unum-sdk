@@ -69,10 +69,9 @@ DT_TABLE_STATS_t *dt_dev_tbl_stats(int reset);
 // Pass TRUE to reset the table (allows to get data and reset in one call)
 DT_TABLE_STATS_t *dt_conn_tbl_stats(int reset);
 
-// Find DNS IP enty in the DNS IP table
-// Returns a pointer to the IP table entry of NULL if not found
-// Call only from the TPCAP thread/handlers
-DT_DNS_IP_t *dt_find_dns_ip(IPV4_ADDR_t *ip);
+// Determine if an ip table entry is in use
+// return TRUE if in use, FALSE if not
+int dt_dns_check_in_use(const DT_DNS_IP_t *entry);
 
 // Start the device telemetry sender (it runs in its own thread)
 int dt_sender_start(void);

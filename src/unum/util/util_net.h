@@ -141,7 +141,7 @@ typedef union {
         uint32_t h;
         uint32_t m1;
         uint32_t m2;
-        uint64_t l;
+        uint32_t l;
     } __attribute__((packed)) s;
 } IPV6_ADDR_t;
 

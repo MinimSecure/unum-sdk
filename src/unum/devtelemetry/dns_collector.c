@@ -84,9 +84,9 @@ static PKT_PROC_ENTRY_t collector_dns_udp = {
 
 
 // DNS IPs table (direct placement)
-static DT_DNS_IP_t *ip_tbl;
+static DT_DNS_IP_t *ip_tbl = NULL;
 // DNS names table (uses pointers)
-static DT_DNS_NAME_t **name_tbl;
+static DT_DNS_NAME_t **name_tbl = NULL;
 
 // Structures tracking DNS name and IP tables stats
 static DT_TABLE_STATS_t name_tbl_stats;
@@ -149,10 +149,28 @@ void dt_reset_dns_tables(void)
     return;
 }
 
-// Find DNS IP enty in the IP table
+// Determine if an ip table entry is in use
+// return TRUE if in use, FALSE if not
+int dt_dns_check_in_use(const DT_DNS_IP_t *entry)
+{
+#ifdef FEATURE_IPV6_TELEMETRY
+    if(entry->u.ipv6.l.h == 0 && entry->u.ipv6.l.l == 0) {
+        return FALSE;
+    }
+#else // FEATURE_IPV6_TELEMETRY
+    if(entry->u.ipv4.i == 0) {
+        return FALSE;
+    }
+#endif // FEATURE_IPV6_TELEMETRY
+
+    return TRUE;
+}
+
+#ifdef DEBUG
+// Find DNS IP entry in the IP table
 // Returns a pointer to the IP table entry of NULL if not found
 // Call only from the TPCAP thread/handlers
-DT_DNS_IP_t *dt_find_dns_ip(IPV4_ADDR_t *ip)
+static DT_DNS_IP_t *dt_find_dns_ipv4(IPV4_ADDR_t *ip)
 {
     int ii, idx;
     DT_DNS_IP_t *ret = NULL;
@@ -165,11 +183,11 @@ DT_DNS_IP_t *dt_find_dns_ip(IPV4_ADDR_t *ip)
 
     for(ii = 0; ii < (DTEL_MAX_DNS_IPS / DT_SEARCH_LIMITER); ii++) {
         // If we hit an empty entry then the IP we are looking for
-        // is not in the table (we NEVER remove inidividual entries)
-        if(ip_tbl[idx].ipv4.i == 0) {
+        // is not in the table (we NEVER remove individual entries)
+        if(!dt_dns_check_in_use(&ip_tbl[idx])) {
             break;
         }
-        if(ip_tbl[idx].ipv4.i == ip->i) {
+        if(ip_tbl[idx].u.ipv4.i == ip->i) {
             ret = &(ip_tbl[idx]);
             break;
         }
@@ -187,9 +205,50 @@ DT_DNS_IP_t *dt_find_dns_ip(IPV4_ADDR_t *ip)
     return ret;
 }
 
+#ifdef FEATURE_IPV6_TELEMETRY
+// Find DNS IP entry in the IP table
+// Returns a pointer to the IP table entry of NULL if not found
+// Call only from the TPCAP thread/handlers
+static DT_DNS_IP_t *dt_find_dns_ipv6(IPV6_ADDR_t *ip)
+{
+    int ii, idx;
+    DT_DNS_IP_t *ret = NULL;
+
+    // Total # of find requests
+    ++(ip_tbl_stats.find_all);
+
+    // Generate hash-based index
+    idx = util_hash(ip, sizeof(*ip)) % DTEL_MAX_DNS_IPS;
+
+    for(ii = 0; ii < (DTEL_MAX_DNS_IPS / DT_SEARCH_LIMITER); ii++) {
+        // If we hit an empty entry then the IP we are looking for
+        // is not in the table (we NEVER remove inidividual entries)
+        if(!dt_dns_check_in_use(&ip_tbl[idx])) {
+            break;
+        }
+        if(ip_tbl[idx].u.ipv6.l.h == ip->l.h && ip_tbl[idx].u.ipv6.l.l == ip->l.l) {
+            ret = &(ip_tbl[idx]);
+            break;
+        }
+        // Collision, try the next index
+        idx = (idx + 1) % DTEL_MAX_DNS_IPS;
+    }
+
+    if(ii < 10) {
+        ++(ip_tbl_stats.find_10);
+    }
+    if(!ret) {
+        ++(ip_tbl_stats.find_fails);
+    }
+
+    return ret;
+}
+#endif // FEATURE_IPV6_TELEMETRY
+#endif // DEBUG
+
 // Add to or update DNS IP->name mapping in the IP table
 // Returns a pointer to the IP table entry added/updated or NULL
-static DT_DNS_IP_t *add_dns_ip(IPV4_ADDR_t *ip, DT_DNS_NAME_t *dname)
+static DT_DNS_IP_t *add_dns_ipv4(IPV4_ADDR_t *ip, DT_DNS_NAME_t *dname)
 {
     int ii, idx;
     DT_DNS_IP_t *ret = NULL;
@@ -202,12 +261,12 @@ static DT_DNS_IP_t *add_dns_ip(IPV4_ADDR_t *ip, DT_DNS_NAME_t *dname)
 
     for(ii = 0; ii < (DTEL_MAX_DNS_IPS / DT_SEARCH_LIMITER); ii++) {
         // If we hit an empty entry then the IP we are looking for
-        // is not in the table (we NEVER remove inidividual entries)
-        if(ip_tbl[idx].ipv4.i == 0) {
+        // is not in the table (we NEVER remove individual entries)
+        if(!dt_dns_check_in_use(&ip_tbl[idx])) {
             ret = &(ip_tbl[idx]);
-            ret->ipv4.i = ip->i;
-            ret->refs = 0;
-        } else if(ip_tbl[idx].ipv4.i != ip->i) {
+            ret->u.ipv4.i = ip->i;
+            ret->af = AF_INET;
+        } else if(ip_tbl[idx].u.ipv4.i != ip->i) {
             // Collision, try the next index
             idx = (idx + 1) % DTEL_MAX_DNS_IPS;
             continue;
@@ -230,6 +289,53 @@ static DT_DNS_IP_t *add_dns_ip(IPV4_ADDR_t *ip, DT_DNS_NAME_t *dname)
 
     return ret;
 }
+
+#ifdef FEATURE_IPV6_TELEMETRY
+// Add to or update DNS IP->name mapping in the IP table
+// Returns a pointer to the IP table entry added/updated or NULL
+static DT_DNS_IP_t *add_dns_ipv6(IPV6_ADDR_t *ip, DT_DNS_NAME_t *dname)
+{
+    int ii, idx;
+    DT_DNS_IP_t *ret = NULL;
+
+    // Total # of add requests
+    ++(ip_tbl_stats.add_all);
+
+    // Generate hash-based index
+    idx = util_hash(ip, sizeof(*ip)) % DTEL_MAX_DNS_IPS;
+
+    for(ii = 0; ii < (DTEL_MAX_DNS_IPS / DT_SEARCH_LIMITER); ii++) {
+        // If we hit an empty entry then the IP we are looking for
+        // is not in the table (we NEVER remove individual entries)
+        if(!dt_dns_check_in_use(&ip_tbl[idx])) {
+            ret = &(ip_tbl[idx]);
+            ret->u.ipv6.l.h = ip->l.h;
+            ret->u.ipv6.l.l = ip->l.l;
+            ret->af = AF_INET6;
+        } else if(ip_tbl[idx].u.ipv6.l.h != ip->l.h || ip_tbl[idx].u.ipv6.l.l != ip->l.l) {
+            // Collision, try the next index
+            idx = (idx + 1) % DTEL_MAX_DNS_IPS;
+            continue;
+        } else {
+            // The IP is already listed
+            ++(ip_tbl_stats.add_found);
+        }
+        // Update the DNS name
+        ip_tbl[idx].dns = dname;
+        ret = &(ip_tbl[idx]);
+        break;
+    }
+
+    if(ii < 10) {
+        ++(ip_tbl_stats.add_10);
+    }
+    if(!ret) {
+        ++(ip_tbl_stats.add_busy);
+    }
+
+    return ret;
+}
+#endif // FEATURE_IPV6_TELEMETRY
 
 // Add DNS name to the name table
 // Returns a pointer to the DNS name table record or NULL
@@ -420,13 +526,29 @@ static void dns_udp_rcv_cb(TPCAP_IF_t *tpif,
                               __func__, name);
                     break;
                 }
-                if(!add_dns_ip((IPV4_ADDR_t *)ptr, qn)) {
+                if(!add_dns_ipv4((IPV4_ADDR_t *)ptr, qn)) {
                     DNSTPRINTF("%s: failed to add IP <" IP_PRINTF_FMT_TPL
                                "> to the table\n",
                                __func__, IP_PRINTF_ARG_TPL(ptr));
                 }
             }
-
+#ifdef FEATURE_IPV6_TELEMETRY
+            if(ntohs(ahdr->type) == 28 && len >= sizeof(IPV6_ADDR_t)) { // AAAA record answer (rfc3596)
+                DT_DNS_NAME_t *qn = add_dns_name(name);
+                if(!qn) {
+                    // Can't add/find this entry to/in the table
+                    DNSTPRINTF("%s: failed to add <%s> to the table\n",
+                              __func__, name);
+                    break;
+                }
+                if(!add_dns_ipv6((IPV6_ADDR_t *)ptr, qn)) {
+                    char buf[INET6_ADDRSTRLEN] = {'\0'};
+                    inet_ntop(AF_INET6, ptr, buf, sizeof(buf));
+                    DNSTPRINTF("%s: failed to add IPv6 <%s> to the table\n",
+                               __func__, buf);
+                }
+            }
+#endif // FEATURE_IPV6_TELEMETRY
             break;
         }
         remains -= len;
@@ -480,13 +602,21 @@ void dt_dns_tbls_test(void)
     printf("IP->DNS tables dump:\n");
     for(ii = 0; ii < DTEL_MAX_DNS_IPS; ii++) {
         DT_DNS_IP_t *ip_item = &(ip_tbl[ii]);
-        if(ip_item->ipv4.i != 0) {
+        if(dt_dns_check_in_use(ip_item)) {
             count++;
-            printf("  [%04d] " IP_PRINTF_FMT_TPL,
-                   ip_item->refs, IP_PRINTF_ARG_TPL(ip_item->ipv4.b));
+            if (ip_item->af == AF_INET) {
+                printf(" " IP_PRINTF_FMT_TPL, IP_PRINTF_ARG_TPL(ip_item->u.ipv4.b));
+#ifdef FEATURE_IPV6_TELEMETRY
+            } else if (ip_item->af == AF_INET6) {
+                char buf[INET6_ADDRSTRLEN] = {'\0'};
+                if (inet_ntop(AF_INET6, ip_item->u.ipv6.b, buf, sizeof(buf)) != NULL) {
+                    printf(" %s", buf);
+                }
+#endif // FEATURE_IPV6_TELEMETRY
+            }
             DT_DNS_NAME_t *n_item = ip_item->dns;
             if(!n_item) {
-                printf(" -> No Name Error\n");
+                printf(" -> No Name Error");
                 ++ecount;
                 continue;
             }
@@ -494,9 +624,18 @@ void dt_dns_tbls_test(void)
                 printf(" -> <%s>", n_item->name);
                 n_item = n_item->cname;
             }
-            if(dt_find_dns_ip(&ip_item->ipv4) != ip_item) {
-                printf(" [search error!]\n");
-                ++ecount;
+            if (ip_item->af == AF_INET) {
+                if(dt_find_dns_ipv4(&ip_item->u.ipv4) != ip_item) {
+                    printf(" [search error!]");
+                    ++ecount;
+                }
+#ifdef FEATURE_IPV6_TELEMETRY
+            } else if (ip_item->af == AF_INET6) {
+                if(dt_find_dns_ipv6(&ip_item->u.ipv6) != ip_item) {
+                    printf(" [search error!]");
+                    ++ecount;
+                }
+#endif // FEATURE_IPV6_TELEMETRY
             }
             printf("\n");
         }
@@ -507,7 +646,7 @@ void dt_dns_tbls_test(void)
     // Test find for an address we should not have
     IPV4_ADDR_t lip;
     lip.i = inet_addr("127.1.1.1");
-    if(dt_find_dns_ip(&lip) != NULL) {
+    if(dt_find_dns_ipv4(&lip) != NULL) {
         printf("Error, search for an unknown address did not fail!\n\n");
     } else {
         printf("Verified no result searching for unknown address\n\n");

@@ -93,10 +93,14 @@ typedef struct _DT_DEVICE DT_DEVICE_t;
 
 // DNS table IP address entry
 struct _DT_DNS_IP {
-    IPV4_ADDR_t ipv4;         // IP address the name is discovered for
+    union {
+        IPV4_ADDR_t ipv4;         // IP address the name is discovered for
+#ifdef FEATURE_IPV6_TELEMETRY
+        IPV6_ADDR_t ipv6;         // IP address the name is discovered for
+#endif // FEATURE_IPV6_TELEMETRY
+    } u;
     struct _DT_DNS_NAME *dns; // DNS name entry pointer for the IP
-    unsigned short refs;      // Number of references to this entry
-    unsigned short pad;       // Padding, unused
+    unsigned short af;        // address family (AF_INET or AF_INET6)
 };
 typedef struct _DT_DNS_IP DT_DNS_IP_t;
 
