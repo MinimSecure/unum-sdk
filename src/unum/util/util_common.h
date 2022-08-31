@@ -242,16 +242,6 @@ int util_buf_to_file(char *file, void *buf, int len, mode_t crmode);
 //                     buf_size was not large enough to read all
 size_t util_file_to_buf(char *file, char *buf, size_t buf_size);
 
-// Compare two files.
-// Parameters:
-// file1, file2 - pathnames of the files to compare
-// must_exist - flag that tells the functon how to treat the non-existent files,
-//              if TRUE both files must exist, if FALSE the non-existen files
-//              are treated as empty.
-// Returns: TRUE - files match, FALSE - differ, negative - error accesing
-//          file(s) (-1 - file1, -2 - file2)
-int util_cmp_files_match(char *file1, char *file2, int must_exist);
-
 // Replace CR/LF w/ LF in a string
 void util_fix_crlf(char *str_in);
 
