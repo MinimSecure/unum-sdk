@@ -8,6 +8,8 @@ function list_expired_before() {
   for cert in ./*.pem; do
     notafter=$(openssl x509 -noout -subject -enddate -in $cert | grep "notAfter=" | sed -e 's/notAfter=//')
     tgtdate=$(date -d "$notafter" +%s)
+    #in osx or when using bsd date use the following way to get epoch date:
+    #tgtdate=$(date -j -f "%b %d %T %Y %Z" "$notafter" "+%s")
     #echo "tgtdate=$tgtdate"
     #echo "today=$today"
     if [ $tgtdate -le $today ]; then
