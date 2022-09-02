@@ -68,16 +68,17 @@ void fe_platform_update_stats()
 
         FE_CONN_HDR_t hdr;
         hdr.proto = proto;
-        hdr.dev_ipv4.i = srcip;
-        hdr.peer_ipv4.i = dstip;
+        hdr.af    = AF_INET;
+        hdr.dev.ipv4.i = srcip;
+        hdr.peer.ipv4.i = dstip;
         hdr.dev_port = sport;
         hdr.peer_port = dport;
 
         if(fe_prep_conn_hdr(&hdr) < 0) {
             log_dbg("%s: skipping p:%d " IP_PRINTF_FMT_TPL ":%hu->"
                     IP_PRINTF_FMT_TPL ":%hu\n", __func__,
-                    hdr.proto, IP_PRINTF_ARG_TPL(hdr.dev_ipv4.b), hdr.dev_port,
-                    IP_PRINTF_ARG_TPL(hdr.peer_ipv4.b), hdr.peer_port);
+                    hdr.proto, IP_PRINTF_ARG_TPL(hdr.dev.ipv4.b), hdr.dev_port,
+                    IP_PRINTF_ARG_TPL(hdr.peer.ipv4.b), hdr.peer_port);
             continue;
         }
 
@@ -85,8 +86,8 @@ void fe_platform_update_stats()
         if(!conn) {
             log("%s: cannot add p:%d " IP_PRINTF_FMT_TPL ":%hu->"
                 IP_PRINTF_FMT_TPL ":%hu\n", __func__,
-                hdr.proto, IP_PRINTF_ARG_TPL(hdr.dev_ipv4.b), hdr.dev_port,
-                IP_PRINTF_ARG_TPL(hdr.peer_ipv4.b), hdr.peer_port);
+                hdr.proto, IP_PRINTF_ARG_TPL(hdr.dev.ipv4.b), hdr.dev_port,
+                IP_PRINTF_ARG_TPL(hdr.peer.ipv4.b), hdr.peer_port);
             continue;
         }
 

@@ -55,7 +55,7 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
 {
     int ii;
     // Buffer for IP address string
-    static char con_ip[INET_ADDRSTRLEN];
+    static char con_ip[INET6_ADDRSTRLEN];
     // Buffer for connection IP protocol number
     static unsigned long proto;
     // Buffer for connection TCP/UDP port
@@ -75,6 +75,12 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
         [0 ... (DEVTELEMETRY_NUM_SLICES - 1)] = { .type = JSON_VAL_UL },
         [ DEVTELEMETRY_NUM_SLICES ] = { .type = JSON_VAL_END }
     };
+#define TPL_TBL_L_PORT_IDX 0
+#define TPL_TBL_R_PORT_IDX 1
+#define TPL_TBL_SYN_WS_IDX 2
+#ifdef REPORT_CURRENT_TCP_WIN_SIZE
+#define TPL_TBL_WS_IDX 3
+#endif
     // Template for generating device info object JSON.
     static JSON_OBJ_TPL_t tpl_tbl_con_obj = {
       { "l_port", { .type = JSON_VAL_PUL, {.pul = NULL}}}, // should be first
@@ -124,30 +130,36 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
     last_idx = idx;
 
     // Prepare the template data
-    snprintf(con_ip, sizeof(con_ip), IP_PRINTF_FMT_TPL,
-             IP_PRINTF_ARG_TPL(p_con->hdr.ip.ipv4.b));
+    if (p_con->hdr.flags.af == AF_INET) {
+        snprintf(con_ip, sizeof(con_ip), IP_PRINTF_FMT_TPL,
+                 IP_PRINTF_ARG_TPL(p_con->hdr.ip.ipv4.b));
+#ifdef FEATURE_IPV6_TELEMETRY
+    } else if (p_con->hdr.flags.af == AF_INET6) {
+        inet_ntop(AF_INET6, p_con->hdr.ip.ipv4.b, con_ip, sizeof(con_ip));
+#endif // FEATURE_IPV6_TELEMETRY
+    }
     proto = p_con->hdr.ip_proto;
-    tpl_tbl_con_obj[0].val.pul = tpl_tbl_con_obj[1].val.pul = NULL;
-    tpl_tbl_con_obj[2].val.pul = NULL;
+    tpl_tbl_con_obj[TPL_TBL_L_PORT_IDX].val.pul = tpl_tbl_con_obj[TPL_TBL_R_PORT_IDX].val.pul = NULL;
+    tpl_tbl_con_obj[TPL_TBL_SYN_WS_IDX].val.pul = NULL;
 #ifdef REPORT_CURRENT_TCP_WIN_SIZE
-    tpl_tbl_con_obj[3].val.pul = NULL;
+    tpl_tbl_con_obj[TPL_TBL_WS_IDX].val.pul = NULL;
 #endif // REPORT_CURRENT_TCP_WIN_SIZE
     if(proto == 6 || proto == 17) {
         port = p_con->hdr.port;
         if(p_con->hdr.flags.rev) { // device's port
-            tpl_tbl_con_obj[0].val.pul = &port;
+            tpl_tbl_con_obj[TPL_TBL_L_PORT_IDX].val.pul = &port;
         } else {             // peer's port
-            tpl_tbl_con_obj[1].val.pul = &port;
+            tpl_tbl_con_obj[TPL_TBL_R_PORT_IDX].val.pul = &port;
         }
         if(proto == 6) {
             if(p_con->syn_tcp_win_size > 0) {
                 syn_tcp_win_size = p_con->syn_tcp_win_size;
-                tpl_tbl_con_obj[2].val.pul = &syn_tcp_win_size;
+                tpl_tbl_con_obj[TPL_TBL_SYN_WS_IDX].val.pul = &syn_tcp_win_size;
             }
 #ifdef REPORT_CURRENT_TCP_WIN_SIZE
             if(p_con->cur_tcp_win_size > 0) {
                 cur_tcp_win_size = p_con->cur_tcp_win_size;
-                tpl_tbl_con_obj[3].val.pul = &cur_tcp_win_size;
+                tpl_tbl_con_obj[TPL_TBL_WS_IDX].val.pul = &cur_tcp_win_size;
             }
 #endif // REPORT_CURRENT_TCP_WIN_SIZE
         }

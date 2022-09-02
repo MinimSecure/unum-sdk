@@ -478,7 +478,7 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     hdr.ip.ipv4.i = peer_ipv4.i;
     hdr.ip_proto = iph->protocol;
     hdr.flags.rev = FALSE;
-    hdr.flags.version = 4;
+    hdr.flags.af = AF_INET;
     hdr.port = 0;
     hdr.dev = dev;
 
@@ -574,15 +574,15 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
     }
 
     // Update the device IP and the interface name where it was found
-    dev->ipv4.i = fe_conn->hdr.dev_ipv4.i;
+    dev->ipv4.i = fe_conn->hdr.dev.ipv4.i;
     memcpy(dev->ifname, fe_conn->hdr.ifname, sizeof(dev->ifname));
 
     // Prepare the dev telemetry connection header from fe connection header
     DT_CONN_HDR_t hdr;
-    hdr.ip.ipv4.i = fe_conn->hdr.peer_ipv4.i;
+    hdr.ip.ipv4.i = fe_conn->hdr.peer.ipv4.i;
     hdr.ip_proto = fe_conn->hdr.proto;
     hdr.flags.rev = fe_conn->hdr.rev;
-    hdr.flags.version = 4;
+    hdr.flags.af = AF_INET;
     hdr.port = (hdr.flags.rev ? fe_conn->hdr.dev_port : fe_conn->hdr.peer_port);
     hdr.dev = dev;
 

@@ -40,8 +40,8 @@ struct _DT_CONN_HDR {
     } ip;
     unsigned char ip_proto; // Connection IP protocol (0 - unrecognized)
     struct {
-        unsigned char rev : 1;     // TRUE if reporting reverse TCP/UDP port
-        unsigned char version : 4; // As per ip header, 4=V4, 6=V6
+        unsigned char rev : 1; // TRUE if reporting reverse TCP/UDP port
+        unsigned char af : 4;  // address family (AF_INET or AF_INET6)
     } flags;
     uint16_t port; // Peer's TCP/UDP port (device port if rev is TRUE)
     struct _DT_DEVICE *dev; // Ptr to the device owning the connection

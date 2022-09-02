@@ -464,15 +464,15 @@ int fe_prep_conn_hdr(FE_CONN_HDR_t *hdr)
 
     // Check if device IP is a local IP address
     memset(hdr->ifname, 0, sizeof(hdr->ifname));
-    if(fe_find_if_by_ipv4(&hdr->dev_ipv4, hdr->ifname) != 0) {
+    if(fe_find_if_by_ipv4(&hdr->dev.ipv4, hdr->ifname) != 0) {
         ret = 1;
-        if(fe_find_if_by_ipv4(&hdr->peer_ipv4, hdr->ifname) != 0) {
+        if(fe_find_if_by_ipv4(&hdr->peer.ipv4, hdr->ifname) != 0) {
             return -1;
         }
         // swap IP addresses
-        IPV4_ADDR_t tmp_ipv4 = hdr->peer_ipv4;
-        hdr->peer_ipv4 = hdr->dev_ipv4;
-        hdr->dev_ipv4 = tmp_ipv4;
+        IPV4_ADDR_t tmp_ipv4 = hdr->peer.ipv4;
+        hdr->peer.ipv4 = hdr->dev.ipv4;
+        hdr->dev.ipv4 = tmp_ipv4;
         // swap ports
         unsigned short tmp_port = hdr->peer_port;
         hdr->peer_port = hdr->dev_port;
@@ -583,11 +583,11 @@ void fe_upd_conn_end(FE_CONN_t *conn, int updated)
 {
     // If MAC is not yet available try to get it from ARP
     if((conn->flags & FE_CONN_HAS_MAC) == 0) {
-        FE_ARP_t *ae = fe_find_arp_entry(&conn->hdr.dev_ipv4);
+        FE_ARP_t *ae = fe_find_arp_entry(&conn->hdr.dev.ipv4);
         if(!ae) {
             // Maybe we have restarted and missed its ARP entry, add it to ARP
             // table with a flag indicating it has to be re-discovered.
-            FE_ARP_t ae = {.ipv4 = conn->hdr.dev_ipv4,
+            FE_ARP_t ae = {.ipv4 = conn->hdr.dev.ipv4,
                            .uptime = util_time(1),
                            .mac = {0, 0, 0, 0, 0, 0},
                            .no_mac = TRUE};
@@ -695,7 +695,7 @@ static void defrag_and_clean_table(void)
             // We can clean without locking since the FE_CONN_UPDATED flag could
             // be set only from festats thread.
             // Clean just the dev_ip, it's enough to make assure "no match".
-            conn->hdr.dev_ipv4.i = 0;
+            conn->hdr.dev.ipv4.i = 0;
             continue;
         }
 

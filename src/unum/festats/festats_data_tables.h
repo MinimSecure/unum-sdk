@@ -18,8 +18,18 @@ typedef struct _FE_ARP FE_ARP_t;
 // This is required because we need to be able to hash the same
 // connection consistently, even if its other info changes.
 struct _FE_CONN_HDR {
-    IPV4_ADDR_t    dev_ipv4;  // device IPv4 address
-    IPV4_ADDR_t    peer_ipv4; // peer IPv4 address
+    union {
+        IPV4_ADDR_t ipv4;    // device IPv4 address
+#ifdef FEATURE_IPV6_TELEMETRY
+        IPV6_ADDR_t ipv6;    // device IPv6 address
+#endif
+    } dev;
+    union {
+        IPV4_ADDR_t ipv4;    // peer IPv4 address
+#ifdef FEATURE_IPV6_TELEMETRY
+        IPV6_ADDR_t ipv6;    // peer IPv6 address
+#endif
+    } peer;
     unsigned short dev_port;  // device TCP/UDP port
     unsigned short peer_port; // peer TCP/UDP port
     char ifname[IFNAMSIZ];    // interface name the device is seen on
@@ -29,6 +39,7 @@ struct _FE_CONN_HDR {
 #endif
     unsigned char  proto;     // IP protocol #
     unsigned char  rev;       // TRUE if connection was from peer to dev
+    unsigned char  af;        // address family (AF_INET or AF_INET6)
 } __attribute__((packed));
 typedef struct _FE_CONN_HDR FE_CONN_HDR_t;
 

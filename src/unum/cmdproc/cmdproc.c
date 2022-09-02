@@ -332,8 +332,8 @@ static void cmdproc(THRD_PARAM_t *p)
             rsp = http_get(url, "Accept: application/json\x00");
 
             if(rsp == NULL || (rsp->code / 100) != 2) {
-                log("%s: command data request error, code %d%s\n",
-                    __func__, rsp ? rsp->code : 0, rsp ? "" : "(none)");
+                log("%s: command data request error for %s, code %d%s\n",
+                    __func__, url, rsp ? rsp->code : 0, rsp ? "" : "(none)");
                 err = -1;
                 break;
             }
