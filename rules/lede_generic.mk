@@ -51,6 +51,9 @@ files.install:
 	$(INSTALL_BIN) $(TARGET_FILES)/switch_mode.sh $(TARGET_RFS)/sbin/switch_mode.sh
 	$(INSTALL_BIN) $(TARGET_FILES)/run_on_board_sta.sh $(TARGET_RFS)/sbin/run_on_board_sta.sh
 	$(INSTALL_BIN) $(TARGET_FILES)/create_on_board_sta.sh $(TARGET_RFS)/sbin/create_on_board_sta.sh
+	$(INSTALL_BIN) $(TARGET_FILES)/agent_reboot.sh $(TARGET_RFS)/sbin/agent_reboot.sh
+	$(INSTALL_BIN) $(TARGET_FILES)/fw_upgrade.sh $(TARGET_RFS)/sbin/fw_upgrade.sh
+	$(INSTALL_BIN) $(TARGET_FILES)/factory_reset.sh $(TARGET_RFS)/sbin/factory_reset.sh
 
 	# Trusted CA list
 	cat "$(COMMON_FILES)/ca/"*.pem > "$(TARGET_RFS)/etc/ssl/certs/unum-ca-certificates.crt"

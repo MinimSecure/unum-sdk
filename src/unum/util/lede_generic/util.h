@@ -31,10 +31,10 @@
 
 // Graceful reboot command for the platform (if not defined
 // the kernel reboot syscall will be used)
-#define REBOOT_CMD "/sbin/reboot"
+#define REBOOT_CMD "/sbin/agent_reboot.sh"
 
 // Commands to execute to factory reset the router
-#define FACTORY_RESET_CMD "/sbin/firstboot -y ; " REBOOT_CMD
+#define FACTORY_RESET_CMD "/sbin/factory_reset.sh"
 
 // Script to get AUTH INFO
 // This returns the auth info key.

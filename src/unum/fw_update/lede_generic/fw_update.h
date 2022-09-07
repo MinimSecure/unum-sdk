@@ -13,9 +13,7 @@
 
 // Define this to make common code run shell command to do the
 // firmware upgrade.
-#define UPGRADE_CMD "(/sbin/wifi down;"                          \
-                    "/sbin/sysupgrade " UPGRADE_FILE_NAME " || " \
-                    "/sbin/wifi up)&"
+#define UPGRADE_CMD "/sbin/fw_upgrade.sh " UPGRADE_FILE_NAME
 
 // Time period in seconds to wait after the upgrade script
 // returns (regardless of the return status) before assuming
