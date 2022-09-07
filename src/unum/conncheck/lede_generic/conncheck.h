@@ -13,5 +13,8 @@
 #define LAN_INFO_FOR_MOBILE_APP "/tmp/provision_info.json"
 #define LAN_INFO_FOR_MOBILE_APP_TMP "/tmp/provision_info.json.tmp"
 
+#define CONNCHECK_STATUS_REPORT_SCRIPT "/sbin/unum_status_report.sh"
+#define CONNCHECK_STATUS_REPORT_SCRIPT_TIMEOUT 10
+
 #endif // _CONNCHECK_H
 
