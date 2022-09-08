@@ -40,6 +40,7 @@ struct _FE_CONN_HDR {
     unsigned char  proto;     // IP protocol #
     unsigned char  rev;       // TRUE if connection was from peer to dev
     unsigned char  af;        // address family (AF_INET or AF_INET6)
+    unsigned char  pad;       // pad to multiple of 4 bytes
 } __attribute__((packed));
 typedef struct _FE_CONN_HDR FE_CONN_HDR_t;
 
@@ -66,6 +67,8 @@ struct _FE_CONN {
 #define FE_CONN_UPDATED 0x0002 // updated, but not yet read
 #define FE_CONN_HAS_MAC 0x0004 // MAC address is known
     unsigned short flags; // Common code connection entry flags
+    unsigned char pad1;
+    unsigned char pad2;
 } __attribute__((packed));
 typedef struct _FE_CONN FE_CONN_t;
 
