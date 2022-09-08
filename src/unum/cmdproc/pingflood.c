@@ -74,7 +74,7 @@ static int fill_ip_hdr(void *ptr, IPV4_ADDR_t *src, IPV4_ADDR_t *dst,
     ip->ihl = 5;        // 20 bytes header
     ip->tos = IPTOS_THROUGHPUT;
     ip->tot_len = htons(payload_len + sizeof(struct iphdr));
-    ip->id = htons((unsigned short)rand()); // ID
+    ip->id = htons((unsigned short)rand()); // ID ; SW-2108 Verified rand is used safely
     ip->ttl = 64;       // Max hops
     ip->protocol = 1;   // ICMP
     ip->saddr = src->i; // Src IP

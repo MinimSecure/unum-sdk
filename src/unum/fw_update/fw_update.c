@@ -71,7 +71,7 @@ static void fw_update(void)
 
     // Random delay at startup to avoid all APs poll server
     // at the same time after large area power outage.
-    delay = rand() % FW_UPDATE_CHECK_PERIOD;
+    delay = rand() % FW_UPDATE_CHECK_PERIOD;    //SW-2108 Verified rand is used safely
     log("%s: delaying updater startup for %d sec\n", __func__, delay);
     sleep(delay);
 

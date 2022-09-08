@@ -107,7 +107,7 @@ static void provision(THRD_PARAM_t *p)
 #if PROVISION_PERIOD_START > 0
     // Random delay at startup to avoid all APs poll server
     // at the same time after large area power outage.
-    delay = rand() % PROVISION_PERIOD_START;
+    delay = rand() % PROVISION_PERIOD_START;    //SW-2108 Verified rand is used safely
     log("%s: delaying first attempt to %d sec\n", __func__, delay);
     sleep(delay);
 #endif // PROVISION_PERIOD_START > 0
@@ -218,7 +218,7 @@ static void provision(THRD_PARAM_t *p)
 
         // Calculate delay delay before next provisioning attempt
         if(delay < PROVISION_MAX_PERIOD) {
-            delay += rand() % PROVISION_PERIOD_INC;
+            delay += rand() % PROVISION_PERIOD_INC;    //SW-2108 Verified rand is used safely
         }
         if(delay > PROVISION_MAX_PERIOD) {
             delay = PROVISION_MAX_PERIOD;

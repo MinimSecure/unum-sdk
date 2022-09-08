@@ -240,7 +240,7 @@ static void activate(THRD_PARAM_t *p)
 #if ACTIVATE_PERIOD_START > 0
     // Random delay at startup to avoid all APs poll server
     // at the same time after large area power outage.
-    delay = rand() % ACTIVATE_PERIOD_START;
+    delay = rand() % ACTIVATE_PERIOD_START;    //SW-2108 Verified rand is used safely
     log("%s: delaying first attempt to %d sec\n", __func__, delay);
     sleep(delay);
 #endif // ACTIVATE_PERIOD_START > 0
@@ -338,7 +338,7 @@ static void activate(THRD_PARAM_t *p)
 
             // Calculate delay before next activation attempt
             if(delay < ACTIVATE_MAX_PERIOD) {
-                delay += rand() % ACTIVATE_PERIOD_INC;
+                delay += rand() % ACTIVATE_PERIOD_INC;    //SW-2108 Verified rand is used safely
             }
             if(delay > ACTIVATE_MAX_PERIOD) {
                 delay = ACTIVATE_MAX_PERIOD;

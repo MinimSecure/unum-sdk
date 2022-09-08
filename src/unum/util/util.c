@@ -698,7 +698,7 @@ int util_init(int level)
         seed += (unsigned int)util_time(1000000000);
         srand(seed);
         // Initialize the seed for the hash function
-        hash_seed = rand();
+        hash_seed = rand();    //SW-2108 Verified rand is used safely
     }
     // Init default server list
     if(level == INIT_LEVEL_SETUP) {

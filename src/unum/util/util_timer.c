@@ -52,7 +52,7 @@ TIMER_HANDLE_t util_timer_set(unsigned int msecs, const char *name,
     {
         // Pick a cell (start at random spot)
         int idx, ii;
-        idx = rand() % UTIL_MAX_TIMERS;
+        idx = rand() % UTIL_MAX_TIMERS;    //SW-2108 Verified rand is used safely
         for(ii = 0; ii < UTIL_MAX_TIMERS; ii++) {
             if(!timer_a[idx].f) {
                 break;

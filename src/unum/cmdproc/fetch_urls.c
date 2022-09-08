@@ -347,7 +347,7 @@ static int add_req(const char *cookie, json_t *root, json_t *req)
 
         // Pick a cell (start at random spot)
         int idx, ii;
-        idx = rand() % FETCH_URLS_QUEUE_LIMIT;
+        idx = rand() % FETCH_URLS_QUEUE_LIMIT;    //SW-2108 Verified rand is used safely
         for(ii = 0; ii < FETCH_URLS_QUEUE_LIMIT; ii++) {
             if(!fetch_a[idx].req) {
                 break;

@@ -422,7 +422,7 @@ static int scan_device(PORT_SCAN_DEVICE_t *port_scan_device)
 
         // Pick random source port (if we inadvertently pick one that is in use)
         // it will mean a performance hit, but should not cause any major issue.
-        unsigned short sport_h = 0x7fff + (rand() & 0x7fff);
+        unsigned short sport_h = 0x7fff + (rand() & 0x7fff);    //SW-2108 Verified rand is used safely
         unsigned short sport = htons(sport_h);
 
         log_dbg("%s: scanning " IP_PRINTF_FMT_TPL " from port %d\n",
@@ -435,7 +435,7 @@ static int scan_device(PORT_SCAN_DEVICE_t *port_scan_device)
         scan_params.ipv4_dst.i = ipv4.i;
         scan_params.to_scan = to_scan;
         scan_params.from_scan = from_scan;
-        scan_params.seq = (rand() << 16) ^ rand();
+        scan_params.seq = (rand() << 16) ^ rand();    //SW-2108 Verified rand is used safely
 
         // Prepare and activate the receiving callback handling the
         // scan responses
@@ -540,7 +540,7 @@ static int add_device(json_t *devices, json_t *device) {
     {
         // Pick a cell (start at random spot)
         int idx, ii;
-        idx = rand() % PORT_SCAN_QUEUE_LIMIT;
+        idx = rand() % PORT_SCAN_QUEUE_LIMIT;    //SW-2108 Verified rand is used safely
         for(ii = 0; ii < PORT_SCAN_QUEUE_LIMIT; ii++) {
             if(!g_devices_a[idx].device) {
                 break;

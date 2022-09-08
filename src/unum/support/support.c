@@ -72,7 +72,7 @@ static void support(void)
 #if SUPPORT_STARTUP_DELAY_RANDOM > 0
     // Random delay at startup to avoid all devices trying to connect
     // at the same time after large area power outage.
-    delay += rand() % SUPPORT_STARTUP_DELAY_RANDOM;
+    delay += rand() % SUPPORT_STARTUP_DELAY_RANDOM;    //SW-2108 Verified rand is used safely
 #endif // SUPPORT_STARTUP_DELAY_RANDOM > 0
 
 #if (SUPPORT_STARTUP_DELAY_FIXED + SUPPORT_STARTUP_DELAY_RANDOM) > 0
