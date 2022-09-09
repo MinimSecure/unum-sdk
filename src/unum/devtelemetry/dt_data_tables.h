@@ -68,7 +68,10 @@ struct _DT_DEVICE {
     unsigned char mac[6];  // device MAC address
     uint16_t rating;       // 0->free, 1->few out, 2->few in, 3->in+out or 3+
     unsigned long t_add;   // 1/10 sec uptime when the device was added
-    IPV4_ADDR_t ipv4;      // Device IPv4 address
+    IPV4_ADDR_t ipv4;    // Device's IPv4 address
+#ifdef FEATURE_IPV6_TELEMETRY
+    IPV6_ADDR_t ipv6[MAX_IPV6_ADDRESSES_PER_MAC]; // Device's IPv6 addresses
+#endif
     char ifname[IFNAMSIZ]; // Interface name the device last seen on
 #if (IFNAMSIZ % 4) != 0
 #  error IFNAMSIZ should be divisible by 4

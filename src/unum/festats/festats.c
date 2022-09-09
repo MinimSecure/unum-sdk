@@ -588,7 +588,7 @@ static FE_ARP_t *fe_find_arp_entry(IPV4_ADDR_t *ipv4)
     return NULL;
 }
 
-#if defined(FEATURE_IPV6_TELEMETRY) && defined(DEBUG)
+#if defined(FEATURE_IPV6_TELEMETRY)
 // Query NDP table tracker for a match to specified IP address
 // For use only from the festats thread.
 FE_NDP_t *fe_find_ndp_entry(IPV6_ADDR_t *ipv6)

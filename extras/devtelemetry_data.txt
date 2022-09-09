@@ -34,9 +34,28 @@ Device telemetry JSON:
       "mac": "c0:a8:00:67:62:72",
       "ifname": "br0",
       "ip": "192.168.0.103",
+      "ipv6": [
+        "2001:470:e8d9:64:54ea:4aad:a263:8599"
+      ],
       "conn": [
         {
           "r_ip": "50.31.164.155",
+          "r_port": 443,           // remote (peer's) port the connection is to
+          "proto": 6,
+          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
+          "b_in": [
+            45293,
+            9788,
+            34149
+          ],
+          "b_out": [
+            10534,
+            4853,
+            13603
+          ]
+        },
+        {
+          "r_ip": "2a04:4e42:400::323",
           "r_port": 443,           // remote (peer's) port the connection is to
           "proto": 6,
           "syn_ws": 29200,         // initial TCP window size (if SYN captured)
@@ -65,70 +84,9 @@ Device telemetry JSON:
             0,
             54
           ]
-        }
-      ]
-    },
-    {
-      "mac": "c0:a8:00:67:62:72",
-      "ifname": "br0",
-      "ip": "2001:470:e8d9:64:54ea:4aad:a263:8599",
-      "conn": [
-        {
-          "r_ip": "2a04:4e42:400::323",
-          "r_port": 443,           // remote (peer's) port the connection is to
-          "proto": 6,
-          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
-          "b_in": [
-            45293,
-            9788,
-            34149
-          ],
-          "b_out": [
-            10534,
-            4853,
-            13603
-          ]
         },
         {
           "r_ip": "2607:f8b0:400a:80a::200e",
-          "r_port": 443,
-          "proto": 6,
-          "b_in": [
-            0,
-            0,
-            66
-          ],
-          "b_out": [
-            0,
-            0,
-            54
-          ]
-        }
-      ]
-    },
-    {
-      "mac": "c0:a8:00:67:62:72",
-      "ifname": "br0",
-      "ip": "2001:470:e8d9:64::8599",
-      "conn": [
-        {
-          "r_ip": "2a04:4e42:400::323",
-          "r_port": 443,           // remote (peer's) port the connection is to
-          "proto": 6,
-          "syn_ws": 29200,         // initial TCP window size (if SYN captured)
-          "b_in": [
-            45293,
-            9788,
-            34149
-          ],
-          "b_out": [
-            10534,
-            4853,
-            13603
-          ]
-        },
-        {
-          "r_ip": "2607:f8b0:400a:80a::200f",
           "r_port": 443,
           "proto": 6,
           "b_in": [

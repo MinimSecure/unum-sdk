@@ -274,7 +274,11 @@ static DT_CONN_t *ip_upd_conn(DT_DEVICE_t *dev,
 #ifdef DT_CONN_MAP_IP_TO_DNS
     // Update the DNS info
     if(!conn->dns_ip) {
-        conn->dns_ip = dt_find_dns_ip(&(conn->hdr.ipv4));
+        if (conn->hdr.af == AF_INET) {
+            conn->dns_ip = dt_find_dns_ipv4(&(conn->hdr.ipv4));
+        } else if (conn->hdr.af == AF_INET6) {
+            conn->dns_ip = dt_find_dns_ipv6(&(conn->hdr.ipv6));
+        }
         if(conn->dns_ip) {
             conn->dns_ip->refs++;
         }
@@ -300,10 +304,22 @@ static void ip_pkt_upd_conn(DT_DEVICE_t *dev,
     DT_CONN_t *conn = ip_upd_conn(dev, hdr);
 
     if(conn == NULL) {
-        DPRINTF("%s: unable to add IP pkt connection "
-                IP_PRINTF_FMT_TPL " <-> " IP_PRINTF_FMT_TPL " \n",
-                __func__, IP_PRINTF_ARG_TPL(dev->ipv4.b),
-                IP_PRINTF_ARG_TPL(hdr->ip.ipv4.b));
+        char ip_dev[INET6_ADDRSTRLEN] = {'\0'};
+        char ip_conn[INET6_ADDRSTRLEN] = {'\0'};
+        if (hdr->flags.af == AF_INET) {
+            inet_ntop(AF_INET, dev->ipv4.b,    ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET, hdr->ip.ipv4.b, ip_conn, sizeof(ip_conn));
+#ifdef FEATURE_IPV6_TELEMETRY
+        } else {
+            inet_ntop(AF_INET6, dev->ipv6[0].b, ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET6, hdr->ip.ipv6.b, ip_conn, sizeof(ip_conn));
+#endif // FEATURE_IPV6_TELEMETRY
+        }
+
+        DPRINTF("%s: unable to add IP pkt connection %s <-> %s\n",
+                __func__,
+                ip_dev,
+                ip_conn);
         return;
     }
 
@@ -468,7 +484,7 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
         return;
     }
 
-    // Update the interface and the device IPv4 address
+    // Update the interface name and the device IPv4 address
     dev->ipv4.i = dev_ipv4.i;
     strncpy(dev->ifname, tpif->name, IFNAMSIZ-1);
     dev->ifname[IFNAMSIZ-1] = '\0';
@@ -561,7 +577,7 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 int dt_add_fe_conn(FE_CONN_t *fe_conn)
 {
     // If we see the connection then there were at least connection setup pkts
-    int rating = 0x4 | 0x2 |
+    unsigned int rating = 0x4 | 0x2 |
                  ((fe_conn->in.bytes > 0 || fe_conn->out.bytes > 0) ? 0x1 : 0);
 
     DPRINTF("%s: adding " MAC_PRINTF_FMT_TPL " rating %d\n",
@@ -573,16 +589,41 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
         return FALSE;
     }
 
+    DT_CONN_HDR_t hdr;
+    memset(&hdr, 0, sizeof(hdr));
     // Update the device IP and the interface name where it was found
-    dev->ipv4.i = fe_conn->hdr.dev.ipv4.i;
+    if (fe_conn->hdr.af == AF_INET) {
+        dev->ipv4.i = fe_conn->hdr.dev.ipv4.i;
+        hdr.ip.ipv4.i = fe_conn->hdr.peer.ipv4.i;
+#ifdef FEATURE_IPV6_TELEMETRY
+    } else if (fe_conn->hdr.af == AF_INET6) {
+        for(unsigned ix=0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ++ix) {
+            if (dev->ipv6[ix].l.h == fe_conn->hdr.dev.ipv6.l.h &&
+                dev->ipv6[ix].l.l == fe_conn->hdr.dev.ipv6.l.l) {
+                // we already have this address
+                break;
+            } else if (dev->ipv6[ix].l.h == 0 && dev->ipv6[ix].l.h == 0) {
+                // found an empty entry, fill it
+                dev->ipv6[ix].l.h = fe_conn->hdr.dev.ipv6.l.h;
+                dev->ipv6[ix].l.l = fe_conn->hdr.dev.ipv6.l.l;
+                break;
+            } else {
+                // do nothing - we can't record the device ipv6 address
+                // but the connection data is still of value
+            }
+        }
+        hdr.ip.ipv6.l.h = fe_conn->hdr.peer.ipv6.l.h;
+        hdr.ip.ipv6.l.l = fe_conn->hdr.peer.ipv6.l.l;
+#endif // FEATURE_IPV6_TELEMETRY
+    } else {
+        return FALSE;
+    }
     memcpy(dev->ifname, fe_conn->hdr.ifname, sizeof(dev->ifname));
 
     // Prepare the dev telemetry connection header from fe connection header
-    DT_CONN_HDR_t hdr;
-    hdr.ip.ipv4.i = fe_conn->hdr.peer.ipv4.i;
     hdr.ip_proto = fe_conn->hdr.proto;
     hdr.flags.rev = fe_conn->hdr.rev;
-    hdr.flags.af = AF_INET;
+    hdr.flags.af = fe_conn->hdr.af;
     hdr.port = (hdr.flags.rev ? fe_conn->hdr.dev_port : fe_conn->hdr.peer_port);
     hdr.dev = dev;
 
@@ -590,12 +631,24 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
     // the same way from both festats and tpcap)
     DT_CONN_t *conn = ip_upd_conn(dev, &hdr);
     if(conn == NULL) {
-        DPRINTF("%s: unable to add fe connection p:%d"
-                IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu \n",
+        char ip_dev[INET6_ADDRSTRLEN] = {'\0'};
+        char ip_peer[INET6_ADDRSTRLEN] = {'\0'};
+
+        if (fe_conn->hdr.af == AF_INET) {
+            inet_ntop(AF_INET, fe_conn->hdr.dev.ipv4.b,  ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET, fe_conn->hdr.peer.ipv4.b, ip_peer, sizeof(ip_peer));
+#ifdef FEATURE_IPV6_TELEMETRY
+        } else {
+            inet_ntop(AF_INET6, fe_conn->hdr.dev.ipv6.b,  ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET6, fe_conn->hdr.peer.ipv6.b, ip_peer, sizeof(ip_peer));
+#endif // FEATURE_IPV6_TELEMETRY
+        }
+
+        DPRINTF("%s: unable to add fe connection p:%d %s:%hu %s:%hu\n",
                 __func__, fe_conn->hdr.proto, 
-                IP_PRINTF_ARG_TPL(fe_conn->hdr.dev.ipv4.b),
+                ip_dev,
                 fe_conn->hdr.dev_port,
-                IP_PRINTF_ARG_TPL(fe_conn->hdr.peer.ipv4.b),
+                ip_peer,
                 fe_conn->hdr.peer_port);
         return FALSE;
     }
@@ -603,19 +656,31 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
     // Current slice #
     int slice_num = cap_iteration % DEVTELEMETRY_NUM_SLICES;
 
-    DPRINTF("%s: fe%s connection p:%d "
-            IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu "
-            "cur in/from:%u out/to:%u\n",
-            __func__, (fe_conn->hdr.rev ? " rev" : ""), fe_conn->hdr.proto,
-            IP_PRINTF_ARG_TPL(fe_conn->hdr.dev.ipv4.b),
-            fe_conn->hdr.dev_port,
-            IP_PRINTF_ARG_TPL(fe_conn->hdr.peer.ipv4.b),
-            fe_conn->hdr.peer_port,
-            conn->bytes_from[slice_num], conn->bytes_to[slice_num]);
-    DPRINTF("%s: fe reported in:%llu out:%llu, read in:%llu out:%llu\n",
-            __func__, fe_conn->in.bytes, fe_conn->out.bytes,
-                      fe_conn->in.bytes_read, fe_conn->out.bytes_read);
+    {
+        char ip_dev[INET6_ADDRSTRLEN] = {'\0'};
+        char ip_peer[INET6_ADDRSTRLEN] = {'\0'};
 
+        if (fe_conn->hdr.af == AF_INET) {
+            inet_ntop(AF_INET, fe_conn->hdr.dev.ipv4.b,  ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET, fe_conn->hdr.peer.ipv4.b, ip_peer, sizeof(ip_peer));
+#ifdef FEATURE_IPV6_TELEMETRY
+        } else {
+            inet_ntop(AF_INET6, fe_conn->hdr.dev.ipv6.b,  ip_dev,  sizeof(ip_dev));
+            inet_ntop(AF_INET6, fe_conn->hdr.peer.ipv6.b, ip_peer, sizeof(ip_peer));
+#endif // FEATURE_IPV6_TELEMETRY
+        }
+        DPRINTF("%s: fe%s connection p:%d %s:%hu <-> %s:%hu "
+                "cur in/from:%u out/to:%u\n",
+                __func__, (fe_conn->hdr.rev ? " rev" : ""), fe_conn->hdr.proto,
+                ip_dev,
+                fe_conn->hdr.dev_port,
+                ip_peer,
+                fe_conn->hdr.peer_port,
+                conn->bytes_from[slice_num], conn->bytes_to[slice_num]);
+        DPRINTF("%s: fe reported in:%llu out:%llu, read in:%llu out:%llu\n",
+                __func__, fe_conn->in.bytes, fe_conn->out.bytes,
+                fe_conn->in.bytes_read, fe_conn->out.bytes_read);
+    }
     // Calculate the updated counters. It only adds as much as we can
     // before the values overflow, the rest is not included in the
     // bytes_read, so we should be adding it later
@@ -920,6 +985,7 @@ static char *proto_name(unsigned char proto)
 static void print_test_conn_info(DT_CONN_t *conn)
 {
     int ii;
+    char ip_dev[INET6_ADDRSTRLEN] = {'\0'};
 #ifdef DT_CONN_MAP_IP_TO_DNS
     DT_DNS_IP_t *dns_ip = conn->dns_ip;
     DT_DNS_NAME_t *n_item = dns_ip ? dns_ip->dns : NULL;
@@ -932,9 +998,16 @@ static void print_test_conn_info(DT_CONN_t *conn)
     DT_DNS_NAME_t *n_item = NULL;
 #endif // DT_CONN_MAP_IP_TO_DNS
 
-    printf(" %3u/%.8s to " IP_PRINTF_FMT_TPL,
+    if (conn->hdr.flags.af == AF_INET) {
+        inet_ntop(AF_INET, conn->hdr.ip.ipv4.b,  ip_dev,  sizeof(ip_dev));
+#ifdef FEATURE_IPV6_TELEMETRY
+    } else {
+        inet_ntop(AF_INET6, conn->hdr.ip.ipv6.b, ip_dev,  sizeof(ip_dev));
+#endif // FEATURE_IPV6_TELEMETRY
+    }
+    printf(" %3u/%.8s to %s",
            conn->hdr.ip_proto, proto_name(conn->hdr.ip_proto),
-           IP_PRINTF_ARG_TPL(conn->hdr.ip.ipv4.b));
+           ip_dev);
     if(conn->hdr.ip_proto == IPPROTO_TCP || conn->hdr.ip_proto == IPPROTO_UDP) {
         printf(" p:%u(%s)", conn->hdr.port, conn->hdr.flags.rev ? "our" : "their");
     }

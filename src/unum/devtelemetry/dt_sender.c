@@ -135,7 +135,7 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
                  IP_PRINTF_ARG_TPL(p_con->hdr.ip.ipv4.b));
 #ifdef FEATURE_IPV6_TELEMETRY
     } else if (p_con->hdr.flags.af == AF_INET6) {
-        inet_ntop(AF_INET6, p_con->hdr.ip.ipv4.b, con_ip, sizeof(con_ip));
+        inet_ntop(AF_INET6, p_con->hdr.ip.ipv6.b, con_ip, sizeof(con_ip));
 #endif // FEATURE_IPV6_TELEMETRY
     }
     proto = p_con->hdr.ip_proto;
@@ -188,10 +188,14 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
     int ii;
     // Buffer for device MAC & IP address strings
     static char dev_mac[MAC_ADDRSTRLEN];
-    static char dev_ip[INET_ADDRSTRLEN];
+    static char dev_ip[INET6_ADDRSTRLEN];
+
     // Template for generating device info object JSON.
     static JSON_OBJ_TPL_t tpl_tbl_dev_obj = {
       { "ifname", { .type = JSON_VAL_STR, {.s = NULL}}}, // has to be first
+#ifdef FEATURE_IPV6_TELEMETRY
+      {"ipv6",    {.type = JSON_VAL_ARRAY, {.a = NULL}}}, // has to be second
+#endif // FEATURE_IPV6_TELEMETRY
       { "ip",     { .type = JSON_VAL_STR, {.s = dev_ip}}},
       { "mac",    { .type = JSON_VAL_STR, {.s = dev_mac}}},
       { "conn",   { .type = JSON_VAL_FARRAY, {.fa = tpl_devcon_array_f}}},
@@ -237,11 +241,29 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
             continue;
         }
 #endif // FEATURE_LAN_ONLY
+
         snprintf(dev_ip, sizeof(dev_ip), IP_PRINTF_FMT_TPL,
                  IP_PRINTF_ARG_TPL(dev->ipv4.b));
         snprintf(dev_mac, sizeof(dev_mac), MAC_PRINTF_FMT_TPL,
                  MAC_PRINTF_ARG_TPL(dev->mac));
         tpl_tbl_dev_obj[0].val.s = dev->ifname;
+#if FEATURE_IPV6_TELEMETRY
+        static JSON_VAL_TPL_t ipv6_address_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
+        static char           ipv6_addresses_str[MAX_IPV6_ADDRESSES_PER_MAC * INET6_ADDRSTRLEN] = { 0 };
+        memset(ipv6_addresses_str, 0, sizeof(ipv6_addresses_str));
+        for(unsigned ix=0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ++ix) {
+            if (dev->ipv6[ix].l.h == 0 && dev->ipv6[ix].l.l == 0) {
+                ipv6_address_tpl[ix].type = JSON_VAL_END;
+                break;
+            }
+            inet_ntop(AF_INET6, dev->ipv6[ix].b, &ipv6_addresses_str[ix*INET6_ADDRSTRLEN], INET6_ADDRSTRLEN);
+            ipv6_address_tpl[ix].s = &ipv6_addresses_str[ix*INET6_ADDRSTRLEN];
+            ipv6_address_tpl[ix].type = JSON_VAL_STR;
+        }
+        if (ipv6_addresses_str[0] != 0) {
+            tpl_tbl_dev_obj[1].val.a = ipv6_address_tpl;
+        }
+#endif // FEATURE_IPV6_TELEMETRY
         last_dev = dev;
         break;
     }
