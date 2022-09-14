@@ -593,9 +593,9 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
         DPRINTF("%s: unable to add fe connection p:%d"
                 IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu \n",
                 __func__, fe_conn->hdr.proto, 
-                IP_PRINTF_ARG_TPL(fe_conn->hdr.dev_ipv4.b),
+                IP_PRINTF_ARG_TPL(fe_conn->hdr.dev.ipv4.b),
                 fe_conn->hdr.dev_port,
-                IP_PRINTF_ARG_TPL(fe_conn->hdr.peer_ipv4.b),
+                IP_PRINTF_ARG_TPL(fe_conn->hdr.peer.ipv4.b),
                 fe_conn->hdr.peer_port);
         return FALSE;
     }
@@ -607,9 +607,9 @@ int dt_add_fe_conn(FE_CONN_t *fe_conn)
             IP_PRINTF_FMT_TPL ":%hu <-> " IP_PRINTF_FMT_TPL ":%hu "
             "cur in/from:%u out/to:%u\n",
             __func__, (fe_conn->hdr.rev ? " rev" : ""), fe_conn->hdr.proto,
-            IP_PRINTF_ARG_TPL(fe_conn->hdr.dev_ipv4.b),
+            IP_PRINTF_ARG_TPL(fe_conn->hdr.dev.ipv4.b),
             fe_conn->hdr.dev_port,
-            IP_PRINTF_ARG_TPL(fe_conn->hdr.peer_ipv4.b),
+            IP_PRINTF_ARG_TPL(fe_conn->hdr.peer.ipv4.b),
             fe_conn->hdr.peer_port,
             conn->bytes_from[slice_num], conn->bytes_to[slice_num]);
     DPRINTF("%s: fe reported in:%llu out:%llu, read in:%llu out:%llu\n",
