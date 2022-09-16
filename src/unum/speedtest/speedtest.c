@@ -1175,11 +1175,12 @@ void speedtest_perform(THRD_PARAM_t *p)
             }
             if(samples <= 0) {
                 log("%s: no samples to calculate latency\n", __func__);
+            } else {
+                settings.ping_endpoints[ii].latency_ms = (int)(sum/samples);
+                log("%s: average latency for %s: %ims\n", __func__,
+                    settings.ping_endpoints[ii].domain,
+                    settings.ping_endpoints[ii].latency_ms);
             }
-            settings.ping_endpoints[ii].latency_ms = (int)(sum/samples);
-            log("%s: average latency for %s: %ims\n", __func__,
-                settings.ping_endpoints[ii].domain,
-                settings.ping_endpoints[ii].latency_ms);
         }
     }
 
