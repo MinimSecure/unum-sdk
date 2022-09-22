@@ -17,11 +17,13 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
                           struct iphdr *iph);
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#  define MY_ETH_ARP_PROTO 0x0608
-#  define MY_ETH_IP_PROTO  0x0008
+#  define MY_ETH_ARP_PROTO   0x0608
+#  define MY_ETH_IP_PROTO    0x0008
+#  define MY_ETH_IPV6_PROTO  0xdd86
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#  define MY_ETH_ARP_PROTO 0x0806
-#  define MY_ETH_IP_PROTO  0x0800
+#  define MY_ETH_ARP_PROTO   0x0806
+#  define MY_ETH_IP_PROTO    0x0800
+#  define MY_ETH_IPV6_PROTO  0x86dd
 #else
 #  error Unable to determine the byte order
 #endif
@@ -52,6 +54,14 @@ static PKT_PROC_ENTRY_t tst_hooks[MAX_PKT_PROC_ENTRIES] = {
       {},
       eth_pkt_rcv_cb, NULL, NULL, NULL,
       "Any ARP pkt" },
+    { 0,
+      {},
+      PKT_MATCH_IP_PROTO,
+      { .proto = IPPROTO_ICMPV6 },
+      0,
+      {},
+      NULL, ip_pkt_rcv_cb, NULL, NULL,
+      "Any ICMPv6 pkt" },
     { PKT_MATCH_ETH_TYPE | PKT_MATCH_ETH_TYPE_NEG,
       { {}, MY_ETH_IP_PROTO },
       0,
@@ -101,28 +111,38 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
                ntohs(ehdr->h_proto));
 
         if(iph) {
-            printf("  IP  " IP_PRINTF_FMT_TPL " -> " IP_PRINTF_FMT_TPL
-                   " (%d)\n",
-                   IP_PRINTF_ARG_TPL(&iph->saddr),
-                   IP_PRINTF_ARG_TPL(&iph->daddr),
-                   iph->protocol);
-            if(iph->protocol == 6) {
-                struct tcphdr* tcph = ((void *)iph) + sizeof(struct iphdr);
-                printf("  TCP %u -> %u\n", ntohs(tcph->source),
-                                           ntohs(tcph->dest));
-            } else if(iph->protocol == 17) {
-                struct udphdr* udph = ((void *)iph) + sizeof(struct iphdr);
-                printf("  UDP %u -> %u\n", ntohs(udph->source),
-                                           ntohs(udph->dest));
-            } else if(iph->protocol == 1) {
-                struct icmphdr* icmp = ((void *)iph) + sizeof(struct iphdr);
-                printf("  ICMP type %u code %u", icmp->type,
-                                                 icmp->code);
-                if(icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY) {
-                    printf(" seq %u\n", ntohs(icmp->un.echo.sequence));
-                } else {
-                    printf("\n");
+            if (iph->version == 4) {
+                printf("  IP  " IP_PRINTF_FMT_TPL " -> " IP_PRINTF_FMT_TPL
+                       " (%d)\n",
+                       IP_PRINTF_ARG_TPL(&iph->saddr),
+                       IP_PRINTF_ARG_TPL(&iph->daddr),
+                       iph->protocol);
+                if(iph->protocol == 6) {
+                    struct tcphdr* tcph = ((void *)iph) + sizeof(struct iphdr);
+                    printf("  TCP %u -> %u\n", ntohs(tcph->source),
+                           ntohs(tcph->dest));
+                } else if(iph->protocol == 17) {
+                    struct udphdr* udph = ((void *)iph) + sizeof(struct iphdr);
+                    printf("  UDP %u -> %u\n", ntohs(udph->source),
+                           ntohs(udph->dest));
+                } else if(iph->protocol == 1) {
+                    struct icmphdr* icmp = ((void *)iph) + sizeof(struct iphdr);
+                    printf("  ICMP type %u code %u", icmp->type,
+                           icmp->code);
+                    if(icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY) {
+                        printf(" seq %u\n", ntohs(icmp->un.echo.sequence));
+                    } else {
+                        printf("\n");
+                    }
                 }
+            } else if (iph->version == 6) {
+                char src_addr[INET6_ADDRSTRLEN];
+                char dst_addr[INET6_ADDRSTRLEN];
+
+                struct ipv6hdr *ip6h = (struct ipv6hdr *) iph;
+                inet_ntop(AF_INET6, &ip6h->saddr, src_addr, sizeof(src_addr));
+                inet_ntop(AF_INET6, &ip6h->daddr, dst_addr, sizeof(dst_addr));
+                printf("  IPv6 %s -> %s (%d)\n", src_addr, dst_addr, ip6h->nexthdr);
             }
         }
         printf("    tp_snaplen : %d\n", thdr->tp_snaplen);
@@ -282,7 +302,7 @@ int tpcap_test_filters(char *filters_file)
                       (pe->desc ? pe->desc : ""));
                if(pe->flags_eth) {
                    printf("    MAC: " MAC_PRINTF_FMT_TPL " Ethtype: 0x%04x\n",
-                          MAC_PRINTF_ARG_TPL(pe->eth.mac), pe->eth.proto);
+                          MAC_PRINTF_ARG_TPL(pe->eth.mac), ntohs(pe->eth.proto));
                }
                if(pe->flags_ip) {
                    printf("    A1: " IP_PRINTF_FMT_TPL " A2: " IP_PRINTF_FMT_TPL
@@ -318,7 +338,7 @@ int tpcap_test_filters(char *filters_file)
                     } while(sscanf(str, MAC_SSCANF_FMT_TPL,
                                    MAC_SSCANF_ARG_TPL(pe->eth.mac)) != 6);
 
-                    printf("Ethtype: 0x%04x\n", pe->eth.proto);
+                    printf("Ethtype: 0x%04x\n", htons(pe->eth.proto));
                     do {
                         printf("Ethtype: 0x");
                         scanf("%s", str);
