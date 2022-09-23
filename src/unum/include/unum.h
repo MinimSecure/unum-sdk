@@ -41,6 +41,7 @@
 #include <linux/if_packet.h>
 #include <linux/sockios.h>
 #include <linux/rtnetlink.h>
+#include <linux/ipv6.h>
 #include <sys/reboot.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>

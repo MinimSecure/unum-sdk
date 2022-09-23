@@ -14,13 +14,13 @@
 
 // Debug macros for tests
 #ifdef DEBUG
-#  define DBG_ARP(args...) ((get_test_num() == U_TEST_FE_ARP) ? \
-                            log_dbg(args) : 0)
-#  define DBG_DFG(args...) ((get_test_num() == U_TEST_FE_DEFRAG) ? \
-                            log_dbg(args) : 0)
+#  define DBG_ARP_NDP(args...) ((get_test_num() == U_TEST_FE_ARP_NDP) ?    \
+                                log_dbg(args) : 0)
+#  define DBG_DFG(args...)     ((get_test_num() == U_TEST_FE_DEFRAG) ? \
+                                log_dbg(args) : 0)
 #else // DEBUG
-#  define DBG_ARP(args...) /* Nothiing */
-#  define DBG_DFG(args...) /* Nothiing */
+#  define DBG_ARP_NDP(args...) /* Nothing */
+#  define DBG_DFG(args...) /* Nothing */
 #endif // DEBUG
 
 
@@ -31,8 +31,11 @@ static FE_CONN_t **conn_tbl;
 // to allow clearing it fast. 
 static unsigned char *conn_present;
 
-// ARP table, allocated at startup and never released
+// ARP/NDP tables, allocated at startup and never released
 static FE_ARP_t *arp_tbl;
+#ifdef FEATURE_IPV6_TELEMETRY
+static FE_NDP_t *ndp_tbl;
+#endif // FEATURE_IPV6_TELEMETRY
 
 // Working copy of festats connection table stats struct, only festats
 // thread writes into this table.
@@ -172,7 +175,7 @@ static void fe_add_arp_entry(FE_ARP_t *ae)
         // If empty
         if(arp_tbl[idx].ipv4.i == 0)
         {
-            DBG_ARP("%s: new arp entry " IP_PRINTF_FMT_TPL " -> "
+            DBG_ARP_NDP("%s: new arp entry " IP_PRINTF_FMT_TPL " -> "
                     MAC_PRINTF_FMT_TPL " no_mac=%d\n",
                     __func__, IP_PRINTF_ARG_TPL(ae->ipv4.b),
                     MAC_PRINTF_ARG_TPL(ae->mac), ae->no_mac);
@@ -198,6 +201,48 @@ static void fe_add_arp_entry(FE_ARP_t *ae)
 
     return;
 }
+
+#ifdef FEATURE_IPV6_TELEMETRY
+static void fe_add_ndp_entry(FE_NDP_t *entry)
+{
+    int ii;
+    int idx = (entry->ipv6.b[14] << 8 | entry->ipv6.b[15]) % FESTATS_MAX_NDP;
+    int sel_idx = idx;
+
+    // Limit the number of slots we'll try, start at the index above
+    for(ii = 0; ii < FESTATS_NDP_SEARCH_LIMITER; ii++) {
+        // If empty
+        if(ndp_tbl[idx].ipv6.l.h == 0 && ndp_tbl[idx].ipv6.l.l == 0) {
+#ifdef DEBUG
+            char addr[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, &entry->ipv6.b, addr, sizeof(addr));
+            DBG_ARP_NDP("%s: new ndp entry %s -> "
+                        MAC_PRINTF_FMT_TPL " no_mac=%d\n",
+                        __func__, addr,
+                        MAC_PRINTF_ARG_TPL(entry->mac), entry->no_mac);
+#endif // DEBUG
+            sel_idx = idx;
+            break;
+        }
+        // If the same address entry
+        if(ndp_tbl[idx].ipv6.l.h == entry->ipv6.l.h && ndp_tbl[idx].ipv6.l.l == entry->ipv6.l.l) {
+            sel_idx = idx;
+            break;
+        }
+        // Store the eldest entry index in sel_idx
+        if(ndp_tbl[idx].uptime < ndp_tbl[sel_idx].uptime) {
+            sel_idx = idx;
+        }
+        // Try the next index
+        idx = (idx + 1) % FESTATS_MAX_NDP;
+    }
+
+    // Update the selected entry
+    memcpy(&ndp_tbl[sel_idx], entry, sizeof(ndp_tbl[sel_idx]));
+
+    return;
+}
+#endif // FEATURE_IPV6_TELEMETRY
 
 // Fills in lan_ifnames[][] array with LAN ifnames and the
 // lan_ifcfg[] with the IP configuration of the monitored LAN interfaces.
@@ -316,16 +361,16 @@ static void fe_update_arp_table()
             continue;
         }
         if(hw != 1 /* Ethernet */) {
-            DBG_ARP("%s: skip entry w/ HW type %u\n", __func__, hw);
+            DBG_ARP_NDP("%s: skip entry w/ HW type %u\n", __func__, hw);
             continue;
         }
         if((flags & 2) == 0 /* Bit 1 - entry complete */) {
-            DBG_ARP("%s: skip incomplete w/ flags %x\n", __func__, flags);
+            DBG_ARP_NDP("%s: skip incomplete w/ flags %x\n", __func__, flags);
             continue;
         }
         ifname[sizeof(ifname) - 1] = 0;
         if(fe_find_ipv4cfg_by_ifname(ifname, NULL) != 0) {
-            DBG_ARP("%s: skip entry for interface %s\n", __func__, ifname);
+            DBG_ARP_NDP("%s: skip entry for interface %s\n", __func__, ifname);
             continue;
         }
         FE_ARP_t ae = {.ipv4 = {.b = {ip[0], ip[1], ip[2], ip[3]}},
@@ -338,6 +383,125 @@ static void fe_update_arp_table()
     fclose(fp);
     return;
 }
+
+#ifdef FEATURE_IPV6_TELEMETRY
+static int recv_msg(char* buf_p, unsigned int buf_size, struct sockaddr_nl sock_addr, int sock)
+{
+    struct nlmsghdr *nh;
+    int len, nll = 0;
+    while (1) {
+        len = recv(sock, buf_p, buf_size - nll, 0);
+        if (len < 0)
+            return len;
+
+        nh = (struct nlmsghdr *)buf_p;
+
+        if (nh->nlmsg_type == NLMSG_DONE)
+            break;
+        buf_p += len;
+        nll += len;
+        if ((sock_addr.nl_groups & RTMGRP_NEIGH) == RTMGRP_NEIGH)
+            break;
+
+        if ((sock_addr.nl_groups & RTMGRP_IPV4_ROUTE) == RTMGRP_IPV4_ROUTE)
+            break;
+    }
+    return nll;
+}
+
+// Update NDP tracker table from a netlink route socket
+// For use only from the festats thread.
+static void fe_update_ndp_table()
+{
+    struct sockaddr_nl sa;
+    struct nlmsghdr *nh;
+    int sock, seq = 0;
+    struct msghdr msg;
+    struct iovec iov;
+    int nll;
+    struct {
+        struct nlmsghdr nl;
+        struct ndmsg rt;
+        char buf[8192];
+    } req;
+    struct rtattr *rt_attr;
+    struct ndmsg *rt_msg = NULL;
+    int rtl = -1;
+    static char buf[8192];
+
+    sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (sock < 0) {
+        log("%s: open netlink socket: %s\n", __func__, strerror(errno));
+        return;
+    }
+    memset(&sa, 0, sizeof(sa));
+    sa.nl_family = AF_NETLINK;
+    if (bind(sock, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+        fprintf(stderr, "%s: bind netlink socket: %s\n", __func__, strerror(errno));
+        close(sock);
+        return;
+    }
+    memset(&req, 0, sizeof(req));
+    req.nl.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    req.nl.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+    req.nl.nlmsg_type = RTM_GETNEIGH;
+    req.rt.ndm_family = AF_INET6;
+    req.nl.nlmsg_pid = 0;
+    req.nl.nlmsg_seq = ++seq;
+    memset(&msg, 0, sizeof(msg));
+    iov.iov_base = (void *)&req.nl;
+    iov.iov_len = req.nl.nlmsg_len;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    if (sendmsg(sock, &msg, 0) < 0) {
+        log("%s: send to netlink: %s\n", __func__, strerror(errno));
+        close(sock);
+        return;
+    }
+    memset(buf, 0, sizeof(buf));
+    nll = recv_msg(buf, sizeof(buf), sa, sock);
+    if (nll < 0) {
+        log("%s recv from netlink: %s\n", __func__, strerror(nll));
+        close(sock);
+        return;
+    }
+    nh = (struct nlmsghdr *)buf;
+
+    for (; NLMSG_OK(nh, nll); nh = NLMSG_NEXT(nh, nll)) {
+        FE_NDP_t entry = {.uptime = util_time(1),
+                          .no_mac = FALSE};
+
+        rt_msg = (struct ndmsg *)NLMSG_DATA(nh);
+        if (rt_msg->ndm_state != NUD_REACHABLE && rt_msg->ndm_state != NUD_STALE) {
+            continue;
+        }
+        rt_attr = (struct rtattr *)RTM_RTA(rt_msg);
+        rtl = RTM_PAYLOAD(nh);
+        for (; RTA_OK(rt_attr, rtl); rt_attr = RTA_NEXT(rt_attr, rtl)) {
+            switch (rt_attr->rta_type) {
+            case NDA_DST:
+            {
+                unsigned char* addr = RTA_DATA(rt_attr);
+                memcpy(entry.ipv6.b, addr, sizeof(entry.ipv6.b));
+                break;
+            }
+            case NDA_LLADDR:
+            {
+                uint8_t* mac_p = RTA_DATA(rt_attr);
+                memcpy(entry.mac, mac_p, sizeof(entry.mac));
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        fe_add_ndp_entry(&entry);
+    }
+
+    close(sock);
+    return;
+}
+#endif // FEATURE_IPV6_TELEMETRY
 
 // Query ARP table tracker for a match to specified IP address
 // For use only from the festats thread.
@@ -360,6 +524,29 @@ static FE_ARP_t *fe_find_arp_entry(IPV4_ADDR_t *ipv4)
     return NULL;
 }
 
+#if defined(FEATURE_IPV6_TELEMETRY) && defined(DEBUG)
+// Query NDP table tracker for a match to specified IP address
+// For use only from the festats thread.
+FE_NDP_t *fe_find_ndp_entry(IPV6_ADDR_t *ipv6)
+{
+    int ii;
+    int idx = (ipv6->b[14] << 8 | ipv6->b[15]) % FESTATS_MAX_NDP;
+
+    for(ii = 0; ii < FESTATS_ARP_SEARCH_LIMITER; ii++)
+    {
+        // If empty or the same address entry
+        if(ndp_tbl[idx].ipv6.l.h == ipv6->l.h && ndp_tbl[idx].ipv6.l.l == ipv6->l.l)
+        {
+            return &ndp_tbl[idx];
+        }
+        // Try the next index
+        idx = (idx + 1) % FESTATS_MAX_NDP;
+    }
+
+    return NULL;
+}
+#endif // FEATURE_IPV6_TELEMETRY
+
 // Walk through ARP tracker table trying to discover MACs for IPs that
 // have connections, but no mapping to a MAC address is captured yet.
 // This migh only happen at agebt restart or if a connection is set up
@@ -373,7 +560,7 @@ void fe_run_arp_discovery(void)
         if(!arp_tbl[ii].no_mac) {
             continue;
         }
-        DBG_ARP("%s: discovering MAC for " IP_PRINTF_FMT_TPL "\n",
+        DBG_ARP_NDP("%s: discovering MAC for " IP_PRINTF_FMT_TPL "\n",
                 __func__, IP_PRINTF_ARG_TPL(arp_tbl[ii].ipv4.b));
         // Send ARP query
         if(fe_find_if_by_ipv4(&arp_tbl[ii].ipv4, ifname) != 0) {
@@ -767,8 +954,11 @@ static void fe_stats_pass(void)
     // Update interface info
     fe_update_if_info();
 
-    // Update ARP tracker table
+    // Update ARP & NDP tracker tables
     fe_update_arp_table();
+#ifdef FEATURE_IPV6_TELEMETRY
+    fe_update_ndp_table();
+#endif // FEATURE_IPV6_TELEMETRY
 
     // Mark all connection entries as not longer present
     memset(conn_present, 0, FESTATS_MAX_CONN * sizeof(*conn_present));
@@ -833,6 +1023,12 @@ static void fe_free_tables(void)
         UTIL_FREE(arp_tbl);
         arp_tbl = NULL;
     }
+#ifdef FEATURE_IPV6_TELEMETRY
+    if(ndp_tbl) {
+        UTIL_FREE(ndp_tbl);
+        ndp_tbl = NULL;
+    }
+#endif // FEATURE_IPV6_TELEMETRY
     if(conn_present) {
         UTIL_FREE(conn_present);
         conn_present = NULL;
@@ -872,6 +1068,14 @@ static int fe_allocate_tables(void)
         log("%s: unable to allocate memory for ARP tracker\n", __func__);
         return -2;
     }
+#ifdef FEATURE_IPV6_TELEMETRY
+    ndp_tbl = UTIL_CALLOC(FESTATS_MAX_NDP, sizeof(*ndp_tbl));
+    if(ndp_tbl == NULL) {
+        fe_free_tables();
+        log("%s: unable to allocate memory for NDP tracker\n", __func__);
+        return -2;
+    }
+#endif // FEATURE_IPV6_TELEMETRY
 
     return 0;
 }
@@ -1021,10 +1225,13 @@ int test_fe_defrag(void)
 }
 
 // Test festats ARP tracker
-int test_fe_arp(void)
+int test_fe_arp_ndp(void)
 {
-    char str[16];
-    unsigned int ip[4];
+    char* str = NULL;
+    unsigned int ipv4[sizeof(struct in_addr)];
+#ifdef FEATURE_IPV6_TELEMETRY
+    struct in6_addr ipv6;
+#endif // FEATURE_IPV6_TELEMETRY
 
     if(fe_allocate_tables() != 0) {
         printf("Unable to allocate memory\n");
@@ -1033,19 +1240,19 @@ int test_fe_arp(void)
 
     for(;;)
     {
-        printf("1 - run ARP tracker pass, 2 - discover, <IP> - run query:\n");
-        scanf("%16s", str);
-        str[sizeof(str) - 1] = 0;
+        printf("1 - run ARP/NDP tracker pass, 2 - discover, <IP> - run query:\n");
+        scanf("%ms", &str);
+        str[strlen(str)] = 0;
 
         // Update interface info
         fe_update_if_info();
 
-        if(sscanf(str, IP_PRINTF_FMT_TPL, &ip[0], &ip[1], &ip[2], &ip[3]) == 4)
+        if(sscanf(str, IP_PRINTF_FMT_TPL, &ipv4[0], &ipv4[1], &ipv4[2], &ipv4[3]) == 4)
         {
-            IPV4_ADDR_t ipv4 = {.b = {ip[0], ip[1], ip[2], ip[3]}};
+            IPV4_ADDR_t ipv4_addr = {.b = {ipv4[0], ipv4[1], ipv4[2], ipv4[3]}};
             printf("Looking up: " IP_PRINTF_FMT_TPL "\n",
-                   IP_PRINTF_ARG_TPL(ipv4.b));
-            FE_ARP_t *ae = fe_find_arp_entry(&ipv4);
+                   IP_PRINTF_ARG_TPL(ipv4_addr.b));
+            FE_ARP_t *ae = fe_find_arp_entry(&ipv4_addr);
             if(ae != NULL) {
                 printf("ARP entry " IP_PRINTF_FMT_TPL " -> "
                        MAC_PRINTF_FMT_TPL " no_mac=%d\n",
@@ -1067,16 +1274,51 @@ int test_fe_arp(void)
                 printf("No ARP info entry\n");
             }
         }
+#ifdef FEATURE_IPV6_TELEMETRY
+        else if(inet_pton(AF_INET6, str, ipv6.s6_addr) == 1)
+        {
+            IPV6_ADDR_t ipv6_addr = {.b = {ipv6.s6_addr[0],  ipv6.s6_addr[1],  ipv6.s6_addr[2],  ipv6.s6_addr[3],
+                                           ipv6.s6_addr[4],  ipv6.s6_addr[5],  ipv6.s6_addr[6],  ipv6.s6_addr[7],
+                                           ipv6.s6_addr[8],  ipv6.s6_addr[9],  ipv6.s6_addr[10], ipv6.s6_addr[11],
+                                           ipv6.s6_addr[12], ipv6.s6_addr[13], ipv6.s6_addr[14], ipv6.s6_addr[15]}};
+            char addr[INET6_ADDRSTRLEN];
+            printf("Looking up: %s\n", inet_ntop(AF_INET6, &ipv6_addr.b, addr, sizeof(addr)));
+            FE_NDP_t *ne = fe_find_ndp_entry(&ipv6_addr);
+            if (ne != NULL) {
+                char addr[INET6_ADDRSTRLEN];
+                inet_ntop(AF_INET6, &ne->ipv6.b, addr, sizeof(addr));
+                DBG_ARP_NDP("NDP entry %s -> " MAC_PRINTF_FMT_TPL " no_mac=%d\n",
+                            addr, MAC_PRINTF_ARG_TPL(ne->mac), ne->no_mac);
+                for(;;) {
+                    printf("1 - set no_mac, 2 - skip:\n");
+                    scanf("%2s", str);
+                    if(*str == '1') {
+                        ne->no_mac = TRUE;
+                        memset(ne->mac, 0, sizeof(ne->mac));
+                        break;
+                    }
+                    else if(*str == '2') {
+                        break;
+                    }
+                }
+            }
+        }
+#endif // FEATURE_IPV6_TELEMETRY
         else if(*str == '1')
         {
-            printf("Scanning ARP table...\n");
+            printf("Scanning ARP/NDP table...\n");
             fe_update_arp_table();
+#ifdef FEATURE_IPV6_TELEMETRY
+            fe_update_ndp_table();
+#endif // FEATURE_IPV6_TELEMETRY
         }
         else if(*str == '2')
         {
             printf("Run MACs discovery...\n");
             fe_run_arp_discovery();
         }
+
+        free(str);
     }
     
     return 0;
@@ -1085,11 +1327,28 @@ int test_fe_arp(void)
 // Print out details for a single connection
 static void print_fe_conn_info(FE_CONN_t *conn)
 {
-    printf("%3u/%.8s " IP_PRINTF_FMT_TPL ":%u %s " IP_PRINTF_FMT_TPL ":%u\n",
-           conn->hdr.proto, proto_name(conn->hdr.proto),
-           IP_PRINTF_ARG_TPL(conn->hdr.dev_ipv4.b), conn->hdr.dev_port,
-           (conn->hdr.rev ? "<-" : "->"),
-           IP_PRINTF_ARG_TPL(conn->hdr.peer_ipv4.b), conn->hdr.peer_port);
+    if (conn->hdr.af == AF_INET) {
+        printf("%3u/%.8s " IP_PRINTF_FMT_TPL ":%u %s " IP_PRINTF_FMT_TPL ":%u\n",
+               conn->hdr.proto, proto_name(conn->hdr.proto),
+               IP_PRINTF_ARG_TPL(conn->hdr.dev.ipv4.b), conn->hdr.dev_port,
+               (conn->hdr.rev ? "<-" : "->"),
+               IP_PRINTF_ARG_TPL(conn->hdr.peer.ipv4.b), conn->hdr.peer_port);
+    } else if (conn->hdr.af == AF_INET6) {
+#ifdef FEATURE_IPV6_TELEMETRY
+        char dev_addr[INET6_ADDRSTRLEN];
+        char peer_addr[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &conn->hdr.dev.ipv4.b, dev_addr, sizeof(dev_addr));
+        inet_ntop(AF_INET6, &conn->hdr.peer.ipv4.b, peer_addr, sizeof(peer_addr));
+        printf("%3u/%.8s %s:%u %s %s:%u\n",
+               conn->hdr.proto,
+               proto_name(conn->hdr.proto),
+               dev_addr,
+               conn->hdr.dev_port,
+               (conn->hdr.rev ? "<-" : "->"),
+               peer_addr,
+               conn->hdr.peer_port);
+#endif // FEATURE_IPV6_TELEMETRY
+    }
     printf("  uid: %u off:%d flags:0x%x\n", conn->uid, conn->off, conn->flags);
     printf("  bytes in/out: %llu/%llu\n", conn->in.bytes, conn->out.bytes);
     printf("  read in/out: %llu/%llu\n", conn->in.bytes_read,

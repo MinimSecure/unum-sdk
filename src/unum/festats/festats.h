@@ -22,10 +22,13 @@
 #  define FESTATS_MAX_CONN 8192 // Must be power of 2
 #endif // FESTATS_MAX_CONN
 
-// Default max arp tracker entries
+// Default max arp/ndp tracker entries
 #ifndef FESTATS_MAX_ARP
 #  define FESTATS_MAX_ARP 1024
 #endif // FESTATS_MAX_ARP
+#ifndef FESTATS_MAX_NDP
+#  define FESTATS_MAX_NDP 1024
+#endif // FESTATS_MAX_NDP
 
 // The values are placed in the tables based on their unique keys
 // hash. This works well while the tables are mostly empty.
@@ -45,6 +48,9 @@
 #ifndef FESTATS_ARP_SEARCH_LIMITER
 #  define FESTATS_ARP_SEARCH_LIMITER 16
 #endif // FESTATS_ARP_SEARCH_LIMITER
+#ifndef FESTATS_NDP_SEARCH_LIMITER
+#  define FESTATS_NDP_SEARCH_LIMITER 16
+#endif // FESTATS_NDP_SEARCH_LIMITER
 
 
 // These variables are used by festats test to set custom

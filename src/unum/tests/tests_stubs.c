@@ -46,8 +46,8 @@ int __attribute__((weak)) test_fe_defrag(void)
     return 0;
 }
 
-// Test festats ARP tracker
-int __attribute__((weak)) test_fe_arp(void)
+// Test festats ARP/NDP tracker
+int __attribute__((weak)) test_fe_arp_ndp(void)
 {
     printf("Test %d is not implemented for the platform\n",
            get_test_num());

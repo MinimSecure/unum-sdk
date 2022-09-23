@@ -444,7 +444,6 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
 #ifdef FEATURE_IPV6_TELEMETRY
     // Create socket
     NL_SOCK_t nl_socket = { .s = -1 };
-    void *req = NULL;
     int buf_index = 0;
     int if_index = if_nametoindex(dev);
     if (if_index == 0) {
@@ -545,10 +544,6 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
         ipcfg[longest_lifetime_index].flags |= DEV_IPV6_CFG_FLAG_PRIMARY;
     }
 
-    if(req) {
-        UTIL_FREE(req);
-        req = NULL;
-    }
     if(nl_socket.s >= 0) {
         close(nl_socket.s);
     }
@@ -556,7 +551,6 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
 
     return ret;
 }
-
 
 // Get network device statistics/counters.
 // Returns 0 if successful, error code if fails.

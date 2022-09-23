@@ -27,7 +27,7 @@
 #define U_TEST_RTR_TELE     18 // test router telemetry
 #define U_TEST_FESTATS      19 // test festats subsystem
 #define U_TEST_FE_DEFRAG    20 // test festats defrag
-#define U_TEST_FE_ARP       21 // test festats ARP tracker
+#define U_TEST_FE_ARP_NDP   21 // test festats ARP/NDP tracker
 #define U_TEST_DNS          22 // test dns subsystem
 #define U_TEST_ZIP          23 // test dns subsystem
 #define U_TEST_IPTABLES     24 // test iptables telemetry
@@ -48,8 +48,8 @@ int test_festats(void);
 // Test forwarding engine stats table defragmenter (stubbed)
 int test_fe_defrag(void);
 
-// Test forwarding engine stats ARP tracker (stubbed)
-int test_fe_arp(void);
+// Test forwarding engine stats ARP/NDP tracker (stubbed)
+int test_fe_arp_ndp(void);
 
 // Test the agent crash handling code
 void test_crash_handling(void);

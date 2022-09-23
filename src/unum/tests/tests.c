@@ -82,8 +82,8 @@ static void print_tests_info()
            "- test forwarding engine stats collection\n");
     printf(UTIL_STR(U_TEST_FE_DEFRAG)
            "- test forwarding engine table defrag\n");
-    printf(UTIL_STR(U_TEST_FE_ARP)
-           "- test forwarding engine ARP tracker\n");
+    printf(UTIL_STR(U_TEST_FE_ARP_NDP)
+           "- test forwarding engine ARP/NDP tracker\n");
     printf(UTIL_STR(U_TEST_DNS)
            "- test dns subsystem\n");
     printf(UTIL_STR(U_TEST_ZIP)
@@ -168,8 +168,8 @@ static int run_platform_tests(int test_num, char *test_num_str)
         case U_TEST_FE_DEFRAG:
             return test_fe_defrag();
 
-        case U_TEST_FE_ARP:
-            return test_fe_arp();
+        case U_TEST_FE_ARP_NDP:
+            return test_fe_arp_ndp();
 
         case U_TEST_DNS:
             return test_dns();

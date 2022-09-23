@@ -2,7 +2,7 @@
 // forwarding engine stats subsystem hashtable definitions
 
 
-// Stores information about ARP entries we detect. We only store it for IPs
+// Stores information about ARP/NDP entries we detect. We only store it for IPs
 // matching the IP networks configured on the monitored LAN interfaces.
 // It's used to find out MAC addresses of the devices.
 struct _FE_ARP {
@@ -14,6 +14,17 @@ struct _FE_ARP {
 } __attribute__((packed));
 typedef struct _FE_ARP FE_ARP_t;
 
+#ifdef FEATURE_IPV6_TELEMETRY
+struct _FE_NDP {
+    IPV6_ADDR_t   ipv6;   // device IPv6 address
+    unsigned int  uptime; // uptime when the entry was last seen
+    unsigned char mac[6]; // device MAC
+    unsigned char no_mac; // flag indicating we need to discover the MAC
+    unsigned char pad;    // unused yet
+} __attribute__((packed));
+typedef struct _FE_NDP FE_NDP_t;
+#endif // FEATURE_IPV6_TELEMETRY
+
 // Store unchanging information about a connection in a header.
 // This is required because we need to be able to hash the same
 // connection consistently, even if its other info changes.
@@ -22,7 +33,7 @@ struct _FE_CONN_HDR {
         IPV4_ADDR_t ipv4;    // device IPv4 address
 #ifdef FEATURE_IPV6_TELEMETRY
         IPV6_ADDR_t ipv6;    // device IPv6 address
-#endif
+#endif // FEATURE_IPV6_TELEMETRY
     } dev;
     union {
         IPV4_ADDR_t ipv4;    // peer IPv4 address
