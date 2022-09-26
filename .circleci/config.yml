@@ -19,6 +19,22 @@ jobs:
           path: out/linux_generic
           destination: build
 
+  build-amd64-debug:
+    docker:
+      - image: minimsecure/circleci-debian-amd64:stretch-slim
+    steps:
+      - checkout
+      - run:
+          name: Build unum and .deb with DEBUG
+          command: |
+            if [[ ! -z "$CIRCLE_TAG" ]]; then
+              BUILD_VERSION=${CIRCLE_TAG/v/}
+            fi
+            ./dist/make_dotdeb.sh -D $BUILD_VERSION
+      - store_artifacts:
+          path: out/linux_generic
+          destination: build
+
   # Build a .deb package for armhf platforms.
   build-armhf:
     machine:
@@ -210,6 +226,7 @@ workflows:
   snapshot:
     jobs:
       - build-amd64
+      - build-amd64-debug
       - build-armhf
       - build-docker
 

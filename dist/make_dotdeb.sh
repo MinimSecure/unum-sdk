@@ -17,6 +17,10 @@ for arg in $@; do
             OPT_ENTER_WORKSPACE=1
             shift
             ;;
+        --debug|-D)
+            export UNUM_DEBUG=1
+            shift
+            ;;
         *)  break
             ;;
     esac
