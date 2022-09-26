@@ -41,7 +41,9 @@
 #include <linux/if_packet.h>
 #include <linux/sockios.h>
 #include <linux/rtnetlink.h>
+#ifdef FEATURE_IPV6_TELEMETRY
 #include <linux/ipv6.h>
+#endif // FEATURE_IPV6_TELEMETRY
 #include <sys/reboot.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
