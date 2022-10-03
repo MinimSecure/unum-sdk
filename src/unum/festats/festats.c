@@ -56,9 +56,12 @@ static int conn_tbl_stats_read = TRUE;
 static char lan_ifnames[TPCAP_IF_MAX][IFNAMSIZ];
 // IP configuration of the monitored interfaces. Updated before
 // each scan pass by fe_update_if_info()
-static DEV_IP_CFG_t lan_ifcfg[TPCAP_IF_MAX];
-// Number of interfaces in lan_ifcfg[] array
-static int lan_ifcfg_count;
+static DEV_IP_CFG_t lan_ifcfg_ipv4[TPCAP_IF_MAX];
+#ifdef FEATURE_IPV6_TELEMETRY
+static DEV_IPV6_CFG_t lan_ifcfg_ipv6[TPCAP_IF_MAX][MAX_IPV6_ADDRESSES_PER_MAC];
+#endif // FEATURE_IPV6_TELEMETRY
+// Number of interfaces in lan_ifcfg_*[] arrays
+static int lan_ifcfg_count = 0;
 
 // Flag indicationg that we are starting up and have to collect
 // the inital snapshort of the counters to initialize the offsets
@@ -245,15 +248,23 @@ static void fe_add_ndp_entry(FE_NDP_t *entry)
 #endif // FEATURE_IPV6_TELEMETRY
 
 // Fills in lan_ifnames[][] array with LAN ifnames and the
-// lan_ifcfg[] with the IP configuration of the monitored LAN interfaces.
+// lan_ifcfg_*[] with the IP configuration of the monitored LAN interfaces.
 static int fe_add_if(const char *ifname, void *unused)
 {
-    DEV_IP_CFG_t *new_ipcfg = &lan_ifcfg[lan_ifcfg_count];
+    DEV_IP_CFG_t *new_ipv4cfg = &lan_ifcfg_ipv4[lan_ifcfg_count];
+#ifdef FEATURE_IPV6_TELEMETRY
+    DEV_IPV6_CFG_t *new_ipv6cfg = &lan_ifcfg_ipv6[lan_ifcfg_count][0];
+    memset(new_ipv6cfg, 0, sizeof(DEV_IPV6_CFG_t)*MAX_IPV6_ADDRESSES_PER_MAC);
+    if(util_get_ipv6cfg(ifname, new_ipv6cfg) != 0) {
+        log("%s: failed to get IPv6 config for %s\n", __func__, ifname);
+        return -1;
+    }
+#endif // FEATURE_IPV6_TELEMETRY
 
     // Capture the interface configuration
-    memset(new_ipcfg, 0, sizeof(*new_ipcfg));
-    if(util_get_ipcfg(ifname, new_ipcfg) != 0) {
-        log("%s: failed to get IP config for %s\n", __func__, ifname);
+    memset(new_ipv4cfg, 0, sizeof(*new_ipv4cfg));
+    if(util_get_ipcfg(ifname, new_ipv4cfg) != 0) {
+        log("%s: failed to get IPv4 config for %s\n", __func__, ifname);
         return -1;
     }
 
@@ -284,13 +295,13 @@ static void fe_update_if_info()
 // ifname - pointer to IFNAMSIZ buffer to receive the interface name found
 //          (can be NULL)
 // Returns: 0 - found, -1 - not found
-static int fe_find_if_by_ipv4(IPV4_ADDR_t *ipv4, char *ifname)
+static int fe_find_if_by_ipv4(const IPV4_ADDR_t *ipv4, char *ifname)
 {
     int ii;
     for(ii = 0; ii < lan_ifcfg_count; ++ii)
     {
-        if((ipv4->i & lan_ifcfg[ii].ipv4mask.i) ==
-           (lan_ifcfg[ii].ipv4.i & lan_ifcfg[ii].ipv4mask.i))
+        if((ipv4->i & lan_ifcfg_ipv4[ii].ipv4mask.i) ==
+           (lan_ifcfg_ipv4[ii].ipv4.i & lan_ifcfg_ipv4[ii].ipv4mask.i))
         {
             break;
         }
@@ -304,11 +315,64 @@ static int fe_find_if_by_ipv4(IPV4_ADDR_t *ipv4, char *ifname)
     return 0;
 }
 
+#ifdef FEATURE_IPV6_TELEMETRY
+// Find LAN interface by matching an IP address to its IP
+// configuration.
+// ifname - pointer to IFNAMSIZ buffer to receive the interface name found
+//          (can be NULL)
+// Returns: 0 - found, -1 - not found
+static int fe_find_if_by_ipv6(const IPV6_ADDR_t *ipv6, char *ifname)
+{
+    int ii, ij = 0;
+    for(ii = 0; ii < lan_ifcfg_count; ++ii)
+    {
+        for (ij = 0; ij < MAX_IPV6_ADDRESSES_PER_MAC; ++ij)
+        {
+            DEV_IPV6_CFG_t* ifcfg = &lan_ifcfg_ipv6[ii][ij];
+            if (ifcfg->addr.l.h == 0 && ifcfg->addr.l.l == 0) {
+                // unused
+                ij = MAX_IPV6_ADDRESSES_PER_MAC;
+                break;
+            }
+            uint64_t h = ipv6->l.h;
+            uint64_t l = ipv6->l.l;
+            if (ifcfg->prefix_len > 64) {
+                // 65 => 0x8000_0000_0000_0000
+                uint64_t mask = 0xffffffffffffffffull << (64 - (ifcfg->prefix_len - 64));
+                // compare upper 64, mask & compare lower 64
+                if (h == ifcfg->addr.l.h && ((l & mask) == (ifcfg->addr.l.l & mask))) {
+                    // match
+                    break;
+                }
+            } else {
+                uint64_t mask = 0xffffffffffffffffull << (64 - ifcfg->prefix_len);
+                // mask & compare upper 64
+                if ((h & mask) == (ifcfg->addr.l.h & mask)) {
+                    // match
+                    break;
+                }
+            } // (ifcfg->prefix_len > 64)
+        }
+        if (ij < MAX_IPV6_ADDRESSES_PER_MAC) {
+            // found
+            break;
+        }
+    }
+    if(ii >= lan_ifcfg_count) {
+        return -1;
+    }
+    if(ifname != NULL) {
+        memcpy(ifname, lan_ifnames[ii], IFNAMSIZ);
+    }
+    return 0;
+}
+#endif // FEATURE_IPV6_TELEMETRY
+
 // Find IP config by matching LAN interface name to lan_ifnames[][].
 // ipv4_cfg - pointer to DEV_IP_CFG_t buffer to receive the interface IP
 //            configuration (can be NULL)
 // Returns: 0 - found, -1 - not found
-static int fe_find_ipv4cfg_by_ifname(char *ifname, DEV_IP_CFG_t *ipv4_cfg)
+static int fe_find_ipv4cfg_by_ifname(const char *ifname, DEV_IP_CFG_t *ipv4_cfg)
 {
     int ii;
     for(ii = 0; ii < lan_ifcfg_count; ++ii)
@@ -321,7 +385,7 @@ static int fe_find_ipv4cfg_by_ifname(char *ifname, DEV_IP_CFG_t *ipv4_cfg)
         return -1;
     }
     if(ipv4_cfg != NULL) {
-        memcpy(ipv4_cfg, &lan_ifcfg[ii], sizeof(*ipv4_cfg));
+        memcpy(ipv4_cfg, &lan_ifcfg_ipv4[ii], sizeof(*ipv4_cfg));
     }
     return 0;
 }
@@ -651,23 +715,52 @@ int fe_prep_conn_hdr(FE_CONN_HDR_t *hdr)
 
     // Check if device IP is a local IP address
     memset(hdr->ifname, 0, sizeof(hdr->ifname));
-    if(fe_find_if_by_ipv4(&hdr->dev.ipv4, hdr->ifname) != 0) {
-        ret = 1;
-        if(fe_find_if_by_ipv4(&hdr->peer.ipv4, hdr->ifname) != 0) {
-            return -1;
+    if (hdr->af == AF_INET) {
+        if(fe_find_if_by_ipv4(&hdr->dev.ipv4, hdr->ifname) != 0) {
+            // dev address is local
+            ret = 1;
+            if(fe_find_if_by_ipv4(&hdr->peer.ipv4, hdr->ifname) != 0) {
+                // both dev and peer addresses are local
+                return -1;
+            }
+            // swap IP addresses
+            IPV4_ADDR_t tmp_ipv4 = hdr->peer.ipv4;
+            hdr->peer.ipv4 = hdr->dev.ipv4;
+            hdr->dev.ipv4 = tmp_ipv4;
+            // swap ports
+            unsigned short tmp_port = hdr->peer_port;
+            hdr->peer_port = hdr->dev_port;
+            hdr->dev_port = tmp_port;
+            // mark the entry as reverse
+            hdr->rev = TRUE;
+        } else {
+            hdr->rev = FALSE;
         }
-        // swap IP addresses
-        IPV4_ADDR_t tmp_ipv4 = hdr->peer.ipv4;
-        hdr->peer.ipv4 = hdr->dev.ipv4;
-        hdr->dev.ipv4 = tmp_ipv4;
-        // swap ports
-        unsigned short tmp_port = hdr->peer_port;
-        hdr->peer_port = hdr->dev_port;
-        hdr->dev_port = tmp_port;
-        // mark the entry as reverse
-        hdr->rev = TRUE;
+#ifdef FEATURE_IPV6_TELEMETRY
+    } else if (hdr->af == AF_INET6) {
+        if(fe_find_if_by_ipv6(&hdr->dev.ipv6, hdr->ifname) != 0) {
+            ret = 1;
+            // dev address is local
+            if(fe_find_if_by_ipv6(&hdr->peer.ipv6, hdr->ifname) != 0) {
+                // both dev and peer addresses are local
+                return -1;
+            }
+            // swap IP addresses
+            IPV6_ADDR_t tmp_ipv6 = hdr->peer.ipv6;
+            hdr->peer.ipv6 = hdr->dev.ipv6;
+            hdr->dev.ipv6 = tmp_ipv6;
+            // swap ports
+            unsigned short tmp_port = hdr->peer_port;
+            hdr->peer_port = hdr->dev_port;
+            hdr->dev_port = tmp_port;
+            // mark the entry as reverse
+            hdr->rev = TRUE;
+        } else {
+            hdr->rev = FALSE;
+        }
+#endif // FEATURE_IPV6_TELEMETRY
     } else {
-        hdr->rev = FALSE;
+        return -1;
     }
 
     return ret;
@@ -770,20 +863,40 @@ void fe_upd_conn_end(FE_CONN_t *conn, int updated)
 {
     // If MAC is not yet available try to get it from ARP
     if((conn->flags & FE_CONN_HAS_MAC) == 0) {
-        FE_ARP_t *ae = fe_find_arp_entry(&conn->hdr.dev.ipv4);
-        if(!ae) {
-            // Maybe we have restarted and missed its ARP entry, add it to ARP
-            // table with a flag indicating it has to be re-discovered.
-            FE_ARP_t ae = {.ipv4 = conn->hdr.dev.ipv4,
-                           .uptime = util_time(1),
-                           .mac = {0, 0, 0, 0, 0, 0},
-                           .no_mac = TRUE};
-            fe_add_arp_entry(&ae);
-        } else if(ae->no_mac) {
-            // We already know about MAC being missing for this ARP entry.
+        if (conn->hdr.af == AF_INET) {
+            FE_ARP_t *ae = fe_find_arp_entry(&conn->hdr.dev.ipv4);
+            if(!ae) {
+                // Maybe we have restarted and missed its ARP entry, add it to ARP
+                // table with a flag indicating it has to be re-discovered.
+                FE_ARP_t ae = {.ipv4 = conn->hdr.dev.ipv4,
+                               .uptime = util_time(1),
+                               .mac = {0, 0, 0, 0, 0, 0},
+                               .no_mac = TRUE};
+                fe_add_arp_entry(&ae);
+            } else if(ae->no_mac) {
+                // We already know about MAC being missing for this ARP entry.
+            } else {
+                memcpy(conn->mac, ae->mac, sizeof(conn->mac));
+                conn->flags |= FE_CONN_HAS_MAC;
+            }
+#ifdef FEATURE_IPV6_TELEMETRY
         } else {
-            memcpy(conn->mac, ae->mac, sizeof(conn->mac));
-            conn->flags |= FE_CONN_HAS_MAC;
+            FE_NDP_t *ne = fe_find_ndp_entry(&conn->hdr.dev.ipv6);
+            if(!ne) {
+                // Maybe we have restarted and missed its NDP entry, add it to NDP
+                // table with a flag indicating it has to be re-discovered.
+                FE_NDP_t ne = {.ipv6 = conn->hdr.dev.ipv6,
+                               .uptime = util_time(1),
+                               .mac = {0, 0, 0, 0, 0, 0},
+                               .no_mac = TRUE};
+                fe_add_ndp_entry(&ne);
+            } else if(ne->no_mac) {
+                // We already know about MAC being missing for this ARP entry.
+            } else {
+                memcpy(conn->mac, ne->mac, sizeof(conn->mac));
+                conn->flags |= FE_CONN_HAS_MAC;
+            }
+#endif // FEATURE_IPV6_TELEMETRY
         }
     }
     // We have found or added the connection entry, set the updated flag
