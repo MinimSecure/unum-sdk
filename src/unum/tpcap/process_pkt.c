@@ -140,61 +140,82 @@ static int tpcap_match_packet(TPCAP_IF_t *tpif, struct tpacket2_hdr *thdr,
 
     // Matching IP header
     struct iphdr *iph = (void *)thdr + thdr->tp_net;
+    struct ipv6hdr *ip6h = (void *)thdr + thdr->tp_net;
 
     // No IP header if snap len is too short
     if(thdr->tp_snaplen - (thdr->tp_net-thdr->tp_mac) < sizeof(struct iphdr) ||
-       ehdr->h_proto != htons(ETH_P_IP))
+        (ehdr->h_proto != htons(ETH_P_IP) && ehdr->h_proto != htons(ETH_P_IPV6)))
     {
         iph = NULL;
+        ip6h = NULL;
     }
     // Make sure we have IP header if checking it or TCP/UDP
-    if((ipf | tuf) != 0 && !iph)
+    if((ipf | tuf) != 0 && !iph && !ip6h)
     {
         return FALSE;
     }
 
     if(ipf != 0)
     {
-        uint32_t sa = iph->saddr;
-        uint32_t da = iph->daddr;
-        uint32_t sah = ntohl(iph->saddr);
-        uint32_t dah = ntohl(iph->daddr);
-        m = TRUE;
-        m &= ((ipf & PKT_MATCH_IP_A1_SRC) == 0 || sa == pe->ip.a1.i);
-        m &= ((ipf & PKT_MATCH_IP_A1_DST) == 0 || da == pe->ip.a1.i);
-        m &= ((ipf & PKT_MATCH_IP_A1_ANY) == 0 ||
-              sa == pe->ip.a1.i || da == pe->ip.a1.i);
-        m &= ((ipf & PKT_MATCH_IP_A2_SRC) == 0 || sa == pe->ip.a2.i);
-        m &= ((ipf & PKT_MATCH_IP_A2_DST) == 0 || da == pe->ip.a2.i);
-        m &= ((ipf & PKT_MATCH_IP_A2_ANY) == 0 ||
-              sa == pe->ip.a2.i || da == pe->ip.a2.i);
-        m &= ((ipf & PKT_MATCH_IP_MY_DST) == 0 || da == tpif->ipcfg.ipv4.i);
-        m &= ((ipf & PKT_MATCH_IP_NET_SRC) == 0 ||
-              (sa & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
-        m &= ((ipf & PKT_MATCH_IP_NET_DST) == 0 ||
-              (da & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
-        m &= ((ipf & PKT_MATCH_IP_NET_ANY) == 0 ||
-              (da & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i) ||
-              (sa & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
-        m &= ((ipf & PKT_MATCH_IP_RNG_SRC) == 0 ||
-              (sah >= ntohl(pe->ip.a1.i) && sah <= ntohl(pe->ip.a2.i)));
-        m &= ((ipf & PKT_MATCH_IP_RNG_DST) == 0 ||
-              (dah >= ntohl(pe->ip.a1.i) && dah <= ntohl(pe->ip.a2.i)));
-        m &= ((ipf & PKT_MATCH_IP_RNG_ANY) == 0 ||
-              (sah >= ntohl(pe->ip.a1.i) && sah <= ntohl(pe->ip.a2.i)) ||
-              (dah >= ntohl(pe->ip.a1.i) && dah <= ntohl(pe->ip.a2.i)));
-        // Negate addr match
-        match &= ((ipf & PKT_MATCH_IP_ADDR_NEG) == 0) ? (m) : (!m);
-        // Match the IP protocol field
-        m = ((ipf & PKT_MATCH_IP_PROTO) == 0 || iph->protocol == pe->ip.proto);
-        // Negate the protocol match
-        match &= ((ipf & PKT_MATCH_IP_PROTO_NEG) == 0) ? (m) : (!m);
-        // Match the IP version field
-        m = ((ipf & PKT_MATCH_IP_V6) == 0 || iph->version == 6);
-        // Negate the IPv6 version match
-        match &= ((ipf & PKT_MATCH_IP_V6_NEG) == 0) ? (m) : (!m);
-        // return if matching has failed
-        if(!match) {
+        if (iph->version == 4)
+        {
+            uint32_t sa = iph->saddr;
+            uint32_t da = iph->daddr;
+            uint32_t sah = ntohl(iph->saddr);
+            uint32_t dah = ntohl(iph->daddr);
+            m = TRUE;
+            m &= ((ipf & PKT_MATCH_IP_A1_SRC) == 0 || sa == pe->ip.a1.i);
+            m &= ((ipf & PKT_MATCH_IP_A1_DST) == 0 || da == pe->ip.a1.i);
+            m &= ((ipf & PKT_MATCH_IP_A1_ANY) == 0 ||
+                  sa == pe->ip.a1.i || da == pe->ip.a1.i);
+            m &= ((ipf & PKT_MATCH_IP_A2_SRC) == 0 || sa == pe->ip.a2.i);
+            m &= ((ipf & PKT_MATCH_IP_A2_DST) == 0 || da == pe->ip.a2.i);
+            m &= ((ipf & PKT_MATCH_IP_A2_ANY) == 0 ||
+                  sa == pe->ip.a2.i || da == pe->ip.a2.i);
+            m &= ((ipf & PKT_MATCH_IP_MY_DST) == 0 || da == tpif->ipcfg.ipv4.i);
+            m &= ((ipf & PKT_MATCH_IP_NET_SRC) == 0 ||
+                  (sa & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
+            m &= ((ipf & PKT_MATCH_IP_NET_DST) == 0 ||
+                  (da & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
+            m &= ((ipf & PKT_MATCH_IP_NET_ANY) == 0 ||
+                  (da & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i) ||
+                  (sa & pe->ip.a2.i) == (pe->ip.a1.i & pe->ip.a2.i));
+            m &= ((ipf & PKT_MATCH_IP_RNG_SRC) == 0 ||
+                  (sah >= ntohl(pe->ip.a1.i) && sah <= ntohl(pe->ip.a2.i)));
+            m &= ((ipf & PKT_MATCH_IP_RNG_DST) == 0 ||
+                  (dah >= ntohl(pe->ip.a1.i) && dah <= ntohl(pe->ip.a2.i)));
+            m &= ((ipf & PKT_MATCH_IP_RNG_ANY) == 0 ||
+                  (sah >= ntohl(pe->ip.a1.i) && sah <= ntohl(pe->ip.a2.i)) ||
+                  (dah >= ntohl(pe->ip.a1.i) && dah <= ntohl(pe->ip.a2.i)));
+            // Negate addr match
+            match &= ((ipf & PKT_MATCH_IP_ADDR_NEG) == 0) ? (m) : (!m);
+            // Match the IP protocol field
+            m = ((ipf & PKT_MATCH_IP_PROTO) == 0 || iph->protocol == pe->ip.proto);
+            // Negate the protocol match
+            match &= ((ipf & PKT_MATCH_IP_PROTO_NEG) == 0) ? (m) : (!m);
+            if(!match) {
+                return FALSE;
+            }
+        }
+#ifdef FEATURE_IPV6_TELEMETRY
+        else if (iph->version == 6)
+        {
+            // Match the IP protocol/ field
+            m = ((ipf & PKT_MATCH_IP_PROTO) == 0 || ip6h->nexthdr == pe->ip.proto);
+            // Negate the protocol match
+            match &= ((ipf & PKT_MATCH_IP_PROTO_NEG) == 0) ? (m) : (!m);
+            // Match the IP version field
+            m = ((ipf & PKT_MATCH_IP_V6) == 0 || iph->version == 6);
+            // Negate the IPv6 version match
+            match &= ((ipf & PKT_MATCH_IP_V6_NEG) == 0) ? (m) : (!m);
+            // return if matching has failed
+            if(!match) {
+                return FALSE;
+            }
+        }
+#endif // FEATURE_IPV6_TELEMETRY
+        else
+        {
             return FALSE;
         }
     }
@@ -207,10 +228,18 @@ static int tpcap_match_packet(TPCAP_IF_t *tpif, struct tpacket2_hdr *thdr,
     {
         int minlen;
         // Fail immediately if IP packet is not TCP or UDP
-        if(iph->protocol == 6) {
-            minlen = sizeof(struct iphdr) + sizeof(*tcph);
-        } else if(iph->protocol == 17) {
-            minlen = sizeof(struct iphdr) + sizeof(*udph);
+        if(iph->protocol == IPPROTO_TCP) {
+#ifdef FEATURE_IPV6_TELEMETRY
+            minlen = sizeof(*tcph) + (iph->version == 6) ? sizeof(struct ipv6hdr) : sizeof(struct iphdr);
+#else
+            minlen = sizeof(*tcph) + sizeof(struct iphdr);
+#endif // FEATURE_IPV6_TELEMETRY
+        } else if(iph->protocol == IPPROTO_UDP) {
+#ifdef FEATURE_IPV6_TELEMETRY
+            minlen = sizeof(*udph) + (iph->version == 6) ? sizeof(struct ipv6hdr) : sizeof(struct iphdr);
+#else
+            minlen = sizeof(*udph) + sizeof(struct iphdr);
+#endif // FEATURE_IPV6_TELEMETRY
         } else {
             return FALSE;
         }
@@ -259,7 +288,7 @@ static int tpcap_match_packet(TPCAP_IF_t *tpif, struct tpacket2_hdr *thdr,
         pe->eth_func(tpif, pe, thdr, ehdr);
     }
     if(pe->ip_func && iph) {
-        pe->ip_func(tpif, pe, thdr, iph);
+        pe->ip_func(tpif, pe, thdr, iph, ip6h);
     }
     if(pe->chain) {
         return tpcap_match_packet(tpif, thdr, ehdr, pe->chain);

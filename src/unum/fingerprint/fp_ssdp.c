@@ -23,7 +23,9 @@
 static void ssdp_rsp_rcv_cb(TPCAP_IF_t *tpif,
                             PKT_PROC_ENTRY_t *pe,
                             struct tpacket2_hdr *thdr,
-                            struct iphdr *iph);
+                            struct iphdr   *iph,
+                            struct ipv6hdr *ip6h);
+
 
 
 // SSDP start timer handle. There should be only 1 SSDP start timer
@@ -156,12 +158,19 @@ static FP_SSDP_t *add_ssdp(unsigned char *mac)
 static void ssdp_rsp_rcv_cb(TPCAP_IF_t *tpif,
                             PKT_PROC_ENTRY_t *pe,
                             struct tpacket2_hdr *thdr,
-                            struct iphdr *iph)
+                            struct iphdr *iph,
+                            struct ipv6hdr *ip6h)
 {
     static char ssdp_hdr[] = "HTTP/1.1 200 OK\r\n";
     struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     struct udphdr *udph = ((void *)iph) + sizeof(struct iphdr);
     char *ptr = ((void *)udph) + sizeof(struct udphdr);
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     if(IS_OPM(UNUM_OPM_AP)) {
 #ifdef FEATURE_GUEST_NAT

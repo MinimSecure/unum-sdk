@@ -21,7 +21,8 @@
 static void useragent_rcv_cb(TPCAP_IF_t *tpif,
                              PKT_PROC_ENTRY_t *pe,
                              struct tpacket2_hdr *thdr,
-                             struct iphdr *iph);
+                             struct iphdr *iph,
+                             struct ipv6hdr *ip6h);
 
 // HTTP packets processing entry for fingerprinting info collector
 static PKT_PROC_ENTRY_t fp_useragent_pkt_proc = {
@@ -144,13 +145,20 @@ FP_USERAGENT_t *add_useragent(unsigned char *mac)
 static void useragent_rcv_cb(TPCAP_IF_t *tpif,
                              PKT_PROC_ENTRY_t *pe,
                              struct tpacket2_hdr *thdr,
-                             struct iphdr *iph)
+                             struct iphdr   *iph,
+                             struct ipv6hdr *ip6h)
 {
     struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     struct tcphdr *tcphdr = ((void *)iph + sizeof(struct iphdr));
     int header_total = thdr->tp_net - thdr->tp_mac + sizeof(struct iphdr) +
                        tcphdr->doff * 4;
     char *tcp = ((void *)iph) + sizeof(struct iphdr) + (tcphdr->doff * 4);
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     if(IS_OPM(UNUM_OPM_AP)) {
 #ifdef FEATURE_GUEST_NAT

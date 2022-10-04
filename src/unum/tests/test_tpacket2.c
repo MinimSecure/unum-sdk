@@ -14,7 +14,8 @@ static void eth_pkt_rcv_cb(TPCAP_IF_t *tpif,
 static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
                           PKT_PROC_ENTRY_t *pe,
                           struct tpacket2_hdr *thdr,
-                          struct iphdr *iph);
+                          struct iphdr   *iph,
+                          struct ipv6hdr *ip6h);
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #  define MY_ETH_ARP_PROTO   0x0608
@@ -186,7 +187,8 @@ static void eth_pkt_rcv_cb(TPCAP_IF_t *tpif,
 static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
                           PKT_PROC_ENTRY_t *pe,
                           struct tpacket2_hdr *thdr,
-                          struct iphdr *iph)
+                          struct iphdr   *iph,
+                          struct ipv6hdr *ip6h)
 {
     struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     printf("Packet on interface: %s, hook: %02d\n",

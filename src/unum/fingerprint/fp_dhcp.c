@@ -44,7 +44,8 @@ struct dhcp_pkt {
 static void dhcp_rcv_cb(TPCAP_IF_t *tpif,
                         PKT_PROC_ENTRY_t *pe,
                         struct tpacket2_hdr *thdr,
-                        struct iphdr *iph);
+                        struct iphdr   *iph,
+                        struct ipv6hdr *iph6);
 
 
 // DHCP packets processing entry for fingerprinting info collector
@@ -172,11 +173,18 @@ static FP_DHCP_t *add_dhcp(unsigned char *mac)
 static void dhcp_rcv_cb(TPCAP_IF_t *tpif,
                         PKT_PROC_ENTRY_t *pe,
                         struct tpacket2_hdr *thdr,
-                        struct iphdr *iph)
+                        struct iphdr   *iph,
+                        struct ipv6hdr *ip6h)
 {
     struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     struct udphdr *udph = ((void *)iph) + sizeof(struct iphdr);
     struct dhcp_pkt *dhdr = ((void *)udph) + sizeof(struct udphdr);
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     if(IS_OPM(UNUM_OPM_AP)) {
 #ifdef FEATURE_GUEST_NAT

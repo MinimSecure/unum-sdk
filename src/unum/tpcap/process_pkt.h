@@ -15,6 +15,7 @@ struct _PKT_PROC_ENTRY;
 struct tpacket2_hdr;
 struct iphdr;
 struct ethhdr;
+struct ipv6hdr;
 
 // Packet processing function types
 typedef void (*ETH_PROC_FUNC_t)(TPCAP_IF_t *tpif,
@@ -24,7 +25,8 @@ typedef void (*ETH_PROC_FUNC_t)(TPCAP_IF_t *tpif,
 typedef void (*IP_PROC_FUNC_t)(TPCAP_IF_t *tpif,
                                struct _PKT_PROC_ENTRY *proc_entry,
                                struct tpacket2_hdr *thdr,
-                               struct iphdr *iph);
+                               struct iphdr   *iph,
+                               struct ipv6hdr *ip6h);
 typedef void (*STATS_FUNC_t)(TPCAP_IF_STATS_t *st);
 
 // Structure describing packet filtering rules

@@ -27,7 +27,8 @@
 static void scan_ack_rcv_cb(TPCAP_IF_t *tpif,
                             PKT_PROC_ENTRY_t *pe,
                             struct tpacket2_hdr *thdr,
-                            struct iphdr *iph);
+                            struct iphdr   *iph,
+                            struct ipv6hdr *ip6h);
 
 // Flag indicating the port scanning thread is running
 static int g_port_scan_in_progress = FALSE;
@@ -75,13 +76,20 @@ static struct {
 static void scan_ack_rcv_cb(TPCAP_IF_t *tpif,
                             PKT_PROC_ENTRY_t *pe,
                             struct tpacket2_hdr *thdr,
-                            struct iphdr *iph)
+                            struct iphdr   *iph,
+                            struct ipv6hdr *ip6h)
 {
     //struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     struct tcphdr *tcph = ((void *)iph) + sizeof(struct iphdr);
 
     // Set the port as open in the port map
     unsigned short port = ntohs(tcph->source);
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     // We should have SYN and ACK bits set in the response if the port
     // is open. If RST is set instead of SYN, then the port is closed.

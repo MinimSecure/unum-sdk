@@ -67,7 +67,8 @@ struct dns_answer {
 static void dns_udp_rcv_cb(TPCAP_IF_t *tpif,
                            PKT_PROC_ENTRY_t *pe,
                            struct tpacket2_hdr *thdr,
-                           struct iphdr *iph);
+                           struct iphdr   *iph,
+                           struct ipv6hdr *ip6h);
 
 
 // DNS packets processing entry for device info collector
@@ -401,10 +402,17 @@ static DT_DNS_NAME_t *add_dns_name(char *name)
 static void dns_udp_rcv_cb(TPCAP_IF_t *tpif,
                            PKT_PROC_ENTRY_t *pe,
                            struct tpacket2_hdr *thdr,
-                           struct iphdr *iph)
+                           struct iphdr   *iph,
+                           struct ipv6hdr *ip6h)
 {
     struct udphdr *udph = ((void *)iph) + sizeof(struct iphdr);
     struct dns_rsp *dnsh = ((void *)udph) + sizeof(struct udphdr);
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     // We are guaranteed to have the IP header, but have to keep checking
     // the DNS data being examined is actually captured.

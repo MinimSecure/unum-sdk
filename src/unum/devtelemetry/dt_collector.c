@@ -24,7 +24,8 @@ static void stats_ready_cb(TPCAP_IF_STATS_t *st);
 static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
                           PKT_PROC_ENTRY_t *pe,
                           struct tpacket2_hdr *thdr,
-                          struct iphdr *iph);
+                          struct iphdr   *iph,
+                          struct ipv6hdr *ip6h);
 
 // All (from or to unicast MAC) IP packets processing entry for
 // device & connection tracking
@@ -344,7 +345,8 @@ static void ip_pkt_upd_conn(DT_DEVICE_t *dev,
 static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
                           PKT_PROC_ENTRY_t *pe,
                           struct tpacket2_hdr *thdr,
-                          struct iphdr *iph)
+                          struct iphdr   *iph,
+                          struct ipv6hdr *ip6h)
 {
     unsigned char *dev_mac;
     IPV4_ADDR_t dev_ipv4;
@@ -353,6 +355,12 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
     struct ethhdr *ehdr = (struct ethhdr *)((void *)thdr + thdr->tp_mac);
     int from_rtr = TRUE;
     int to_rtr = TRUE;
+
+    // ipv4 only until v6 support is added
+    if (iph->version != 4) {
+        // no supported
+        return;
+    }
 
     if(IS_OPM(UNUM_OPM_AP)) {
 
@@ -381,22 +389,25 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 #endif // !FEATURE_LAN_ONLY
 
 #ifdef FEATURE_LAN_ONLY
-    // Use subnet match to figure if the traffic is to or from outside.
-    // For the AP-only mode to work we should use the subnet match method
-    // (currently this is the only way to identify the traffic direction).
-    // For the managed devices (which are also LAN only devices) we can
-    // just match the MAC to src or dst, but for consistency will just use
-    // the subnet match method.
-    if((iph->saddr & tpif->ipcfg.ipv4mask.i) ==
-       (tpif->ipcfg.ipv4.i & tpif->ipcfg.ipv4mask.i))
-    {
-        from_rtr = FALSE;
+    if (iph->version == 4) {
+        // Use subnet match to figure if the traffic is to or from outside.
+        // For the AP-only mode to work we should use the subnet match method
+        // (currently this is the only way to identify the traffic direction).
+        // For the managed devices (which are also LAN only devices) we can
+        // just match the MAC to src or dst, but for consistency will just use
+        // the subnet match method.
+        if((iph->saddr & tpif->ipcfg.ipv4mask.i) ==
+           (tpif->ipcfg.ipv4.i & tpif->ipcfg.ipv4mask.i))
+        {
+            from_rtr = FALSE;
+        }
+        if((iph->daddr & tpif->ipcfg.ipv4mask.i) ==
+           (tpif->ipcfg.ipv4.i & tpif->ipcfg.ipv4mask.i))
+        {
+            to_rtr = FALSE;
+        }
     }
-    if((iph->daddr & tpif->ipcfg.ipv4mask.i) ==
-       (tpif->ipcfg.ipv4.i & tpif->ipcfg.ipv4mask.i))
-    {
-        to_rtr = FALSE;
-    }
+    
     // In the AP mode we cannot see traffic of the devices that are not
     // sending through the AP's bridge interface, but we could see their
     // multicast/broadcast traffic and unless filtered would report false
@@ -442,14 +453,22 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
         bytes_in = 0;
         bytes_out = thdr->tp_len;
         dev_mac = ehdr->h_source;
-        dev_ipv4.i = iph->saddr;
-        peer_ipv4.i = iph->daddr;
+        if (iph->version == 4) {
+            dev_ipv4.i = iph->saddr;
+            peer_ipv4.i = iph->daddr;
+        } else {
+            return;
+        }
     } else {
         bytes_out = 0;
         bytes_in = thdr->tp_len;
         dev_mac = ehdr->h_dest;
-        dev_ipv4.i = iph->daddr;
-        peer_ipv4.i = iph->saddr;
+        if (iph->version == 4) {
+            dev_ipv4.i = iph->daddr;
+            peer_ipv4.i = iph->saddr;
+        } else {
+            return;
+        }
     }
 
 #ifndef FEATURE_LAN_ONLY
@@ -491,10 +510,14 @@ static void ip_pkt_rcv_cb(TPCAP_IF_t *tpif,
 
     // Prepare header for the connection info table entry
     DT_CONN_HDR_t hdr;
-    hdr.ip.ipv4.i = peer_ipv4.i;
-    hdr.ip_proto = iph->protocol;
+    if (iph->version == 4) {
+        hdr.ip.ipv4.i = peer_ipv4.i;
+        hdr.ip_proto = iph->protocol;
+        hdr.flags.af = AF_INET;
+    } else {
+        return;
+    }        
     hdr.flags.rev = FALSE;
-    hdr.flags.af = AF_INET;
     hdr.port = 0;
     hdr.dev = dev;
 
