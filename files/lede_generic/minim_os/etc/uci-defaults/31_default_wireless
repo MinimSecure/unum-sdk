@@ -1,0 +1,38 @@
+# If already configured via the cloud, exit
+uci -q get minim.@unum[0].opmode && exit 0
+
+# SSID
+ssid=`fw_printenv -n mfg_ssid`
+if [ -z "$ssid" ]; then
+	exit 0
+fi
+
+# Key
+key=`fw_printenv -n mfg_psk`
+if [ -z "$key" ]; then
+	exit 0
+fi
+
+# Country code
+country_code=`fw_printenv -n mfg_cc`
+if [ -z "$country_code" ]; then
+	exit 0
+fi
+
+#Set the default SSID and Key for both the radios
+for devidx in 0 1
+do
+	uci -q batch <<-EOF
+		set wireless.@wifi-iface[${devidx}].ssid=$ssid
+		set wireless.@wifi-iface[${devidx}].encryption="psk2"
+		set wireless.@wifi-iface[${devidx}].key=$key
+		set wireless.@wifi-iface[${devidx}].disabled=0
+		set wireless.@wifi-iface[${devidx}].wps_pushbutton=1
+		set wireless.@wifi-iface[${devidx}].wps_device_name=$ssid
+		set wireless.@wifi-iface[${devidx}].wps_manufacturer="Motorola"
+		set wireless.radio${devidx}.disabled=0
+		set wireless.radio${devidx}.country=$country_code
+	EOF
+done
+uci -q commit wireless
+exit 0

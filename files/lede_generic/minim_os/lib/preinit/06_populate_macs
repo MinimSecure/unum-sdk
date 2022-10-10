@@ -1,0 +1,35 @@
+# Copyright (C) 2018 OpenWrt.org
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+preinit_populate_macs() {
+
+	case $(board_name) in
+	motorola,r14)
+		#
+		# Check if the base mac define in the u-boot env matches
+		# the lan mac in the Factory partition. If it doesn't,
+		# use the base mac to program all four system macs in
+		# the Factory partition (where the eth and wifi drivers
+		# expect them)
+		#
+		lan_mac=$(mtd_get_mac_binary Factory 0x2a)
+		base_mac=$(mtd_get_mac_ascii u-boot-env mfg_base_mac)
+		if [ ! -z "$base_mac" -a "$lan_mac" != "$base_mac" ] ; then
+			factory_data=$(find_mtd_chardev Factory)
+			if [ ! -z "$factory_data" ] ; then
+				dd if=$factory_data of=/tmp/factory_data.update
+				macaddr_2bin $base_mac | dd of=/tmp/factory_data.update bs=1 count=6 seek=$((0x2a)) conv=notrunc
+				macaddr_2bin $(macaddr_add $base_mac 1) | dd of=/tmp/factory_data.update bs=1 count=6 seek=$((0x24)) conv=notrunc
+				macaddr_2bin $(macaddr_add $base_mac 2) | dd of=/tmp/factory_data.update bs=1 count=6 seek=$((0x4)) conv=notrunc
+				macaddr_2bin $(macaddr_add $base_mac 3) | dd of=/tmp/factory_data.update bs=1 count=6 seek=$((0xa)) conv=notrunc
+				mtd write /tmp/factory_data.update $factory_data
+				rm /tmp/factory_data.update
+			fi
+		fi
+		;;
+	esac
+}
+
+boot_hook_add preinit_main preinit_populate_macs
