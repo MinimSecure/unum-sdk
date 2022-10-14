@@ -155,8 +155,8 @@ int util_set_main_thrd()
         // The thread ptr should not yet be set and all flags should be cleared
         thrd_ptr = (UTIL_THRD_t *)pthread_getspecific(thrd_key);
         if(thrd_ptr != NULL) {
-            log("%s: error, pointer for key %p is not NULL (%p)\n",
-                __func__, (void*) thrd_key, thrd_ptr);
+            log("%s: error, pointer for main thread is not NULL (%p)\n",
+                __func__, thrd_ptr);
             ret = -1;
             break;
         }
