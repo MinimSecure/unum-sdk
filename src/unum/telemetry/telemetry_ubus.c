@@ -1,0 +1,95 @@
+// (c) 2022 minim.co
+// ubus unum device telemetry code
+
+#include "unum.h"
+
+#ifdef FEATURE_UBUS_TELEMETRY
+static struct ubus_context *ctx = NULL;
+
+#ifdef FEATURE_IPV6_TELEMETRY
+
+static DEV_IPV6_CFG_t ipv6_prefixes[MAX_IPV6_ADDRESSES_PER_MAC];
+
+static void wan6_cb(struct ubus_request *req, int type, struct blob_attr *msg)
+{
+    if (!msg)
+        return;
+    struct blob_attr *pos0;
+    size_t rem0 = blobmsg_data_len(msg);
+    unsigned prefix_idx = 0;
+
+    memset(ipv6_prefixes, '\0', sizeof(ipv6_prefixes));
+
+    __blob_for_each_attr(pos0, blobmsg_data(msg), rem0) {
+        const struct blobmsg_hdr *hdr0 = (struct blobmsg_hdr *) blob_data(pos0);
+        const char* name0 = (const char*) hdr0->name;
+        uint16_t namelen0 = hdr0->namelen;
+        if (!strncmp(name0, "ipv6-prefix", namelen0)) {
+            struct blob_attr* pos1;
+            size_t rem1 = blobmsg_data_len(pos0);
+            __blob_for_each_attr(pos1, blobmsg_data(pos0), rem1) {
+                // per prefix
+                struct blob_attr* pos2;
+                size_t rem2 = blobmsg_data_len(pos1);
+                __blob_for_each_attr(pos2, blobmsg_data(pos1), rem2) {
+                    // per prefix data element
+                    const struct blobmsg_hdr *hdr2 = (struct blobmsg_hdr *) blob_data(pos2);
+                    const char* name2 = (const char*) hdr2->name;
+                    uint16_t namelen2 = hdr2->namelen;
+                    if (!strncmp(name2, "address", namelen2) && blob_id(pos2) == BLOBMSG_TYPE_STRING) {
+                        inet_pton(AF_INET6, blobmsg_data(pos2), ipv6_prefixes[prefix_idx].addr.b);
+                    } else if (!strncmp(name2, "mask", namelen2) && blob_id(pos2) == BLOBMSG_TYPE_INT32) {
+                        uint32_t prefix_len = be32_to_cpu(*(uint32_t *)blobmsg_data(pos2));
+                        ipv6_prefixes[prefix_idx].prefix_len = prefix_len;
+                    } else if (!strncmp(name2, "preferred", namelen2) && blob_id(pos2) == BLOBMSG_TYPE_INT32) {
+                        uint32_t ifa_preferred = be32_to_cpu(*(uint32_t *)blobmsg_data(pos2));
+                        ipv6_prefixes[prefix_idx].ifa_preferred = ifa_preferred;
+                    } else if (!strncmp(name2, "valid", namelen2) && blob_id(pos2) == BLOBMSG_TYPE_INT32) {
+                        uint32_t ifa_valid = be32_to_cpu(*(uint32_t *)blobmsg_data(pos2));
+                        ipv6_prefixes[prefix_idx].ifa_valid = ifa_valid;
+                    }
+                }
+                if (++prefix_idx == MAX_IPV6_ADDRESSES_PER_MAC) {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// Return a pointer to the table of prefixes - contains up to
+// MAX_IPV6_ADDRESSES_PER_MAC entries, invalid entries are all zeroes.
+const DEV_IPV6_CFG_t* telemetry_ubus_get_ipv6_prefixes(void) {
+    return ipv6_prefixes;
+}
+
+#endif // FEATURE_IPV6_TELEMETRY
+
+void telemetry_ubus_refresh(void)
+{
+#ifdef FEATURE_IPV6_TELEMETRY
+    const char wan6_string[] = "network.interface.wan6";
+    uint32_t   wan6_id = 0;
+    int result = ubus_lookup_id(ctx, wan6_string, &wan6_id);
+    if (result != 0) {
+        log("%s: Failed to ubus %s result=%d\n", __func__, wan6_string, result);
+        return;
+    }
+    static struct blob_buf b;
+    blob_buf_init(&b, 0);
+    ubus_invoke(ctx, wan6_id, "status", b.head, wan6_cb, NULL, 30000);
+#endif // FEATURE_IPV6_TELEMETRY
+}
+
+// initialise the ubus telemetry
+void telemetry_ubus_init(void)
+{
+    ctx = ubus_connect(NULL);
+    if (!ctx) {
+        log("%s: failed to connect to ubus\n", __func__);
+        return;
+    }
+
+    telemetry_ubus_refresh();
+}
+#endif // FEATURE_UBUS_TELEMETRY

@@ -7,6 +7,7 @@
 #include "meminfo.h"
 #include "cpuinfo.h"
 #include "iptables.h"
+#include "telemetry_ubus.h"
 
 // Telemetry reporting period (in sec)
 #define TELEMETRY_PERIOD 15

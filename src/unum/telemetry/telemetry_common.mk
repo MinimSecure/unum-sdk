@@ -7,7 +7,8 @@ CPPFLAGS += -I$(UNUM_PATH)/telemetry
 # Add code file(s)
 OBJECTS += ./telemetry/telemetry.o \
 	./telemetry/meminfo.o \
-	./telemetry/cpuinfo.o
+	./telemetry/cpuinfo.o \
+	./telemetry/telemetry_ubus.o
 
 # Add subsystem initializer function
 INITLIST += telemetry_init

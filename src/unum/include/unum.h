@@ -82,6 +82,9 @@
 #include "monitor.h"
 #include "conncheck.h"
 #include "iptables.h"
+#if FEATURE_UBUS_TELEMETRY
+#include "libubus.h"
+#endif // FEATURE_UBUS_TELEMETRY
 
 #ifdef DEBUG
 #  include "tests.h"

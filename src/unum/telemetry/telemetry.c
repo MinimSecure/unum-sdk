@@ -225,12 +225,35 @@ static char *router_telemetry_json()
         }
     }
 #endif // FEATURE_IPV6_TELEMETRY
+
+    static JSON_VAL_TPL_t ipv6_prefixes_tpl[MAX_IPV6_ADDRESSES_PER_MAC + 1];
+    static char ipv6_prefixes_str[MAX_IPV6_ADDRESSES_PER_MAC * sizeof(lan_primary_ipv6_address_str)];
+    memset(ipv6_prefixes_str, '\0', sizeof(ipv6_prefixes_str));
+    unsigned int ipv6_prefixes_valid = 0;
+#if defined(FEATURE_UBUS_TELEMETRY) && defined(FEATURE_IPV6_TELEMETRY)
+    const DEV_IPV6_CFG_t* ipv6_prefixes = telemetry_ubus_get_ipv6_prefixes();
+    for (unsigned ix=0; ix<MAX_IPV6_ADDRESSES_PER_MAC; ++ix) {
+        if (ipv6_prefixes[ix].prefix_len != 0) {
+            char buf[INET6_ADDRSTRLEN] = {'\0'};
+            inet_ntop(AF_INET6, ipv6_prefixes[ix].addr.b, buf, sizeof(buf));
+            ipv6_prefixes_tpl[ix].type = JSON_VAL_STR;
+            ipv6_prefixes_tpl[ix].s = &ipv6_prefixes_str[ix * sizeof(lan_primary_ipv6_address_str)];
+            snprintf(ipv6_prefixes_tpl[ix].s, sizeof(lan_primary_ipv6_address_str), "%s/%d", buf, ipv6_prefixes[ix].prefix_len);
+            ipv6_prefixes_valid = 1;
+        } else {
+            ipv6_prefixes_tpl[ix].type = JSON_VAL_END;
+            break;
+        }
+    }
+#endif // FEATURE_UBUS_TELEMETRY && FEATURE_IPV6_TELEMETRY
     JSON_OBJ_TPL_t tpl = {
       {"lan_ip_address",           {.type = JSON_VAL_STR,   {.s = lan_ip }}},
       {"lan_primary_ipv6_address", {.type = JSON_VAL_STR,
                                     {.s = lan_primary_ipv6_address_valid ? lan_primary_ipv6_address_str : NULL}}},
       {"lan_other_ipv6_addresses", {.type = JSON_VAL_ARRAY,
                                     {.a = lan_other_ipv6_addresses_valid ? lan_ipv6_address_tpl : NULL}}},
+      {"ipv6_prefix_delegations",  {.type = JSON_VAL_ARRAY,
+                                    {.a = ipv6_prefixes_valid ? ipv6_prefixes_tpl : NULL}}},
       {"wan_ip_address",           {.type = JSON_VAL_STR,   {.s = wan_ip }}},
       {"wan_primary_ipv6_address", {.type = JSON_VAL_STR,
                                     {.s = wan_primary_ipv6_address_valid ? wan_primary_ipv6_address_str : NULL}}},
@@ -295,6 +318,10 @@ static void telemetry(THRD_PARAM_t *p)
     log("%s: waiting for activate to complete\n", __func__);
     wait_for_activate();
     log("%s: done waiting for activate\n", __func__);
+
+#if FEATURE_UBUS_TELEMETRY
+    telemetry_ubus_init();
+#endif // FEATURE_UBUS_TELEMETRY
 
     util_wd_set_timeout(HTTP_REQ_MAX_TIME + unum_config.telemetry_period);
 
@@ -409,6 +436,9 @@ static void telemetry(THRD_PARAM_t *p)
         }
 
         util_wd_poll();
+#ifdef FEATURE_UBUS_TELEMETRY
+        telemetry_ubus_refresh();
+#endif // FEATURE_UBUS_TELEMETRY
         sleep(unum_config.telemetry_period);
     }
 
