@@ -54,6 +54,7 @@ static PKT_PROC_ENTRY_t tst_hooks[MAX_PKT_PROC_ENTRIES] = {
       {},
       eth_pkt_rcv_cb, NULL, NULL, NULL,
       "Any ARP pkt" },
+#ifdef FEATURE_IPV6_TELEMETRY
     { 0,
       {},
       PKT_MATCH_IP_PROTO,
@@ -62,6 +63,7 @@ static PKT_PROC_ENTRY_t tst_hooks[MAX_PKT_PROC_ENTRIES] = {
       {},
       NULL, ip_pkt_rcv_cb, NULL, NULL,
       "Any ICMPv6 pkt" },
+#endif // FEATURE_IPV6_TELEMETRY
     { PKT_MATCH_ETH_TYPE | PKT_MATCH_ETH_TYPE_NEG,
       { {}, MY_ETH_IP_PROTO },
       0,
@@ -135,6 +137,7 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
                         printf("\n");
                     }
                 }
+#ifdef FEATURE_IPV6_TELEMETRY
             } else if (iph->version == 6) {
                 char src_addr[INET6_ADDRSTRLEN];
                 char dst_addr[INET6_ADDRSTRLEN];
@@ -143,6 +146,7 @@ void tpkt_print_pkt_info(struct tpacket2_hdr *thdr,
                 inet_ntop(AF_INET6, &ip6h->saddr, src_addr, sizeof(src_addr));
                 inet_ntop(AF_INET6, &ip6h->daddr, dst_addr, sizeof(dst_addr));
                 printf("  IPv6 %s -> %s (%d)\n", src_addr, dst_addr, ip6h->nexthdr);
+#endif // FEATURE_IPV6_TELEMETRY
             }
         }
         printf("    tp_snaplen : %d\n", thdr->tp_snaplen);
