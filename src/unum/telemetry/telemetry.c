@@ -24,6 +24,7 @@ typedef struct {
 #ifdef FEATURE_IPV6_TELEMETRY
   DEV_IPV6_CFG_t wan_ipv6[MAX_IPV6_ADDRESSES_PER_MAC];
   DEV_IPV6_CFG_t lan_ipv6[MAX_IPV6_ADDRESSES_PER_MAC];
+  DEV_IPV6_CFG_t prefix_ipv6[MAX_IPV6_ADDRESSES_PER_MAC];
 #endif // FEATURE_IPV6_TELEMETRY
   int mem_info_update_num;      // mem info number (used to track which is sent)
   int cpu_info_update_num;      // CPU info number (used to track which is sent)
@@ -231,18 +232,27 @@ static char *router_telemetry_json()
     memset(ipv6_prefixes_str, '\0', sizeof(ipv6_prefixes_str));
     unsigned int ipv6_prefixes_valid = 0;
 #if defined(FEATURE_UBUS_TELEMETRY) && defined(FEATURE_IPV6_TELEMETRY)
-    const DEV_IPV6_CFG_t* ipv6_prefixes = telemetry_ubus_get_ipv6_prefixes();
+    const DEV_IPV6_CFG_t* prefixes = telemetry_ubus_get_ipv6_prefixes();
+    memcpy(new_data.prefix_ipv6, prefixes, sizeof(new_data.prefix_ipv6));
     for (unsigned ix=0; ix<MAX_IPV6_ADDRESSES_PER_MAC; ++ix) {
-        if (ipv6_prefixes[ix].prefix_len != 0) {
-            char buf[INET6_ADDRSTRLEN] = {'\0'};
-            inet_ntop(AF_INET6, ipv6_prefixes[ix].addr.b, buf, sizeof(buf));
-            ipv6_prefixes_tpl[ix].type = JSON_VAL_STR;
-            ipv6_prefixes_tpl[ix].s = &ipv6_prefixes_str[ix * sizeof(lan_primary_ipv6_address_str)];
-            snprintf(ipv6_prefixes_tpl[ix].s, sizeof(lan_primary_ipv6_address_str), "%s/%d", buf, ipv6_prefixes[ix].prefix_len);
-            ipv6_prefixes_valid = 1;
-        } else {
-            ipv6_prefixes_tpl[ix].type = JSON_VAL_END;
-            break;
+        new_data.prefix_ipv6[ix].ifa_valid     = 0;
+        new_data.prefix_ipv6[ix].ifa_preferred = 0;
+    }
+    if (memcmp(last_sent.prefix_ipv6, new_data.prefix_ipv6, sizeof(last_sent.prefix_ipv6))) {
+        // prefixes have changed, update cache and report new values
+        memcpy(last_sent.prefix_ipv6, new_data.prefix_ipv6, sizeof(last_sent.prefix_ipv6));
+        for (unsigned ix=0; ix<MAX_IPV6_ADDRESSES_PER_MAC; ++ix) {
+            if (new_data.prefix_ipv6[ix].prefix_len != 0) {
+                char buf[INET6_ADDRSTRLEN] = {'\0'};
+                inet_ntop(AF_INET6, new_data.prefix_ipv6[ix].addr.b, buf, sizeof(buf));
+                ipv6_prefixes_tpl[ix].type = JSON_VAL_STR;
+                ipv6_prefixes_tpl[ix].s = &ipv6_prefixes_str[ix * sizeof(lan_primary_ipv6_address_str)];
+                snprintf(ipv6_prefixes_tpl[ix].s, sizeof(lan_primary_ipv6_address_str), "%s/%d", buf, new_data.prefix_ipv6[ix].prefix_len);
+                ipv6_prefixes_valid = 1;
+            } else {
+                ipv6_prefixes_tpl[ix].type = JSON_VAL_END;
+                break;
+            }
         }
     }
 #endif // FEATURE_UBUS_TELEMETRY && FEATURE_IPV6_TELEMETRY
