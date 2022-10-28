@@ -36,6 +36,9 @@
 
 #undef _NETBSD_SOURCE
 #define _NETBSD_SOURCE
+
+#undef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
 #endif
 
 #include <limits.h>		/* INT_MAX */
