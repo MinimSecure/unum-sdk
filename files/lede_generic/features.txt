@@ -4,3 +4,4 @@ port_scanning
 rescan_devices
 hardware_content_filtering
 edns0_content_filter
+festats_only
