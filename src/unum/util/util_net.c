@@ -496,7 +496,7 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
             struct ifaddrmsg *retaddr = (struct ifaddrmsg *) NLMSG_DATA(retmsg);
             struct rtattr *retrta     = (struct rtattr *) IFA_RTA(retaddr);
 
-            if (retaddr->ifa_index == if_index) {
+            if (retaddr->ifa_index == if_index && retaddr->ifa_family == AF_INET6) {
                 // extract address strings from attribute list
                 int att_len = IFA_PAYLOAD(retmsg);
                 struct ifa_cacheinfo* cache_info = NULL;
