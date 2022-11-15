@@ -176,6 +176,11 @@ static char *router_telemetry_json()
                     break;
                 }
             }
+        } else if (telemetry_seq_num == 0) {
+            // send an empty values on first run if we have no address(es) SW-2746
+            wan_other_ipv6_addresses_valid = 1;
+            wan_ipv6_address_tpl[0].type = JSON_VAL_END;
+            wan_primary_ipv6_address_valid = 1;
         }
     }
 #endif // FEATURE_IPV6_TELEMETRY
@@ -223,6 +228,11 @@ static char *router_telemetry_json()
                     break;
                 }
             }
+        } else if (telemetry_seq_num == 0) {
+            // send an empty values on first run if we have no address(es) SW-2746
+            lan_other_ipv6_addresses_valid = 1;
+            lan_ipv6_address_tpl[0].type = JSON_VAL_END;
+            lan_primary_ipv6_address_valid = 1;
         }
     }
 #endif // FEATURE_IPV6_TELEMETRY
@@ -254,6 +264,10 @@ static char *router_telemetry_json()
                 break;
             }
         }
+    } else if (telemetry_seq_num == 0) {
+        // send an empty prefix list on first run if we have no prefix(es) SW-2746
+        ipv6_prefixes_valid = 1;
+        ipv6_prefixes_tpl[0].type = JSON_VAL_END;
     }
 #endif // FEATURE_UBUS_TELEMETRY && FEATURE_IPV6_TELEMETRY
     JSON_OBJ_TPL_t tpl = {
