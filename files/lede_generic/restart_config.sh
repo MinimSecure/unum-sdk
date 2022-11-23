@@ -98,6 +98,9 @@ if [ $restart_inits -eq 1 ]; then
 	/etc/init.d/fix_lan_addr restart
 	# Update LED state
 	/sbin/update_led.sh
+
+	# Maybe restart samba-manager
+	[ -x /etc/init.d/samba-manager ] && /etc/init.d/samba-manager restart
 fi
 if [ $mode_change -eq 1 ]; then
 	exit 1
