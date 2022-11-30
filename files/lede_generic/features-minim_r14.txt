@@ -8,3 +8,5 @@ gzip_requests
 mac80211_libnl
 supports-160-mhz
 supports_samba
+ipv6_telemetry
+ubus_telemetry

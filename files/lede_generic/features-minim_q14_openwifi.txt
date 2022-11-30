@@ -8,3 +8,4 @@ gzip_requests
 mac80211_libnl
 supports-160-mhz
 ipv6_telemetry
+ubus_telemetry

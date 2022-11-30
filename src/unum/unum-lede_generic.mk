@@ -28,5 +28,8 @@ LDFLAGS += -lz
 # Netlink Library
 LDFLAGS += -lnl-tiny
 
+# Added to enable IPv6 prefixes
+LDFLAGS += -lubox -lubus
+
 # Add hardware ID this LEDE build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
