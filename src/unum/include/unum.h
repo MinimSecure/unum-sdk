@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/mman.h>

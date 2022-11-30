@@ -65,6 +65,118 @@ const DEV_IPV6_CFG_t* telemetry_ubus_get_ipv6_prefixes(void) {
 
 #endif // FEATURE_IPV6_TELEMETRY
 
+#ifdef FEATURE_SUPPORTS_SAMBA
+JSON_VAL_FARRAY_t smb_fa_ptr = NULL;
+
+static SMBT_JSON_TPL_DEVICE_STATE_t smbt_device_state;
+static SMBT_JSON_TPL_DEVICE_STATE_t last_smbt_device_state;
+
+// smb/usb device template
+static JSON_OBJ_TPL_t tpl_tbl_devices_obj = {
+   { "id", { .type = JSON_VAL_STR, {.s = smbt_device_state.id}}},
+   { "bytes_free", { .type = JSON_VAL_PUL, {.pul = &smbt_device_state.bytes_free}}},
+   { "bytes_total", { .type = JSON_VAL_PUL, {.pul = &smbt_device_state.bytes_total}}},
+   { NULL }
+};
+
+static JSON_VAL_TPL_t tpl_tbl_devices_obj_val = {
+   .type = JSON_VAL_OBJ, { .o = tpl_tbl_devices_obj }
+};
+
+// Dynamically builds JSON template for the smb/usb telemetry
+// devices array.
+JSON_VAL_TPL_t *smbt_tpl_devices_array_f(char *key, int ii)
+{
+    if(ii == 0) {
+        return smbt_device_state.id[0] == 0 ? NULL : &tpl_tbl_devices_obj_val;
+    } else {
+        return NULL;
+    }
+}
+
+static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *msg)
+{
+    struct blob_attr *pos0, *pos1, *pos2;
+    size_t rem0, rem1, rem2;
+    int ret;
+    int mount_count = 0;
+    char * uuid = NULL;
+    char * mount = NULL;
+    const char * name = NULL;
+    const char * base_path = "/mnt/sd";
+    struct statvfs buf;
+
+    if (!msg)
+        return;
+
+    rem0 = blobmsg_data_len(msg);
+    __blob_for_each_attr(pos0, blobmsg_data(msg), rem0) {
+        if (!strcmp(blobmsg_name(pos0), "devices")) {
+           rem1 = blobmsg_data_len(pos0);
+            __blob_for_each_attr(pos1, blobmsg_data(pos0), rem1) {
+                char * _uuid = NULL;
+                char * _mount = NULL;
+                rem2 = blobmsg_data_len(pos1);
+                __blob_for_each_attr(pos2, blobmsg_data(pos1), rem2) {
+                    if (blob_id(pos2) == BLOBMSG_TYPE_STRING) {
+                        name = blobmsg_name(pos2);
+                        if (!strcmp(name, "uuid")) {
+                            _uuid = blobmsg_get_string(pos2);
+                        } else if (!strcmp(name, "mount")) {
+                            _mount = blobmsg_get_string(pos2);
+                            if(!strncmp(base_path, _mount, strlen(base_path))) {
+                                mount_count++;
+                                if(mount_count == 1) {
+                                    uuid = _uuid;
+                                    mount = _mount;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if(mount_count == 1) {
+        ret = statvfs(mount, &buf);
+        if(ret < 0) {
+            log("%s: statvfs failed %d\n", __func__, ret);
+        } else {
+            strncpy(smbt_device_state.id, uuid, sizeof(smbt_device_state.id));
+            smbt_device_state.id[sizeof(smbt_device_state.id) - 1] = 0;
+            smbt_device_state.bytes_free = (buf.f_bavail * buf.f_bsize);
+            smbt_device_state.bytes_total = (buf.f_blocks * buf.f_bsize);
+        }
+    } else {
+        memset(&smbt_device_state, 0, sizeof(smbt_device_state));
+    }
+
+    if(!memcmp(&smbt_device_state, &last_smbt_device_state, sizeof(smbt_device_state))) {
+        smb_fa_ptr = NULL;
+    } else {
+        smb_fa_ptr = smbt_tpl_devices_array_f;
+    }
+    memcpy(&last_smbt_device_state, &smbt_device_state, sizeof(last_smbt_device_state));
+}
+
+void telemetry_ubus_refresh_smb(void)
+{
+    const char block_string[] = "block";
+    uint32_t   block_id = 0;
+    static struct blob_buf b;
+    int result;
+
+    result = ubus_lookup_id(ctx, block_string, &block_id);
+    if (result != 0) {
+        log("%s: Failed to ubus %s result=%d\n", __func__, block_string, result);
+        return;
+    }
+    blob_buf_init(&b, 0);
+    ubus_invoke(ctx, block_id, "info", b.head, block_info_cb, NULL, 30000);
+}
+#endif // FEATURE_SUPPORTS_SAMBA
+
 void telemetry_ubus_refresh(void)
 {
 #ifdef FEATURE_IPV6_TELEMETRY
@@ -79,6 +191,10 @@ void telemetry_ubus_refresh(void)
     blob_buf_init(&b, 0);
     ubus_invoke(ctx, wan6_id, "status", b.head, wan6_cb, NULL, 30000);
 #endif // FEATURE_IPV6_TELEMETRY
+
+#ifdef FEATURE_SUPPORTS_SAMBA
+    telemetry_ubus_refresh_smb();
+#endif // FEATURE_SUPPORTS_SAMBA
 }
 
 // initialise the ubus telemetry

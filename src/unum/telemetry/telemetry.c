@@ -40,7 +40,6 @@ static TELEMETRY_DATA_t new_data;
 // gets through to the server.
 static unsigned long telemetry_seq_num = 0;
 
-
 // Collect sysinfo telemetry
 static void update_sysinfo_telemetry(void)
 {
@@ -292,6 +291,9 @@ static char *router_telemetry_json()
       {"cpu_softirq",              {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
       {"cpu_max_usage",            {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
       {"cpu_max_softirq",          {.type = JSON_VAL_PFINT,{.fpi = cpu_pfint_ptr}}},
+#if defined(FEATURE_SUPPORTS_SAMBA)
+      {"smb_devices",              {.type = JSON_VAL_FARRAY,{.fa = smb_fa_ptr}}},
+#endif // FEATURE_SUPPORTS_SAMBA
       {"seq_num",                  {.type = JSON_VAL_UL,  {.ul = telemetry_seq_num}}},
       {NULL}
     };
