@@ -158,14 +158,14 @@ static char *router_telemetry_json()
                                  sizeof(wan_primary_ipv6_address_str),
                                  "%s/%d",
                                  buf,
-                                 (wan_ipv6_addresses[ix].prefix_len) & 127);
+                                 wan_ipv6_addresses[ix].prefix_len);
                         wan_primary_ipv6_address_valid = 1;
                     } else {
                         snprintf(&wan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)],
                                  (INET6_ADDRSTRLEN + 4),
                                  "%s/%d",
                                  buf,
-                                 (wan_ipv6_addresses[ix].prefix_len) & 127);
+                                 wan_ipv6_addresses[ix].prefix_len);
                         wan_ipv6_address_tpl[iy].s = &wan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)];
                         wan_ipv6_address_tpl[iy].type = JSON_VAL_STR;
                         wan_other_ipv6_addresses_valid = 1;
@@ -210,14 +210,14 @@ static char *router_telemetry_json()
                                  sizeof(lan_primary_ipv6_address_str),
                                  "%s/%d",
                                  buf,
-                                 (lan_ipv6_addresses[ix].prefix_len) & 127);
+                                 lan_ipv6_addresses[ix].prefix_len);
                         lan_primary_ipv6_address_valid = 1;
                     } else {
                         snprintf(&lan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)],
                                  (INET6_ADDRSTRLEN + 4),
                                  "%s/%d",
                                  buf,
-                                 (lan_ipv6_addresses[ix].prefix_len) & 127);
+                                 lan_ipv6_addresses[ix].prefix_len);
                         lan_ipv6_address_tpl[iy].s = &lan_other_ipv6_addresses_str[iy * (INET6_ADDRSTRLEN + 4)];
                         lan_ipv6_address_tpl[iy].type = JSON_VAL_STR;
                         lan_other_ipv6_addresses_valid = 1;
