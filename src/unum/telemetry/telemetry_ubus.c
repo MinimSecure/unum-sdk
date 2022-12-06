@@ -66,7 +66,7 @@ const DEV_IPV6_CFG_t* telemetry_ubus_get_ipv6_prefixes(void) {
 #endif // FEATURE_IPV6_TELEMETRY
 
 #ifdef FEATURE_SUPPORTS_SAMBA
-JSON_VAL_FARRAY_t smb_fa_ptr = NULL;
+static JSON_VAL_FARRAY_t __smb_fa_ptr = NULL;
 
 static SMBT_JSON_TPL_DEVICE_STATE_t smbt_device_state;
 static SMBT_JSON_TPL_DEVICE_STATE_t last_smbt_device_state;
@@ -153,11 +153,15 @@ static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *
     }
 
     if(!memcmp(&smbt_device_state, &last_smbt_device_state, sizeof(smbt_device_state))) {
-        smb_fa_ptr = NULL;
+        __smb_fa_ptr = NULL;
     } else {
-        smb_fa_ptr = smbt_tpl_devices_array_f;
+        __smb_fa_ptr = smbt_tpl_devices_array_f;
     }
     memcpy(&last_smbt_device_state, &smbt_device_state, sizeof(last_smbt_device_state));
+}
+
+JSON_VAL_FARRAY_t telemetry_ubus_get_smb_fa_ptr(void) {
+    return __smb_fa_ptr;
 }
 
 void telemetry_ubus_refresh_smb(void)

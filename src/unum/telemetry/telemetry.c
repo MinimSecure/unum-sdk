@@ -61,6 +61,9 @@ static char *router_telemetry_json()
     char *wan_mac = NULL;
     JSON_VAL_PFINT_t cpu_pfint_ptr = NULL;
     JSON_VAL_PFINT_t mem_pfint_ptr = NULL;
+#ifdef FEATURE_SUPPORTS_SAMBA
+    JSON_VAL_FARRAY_t smb_fa_ptr = NULL;
+#endif
     static long last_sysinfo_telemetry = 0;
 
     // Init the new data set by copying over the last sent data
@@ -118,6 +121,12 @@ static char *router_telemetry_json()
     } else {
         mem_pfint_ptr = NULL;
     }
+
+#ifdef FEATURE_SUPPORTS_SAMBA
+    // Get updated farray pointer for smb_devices
+    smb_fa_ptr = telemetry_ubus_get_smb_fa_ptr();
+#endif // FEATURE_SUPPORTS_SAMBA
+
     // Check if CPU info has been updated. If yes set the pointers to retrieve
     // the new counters.
     new_data.cpu_info_update_num = get_cpuinfo_counter();

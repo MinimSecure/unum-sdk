@@ -28,7 +28,8 @@ typedef struct _SMBT_JSON_TPL_DEVICE_STATE {
     unsigned long bytes_total; // tatal bytes on the smb/usb device
 } SMBT_JSON_TPL_DEVICE_STATE_t;
 
-extern JSON_VAL_FARRAY_t smb_fa_ptr;
+// Retreive the current smb farray pointer
+JSON_VAL_FARRAY_t telemetry_ubus_get_smb_fa_ptr(void);
 
 #endif // FEATURE_SUPPORTS_SAMBA
 
