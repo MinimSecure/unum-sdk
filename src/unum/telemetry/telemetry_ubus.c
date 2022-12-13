@@ -54,6 +54,9 @@ static void wan6_cb(struct ubus_request *req, int type, struct blob_attr *msg)
                 }
             }
         }
+        if (prefix_idx == MAX_IPV6_ADDRESSES_PER_MAC) {
+            break;
+        }
     }
 }
 
