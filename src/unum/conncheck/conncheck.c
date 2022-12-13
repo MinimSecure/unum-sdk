@@ -151,14 +151,10 @@ static void conncheck_mk_info_file(void)
     char *no_dns = cc_st.no_dns ? "1" : NULL;
     char *no_servers = cc_st.no_servers ? "1" : NULL;
     char *slist_ready = cc_st.slist_ready ? "1" : NULL;
-    char *luci_rpc_supported = platform_luci_rpc_supported != NULL
-        && platform_luci_rpc_supported() ? "1" : "0";
-    char *luci_rpc_wan_dhcpv4_supported = platform_luci_rpc_wan_dhcpv4_supported != NULL
-        && platform_luci_rpc_wan_dhcpv4_supported() ? "1" : NULL;
-    char *luci_rpc_wan_pppoe_supported = platform_luci_rpc_wan_pppoe_supported != NULL
-        && platform_luci_rpc_wan_pppoe_supported() ? "1" : NULL;
-    char *luci_rpc_wan_static_supported = platform_luci_rpc_wan_static_supported != NULL
-        && platform_luci_rpc_wan_static_supported() ? "1" : NULL;
+    char *luci_rpc_supported = "0";
+    char *luci_rpc_wan_dhcpv4_supported = NULL;
+    char *luci_rpc_wan_pppoe_supported = NULL;
+    char *luci_rpc_wan_static_supported = NULL;
 
     unsigned long *p_connect_uptime = NULL;
     unsigned long *p_cloud_utc = NULL;
@@ -174,6 +170,19 @@ static void conncheck_mk_info_file(void)
     char *p_dns_fails = NULL;
     char *cstate_str = NULL;
     struct _JSON_KEYVAL_TPL *p_conncheck_obj = NULL;
+
+    if (platform_luci_rpc_supported && platform_luci_rpc_supported()) {
+        luci_rpc_supported = "1";
+    }
+    if (platform_luci_rpc_wan_dhcpv4_supported && platform_luci_rpc_wan_dhcpv4_supported()) {
+        luci_rpc_wan_dhcpv4_supported = "1";
+    }
+    if (platform_luci_rpc_wan_pppoe_supported && platform_luci_rpc_wan_pppoe_supported()) {
+        luci_rpc_wan_pppoe_supported = "1";
+    }
+    if (platform_luci_rpc_wan_static_supported && platform_luci_rpc_wan_static_supported()) {
+        luci_rpc_wan_static_supported = "1";
+    }
 
     // By default include progress unless 0
     if(cc_cstate_progress > 0) {
