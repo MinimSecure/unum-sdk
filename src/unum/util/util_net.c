@@ -473,7 +473,12 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
         req.nlh.nlmsg_type  = RTM_GETADDR;
         req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_REQUEST;
         req.nlh.nlmsg_seq   = msg_seq;
+        req.nlh.nlmsg_pid   = 0;  // not used
         req.ifm.ifa_family  = AF_INET6;
+        req.ifm.ifa_prefixlen = 0;
+        req.ifm.ifa_flags   = 0;
+        req.ifm.ifa_scope   = 0;
+        req.ifm.ifa_index   = 0;
         memset(req.buf, 0, sizeof(req.buf));
 
         // send the request
