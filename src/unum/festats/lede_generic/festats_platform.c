@@ -113,6 +113,7 @@ void fe_platform_update_stats()
         // Start filling in the header
         FE_CONN_HDR_t hdr;
         hdr.proto = ip_proto;
+        hdr.pad = 0;
 
         if (proto == NFPROTO_IPV4) {
             hdr.af = AF_INET;
