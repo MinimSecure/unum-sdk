@@ -474,6 +474,7 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
         req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_REQUEST;
         req.nlh.nlmsg_seq   = msg_seq;
         req.ifm.ifa_family  = AF_INET6;
+        memset(req.buf, 0, sizeof(req.buf));
 
         // send the request
         if(send(nl_socket.s, &req, sizeof(req), 0) < 0) {
