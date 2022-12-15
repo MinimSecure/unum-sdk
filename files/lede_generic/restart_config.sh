@@ -101,6 +101,8 @@ if [ $restart_inits -eq 1 ]; then
 
 	# Maybe restart samba-manager
 	[ -x /etc/init.d/samba-manager ] && /etc/init.d/samba-manager restart
+	# Maybe restart miniupnpd 
+	[-x /etc/init.d/miniupnpd ] && /etc/init.d/miniupnpd restart
 fi
 if [ $mode_change -eq 1 ]; then
 	exit 1
