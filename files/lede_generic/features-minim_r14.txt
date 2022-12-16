@@ -10,3 +10,5 @@ supports-160-mhz
 supports_samba
 ipv6_telemetry
 ubus_telemetry
+config_channel_width
+hw-environmental-channel-optimization
