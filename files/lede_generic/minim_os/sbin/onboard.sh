@@ -20,6 +20,7 @@ function create_onboard_sta ()
 		/sbin/uci set wireless.sta0.mode='sta'
 		/sbin/uci set wireless.sta0.ssid="$ssid"
 		/sbin/uci set wireless.sta0.key="$key"
+		/sbin/uci set wireless.sta0.disabled=1
 
 		# Create firewall rule to allow client access
 		/sbin/uci set firewall.wwanzone=zone
