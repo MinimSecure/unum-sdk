@@ -72,7 +72,9 @@ const DEV_IPV6_CFG_t* telemetry_ubus_get_ipv6_prefixes(void) {
 static JSON_VAL_FARRAY_t __smb_fa_ptr = NULL;
 
 static SMBT_JSON_TPL_DEVICE_STATE_t smbt_device_state;
-static SMBT_JSON_TPL_DEVICE_STATE_t last_smbt_device_state;
+
+// Initialize last data to non-zero to force a difference detection at boot
+static SMBT_JSON_TPL_DEVICE_STATE_t last_smbt_device_state = { {}, ~0UL, ~0UL };
 
 // smb/usb device template
 static JSON_OBJ_TPL_t tpl_tbl_devices_obj = {
