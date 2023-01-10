@@ -12,3 +12,4 @@ ipv6_telemetry
 ubus_telemetry
 config_channel_width
 hw-environmental-channel-optimization
+supports-wps
