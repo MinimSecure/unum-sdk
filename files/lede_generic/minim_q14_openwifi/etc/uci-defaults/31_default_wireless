@@ -18,7 +18,7 @@ for devidx in 0 1 2
 do
 	uci -q batch <<-EOF
 		set wireless.@wifi-iface[${devidx}].ssid=$ssid
-		set wireless.@wifi-iface[${devidx}].encryption="psk2"
+		set wireless.@wifi-iface[${devidx}].encryption="sae-mixed"
 		set wireless.@wifi-iface[${devidx}].key=$key
 		set wireless.@wifi-iface[${devidx}].disabled=0
 		set wireless.radio${devidx}.disabled=0

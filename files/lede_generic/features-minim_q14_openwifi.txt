@@ -9,3 +9,4 @@ mac80211_libnl
 supports-160-mhz
 ipv6_telemetry
 ubus_telemetry
+supports_sae_mixed
