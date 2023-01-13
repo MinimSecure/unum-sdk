@@ -13,3 +13,4 @@ ubus_telemetry
 config_channel_width
 hw-environmental-channel-optimization
 supports-wps
+supports_sae_mixed
