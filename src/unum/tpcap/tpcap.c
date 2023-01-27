@@ -10,12 +10,73 @@
 //#define LOG_DST LOG_DST_CONSOLE
 //#define LOG_DBG_DST LOG_DST_CONSOLE
 
+#ifdef FEATURE_TPCAP_USES_EBPF
+// ebpf POC
+static int map_fd;
+static int udp_ports_map_fd;
+static int tcp_ports_map_fd;
+#endif
 
 // Array of monitored interfaces
 static TPCAP_IF_t tp_ifs[TPCAP_IF_MAX];
 
 // Array of stats for monitored interfaces plus the WAN interface
 static TPCAP_IF_STATS_t tp_if_stats[TPCAP_STAT_IF_MAX];
+
+// SW-3453 hard coded BPF filter containing all protocols currently of interest. WIP.
+static struct sock_filter bpf_hardcoded_bytecode[] = {
+    // tcpdump -dd -i lo udp port 67 or udp port 68 or udp port 5353 or udp port 53 or udp port 1900 or tcp port 80
+    { 0x28, 0, 0, 0x0000000c },
+    { 0x15, 0, 15, 0x000086dd },
+    { 0x30, 0, 0, 0x00000014 },
+    { 0x15, 0, 8, 0x00000011 },
+    { 0x28, 0, 0, 0x00000036 },
+    { 0x15, 37, 0, 0x00000043 },
+    { 0x15, 36, 0, 0x00000044 },
+    { 0x15, 35, 0, 0x000014e9 },
+    { 0x15, 34, 0, 0x00000035 },
+    { 0x15, 33, 0, 0x0000076c },
+    { 0x28, 0, 0, 0x00000038 },
+    { 0x15, 31, 19, 0x00000043 },
+    { 0x15, 0, 31, 0x00000006 },
+    { 0x28, 0, 0, 0x00000036 },
+    { 0x15, 28, 0, 0x00000050 },
+    { 0x28, 0, 0, 0x00000038 },
+    { 0x15, 26, 27, 0x00000050 },
+    { 0x15, 0, 26, 0x00000800 },
+    { 0x30, 0, 0, 0x00000017 },
+    { 0x15, 0, 15, 0x00000011 },
+    { 0x28, 0, 0, 0x00000014 },
+    { 0x45, 22, 0, 0x00001fff },
+    { 0xb1, 0, 0, 0x0000000e },
+    { 0x48, 0, 0, 0x0000000e },
+    { 0x15, 18, 0, 0x00000043 },
+    { 0x15, 17, 0, 0x00000044 },
+    { 0x15, 16, 0, 0x000014e9 },
+    { 0x15, 15, 0, 0x00000035 },
+    { 0x15, 14, 0, 0x0000076c },
+    { 0x48, 0, 0, 0x00000010 },
+    { 0x15, 12, 0, 0x00000043 },
+    { 0x15, 11, 0, 0x00000044 },
+    { 0x15, 10, 0, 0x000014e9 },
+    { 0x15, 9, 0, 0x00000035 },
+    { 0x15, 8, 9, 0x0000076c },
+    { 0x15, 0, 8, 0x00000006 },
+    { 0x28, 0, 0, 0x00000014 },
+    { 0x45, 6, 0, 0x00001fff },
+    { 0xb1, 0, 0, 0x0000000e },
+    { 0x48, 0, 0, 0x0000000e },
+    { 0x15, 2, 0, 0x00000050 },
+    { 0x48, 0, 0, 0x00000010 },
+    { 0x15, 0, 1, 0x00000050 },
+    { 0x6, 0, 0, 0x00040000 },
+    { 0x6, 0, 0, 0x00000000 },
+};
+
+static struct sock_fprog bpf_hardcoded_program = {
+    .len = ARRAY_SIZE(bpf_hardcoded_bytecode),
+    .filter = bpf_hardcoded_bytecode,
+};
 
 // Initialize interface stats data structure
 // (stores timestamp and inital values of the counters)
@@ -160,7 +221,13 @@ static int tpcap_setup_if(TPCAP_IF_t *tpif)
     unsigned int ring_len;
     struct sockaddr_ll addr;
     struct tpacket_req req;
-
+#ifdef FEATURE_TPCAP_USES_EBPF
+// ebpf POC
+    struct bpf_object *bpf_obj;
+    struct bpf_program *bpf_prog;
+    int prog_fd;
+    struct rlimit rinf = { RLIM_INFINITY, RLIM_INFINITY };
+#endif
     if((tpif->flags & TPCAP_IF_FD_READY) != 0) {
         log("%s: interface %s already set up\n", __func__, tpif->name);
         log("%s: ring at %p, ring length %d\n", __func__,
@@ -181,6 +248,61 @@ static int tpcap_setup_if(TPCAP_IF_t *tpif)
         close(fd);
         return -2;
     }
+
+    if(setsockopt(fd, SOL_SOCKET, SO_ATTACH_FILTER, &bpf_hardcoded_program, sizeof(bpf_hardcoded_program))) {
+        log("%s: error setting SO_ATTACH_FILTER, %s\n",
+            __func__, strerror(errno));
+        close(fd);
+        return -2;
+    }
+
+#ifdef FEATURE_TPCAP_USES_EBPF
+    // ebpf POC
+    setrlimit(RLIMIT_MEMLOCK, &rinf);
+    obj = bpf_object__open_file("/lib/bpf/minim-ebpf.o", NULL);
+    if (libbpf_get_error(obj)) {
+        log("%s: DEBUGBRE: failed to open bpf!\n", __func__);
+        return -2;
+    }
+
+    //prog = bpf_object__next_program(obj, NULL);
+    prog = bpf_object__find_program_by_title(obj, "socket1");
+    if (!prog) {
+    log("DEBUGBRE: Can't find classifier prog\n");
+    return -1;
+    }
+
+    bpf_program__set_type(prog, BPF_PROG_TYPE_SOCKET_FILTER);
+
+    {
+        struct bpf_object_load_attr load_attr = { 0 };
+        load_attr.obj = obj;
+        val = bpf_object__load_xattr(&load_attr);
+        if (val) {
+            log("%s: DEBUGBRE: failed to load_xattr bpf! %d\n", __func__, val);
+            return -2;
+        }
+    }
+
+    val = bpf_object__load(obj);
+    if(val) {
+        log("%s: DEBUGBRE: failed to load bpf! %d\n", __func__, val);
+        //return -2;
+    }
+
+    prog_fd = bpf_program__fd(prog);
+    map_fd = bpf_object__find_map_fd_by_name(obj, "my_map");
+    udp_ports_map_fd = bpf_object__find_map_fd_by_name(obj, "minim_udp_ports");
+    tcp_ports_map_fd = bpf_object__find_map_fd_by_name(obj, "minim_tcp_ports");
+
+    if(setsockopt(fd, SOL_SOCKET, SO_ATTACH_BPF, &prog_fd, sizeof(prog_fd))) {
+        log("%s: DEBUGBRE: failed to apply bpf filter!\n", __func__);
+        log("%s: error setting SO_ATTACH_BPF, %s\n",
+            __func__, strerror(errno));
+        close(fd);
+        return -2;
+    }
+#endif
 
     memset(&addr, 0, sizeof(addr));
     addr.sll_family = PF_PACKET;
@@ -617,7 +739,33 @@ static void tpcap(THRD_PARAM_t *p)
         //       them for the LAN interfaces (there's just no dev telemetry to
         //       report them in).
         update_stats();
+#if 0
+// epbf POC
+    {
+        long long tcp_cnt, udp_cnt, icmp_cnt;
+        int key;
+                static unsigned char val = 1;
 
+        key = IPPROTO_TCP;
+        bpf_map_lookup_elem(map_fd, &key, &tcp_cnt);
+
+        key = IPPROTO_UDP;
+        bpf_map_lookup_elem(map_fd, &key, &udp_cnt);
+
+        key = IPPROTO_ICMP;
+        bpf_map_lookup_elem(map_fd, &key, &icmp_cnt);
+
+                key = 22;
+        bpf_map_update_elem(tcp_ports_map_fd, &key, &val, 0);
+
+                key = 67;
+        bpf_map_update_elem(udp_ports_map_fd, &key, &val, 0);
+                val++;
+
+        log("DEBUGBRE: TCP %lld UDP %lld ICMP %lld bytes\n",
+            tcp_cnt, udp_cnt, icmp_cnt);
+    }
+#endif
         // Call capturing cycle complete handlers for the
         // users of the tpacket subsystem.
         tpcap_cycle_complete();

@@ -18,3 +18,4 @@ upnp-openwrt-capable
 supports-80211ax
 supports-80211ac
 supports_luci_rpc
+tpcap_uses_cbpf

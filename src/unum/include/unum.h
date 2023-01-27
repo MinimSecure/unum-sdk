@@ -42,6 +42,11 @@
 #include <linux/if_packet.h>
 #include <linux/sockios.h>
 #include <linux/rtnetlink.h>
+#ifdef FEATURE_TPCAP_USES_EBPF
+#include <linux/bpf.h>
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+#endif
 #ifdef FEATURE_IPV6_TELEMETRY
 #include <linux/ipv6.h>
 #endif // FEATURE_IPV6_TELEMETRY
