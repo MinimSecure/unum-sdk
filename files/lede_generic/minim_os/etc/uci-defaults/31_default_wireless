@@ -1,3 +1,6 @@
+. /lib/functions.sh
+. /lib/functions/system.sh
+
 # If already configured via the cloud, exit
 uci -q get minim.@unum[0].opmode && exit 0
 
@@ -34,5 +37,12 @@ do
 		set wireless.radio${devidx}.country=$country_code
 	EOF
 done
+
+case $(board_name) in
+motorola,r14)
+	uci -q set wireless.radio1.channels="36-165"
+	;;
+esac
+
 uci -q commit wireless
 exit 0
