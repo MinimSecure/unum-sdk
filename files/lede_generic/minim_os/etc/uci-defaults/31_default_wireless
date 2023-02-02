@@ -35,6 +35,7 @@ do
 		set wireless.@wifi-iface[${devidx}].wps_manufacturer="Motorola"
 		set wireless.radio${devidx}.disabled=0
 		set wireless.radio${devidx}.country=$country_code
+		set wireless.radio${devidx}.channel=auto
 	EOF
 done
 
