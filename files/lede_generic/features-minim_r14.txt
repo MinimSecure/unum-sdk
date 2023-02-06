@@ -15,3 +15,5 @@ hw-environmental-channel-optimization
 supports-wps
 supports_sae_mixed
 upnp-openwrt-capable
+supports-80211AX
+supports-80211AC
