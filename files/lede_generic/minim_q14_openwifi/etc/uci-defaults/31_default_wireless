@@ -21,6 +21,9 @@ do
 		set wireless.@wifi-iface[${devidx}].encryption="sae-mixed"
 		set wireless.@wifi-iface[${devidx}].key=$key
 		set wireless.@wifi-iface[${devidx}].disabled=0
+		set wireless.@wifi-iface[${devidx}].wps_pushbutton=1
+		set wireless.@wifi-iface[${devidx}].wps_device_name=$ssid
+		set wireless.@wifi-iface[${devidx}].wps_manufacturer="Motorola"
 		set wireless.radio${devidx}.disabled=0
 		set wireless.radio${devidx}.country=US
 	EOF

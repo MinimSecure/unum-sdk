@@ -11,3 +11,4 @@ ipv6_telemetry
 ubus_telemetry
 supports_sae_mixed
 upnp-openwrt-capable
+supports-wps
