@@ -320,17 +320,15 @@ int __attribute__((weak)) platform_change_opmode(int old_flags, int new_flags);
 int util_init(int level);
 
 #define RESOURCE_PROTO_HTTPS        "https"
+#define RESOURCE_PROTO_HTTP         "http"
 
 #define RESOURCE_TYPE_API           0
 #define RESOURCE_TYPE_API_STR       "api"
 
-#define RESOURCE_TYPE_MY            1
-#define RESOURCE_TYPE_MY_STR        "my"
-
-#define RESOURCE_TYPE_RELEASES      2
+#define RESOURCE_TYPE_RELEASES      1
 #define RESOURCE_TYPE_RELEASES_STR  "releases"
 
-#define RESOURCE_TYPE_PROVISION     3
+#define RESOURCE_TYPE_PROVISION     2
 #define RESOURCE_TYPE_PROVISION_STR "provision"
 
 // Build URL

@@ -10,11 +10,6 @@
 //#define LOG_DST LOG_DST_CONSOLE
 //#define LOG_DBG_DST LOG_DST_CONSOLE
 
-// URLs for checking HTTP & HTTPs connectivity
-#define CONNCHECK_HTTP_URL "http://api.minim.co/time"
-#define CONNCHECK_HTTPS_URL "https://my.minim.co/time"
-
-
 // Set if cert and key files are provisioned for the device.
 static UTIL_EVENT_t conncheck_complete = UTIL_EVENT_INITIALIZER;
 
@@ -411,14 +406,20 @@ static int conncheck_troubleshoot_https(void)
 
     for(;;)
     {
-        http_rsp *rsp = http_get(CONNCHECK_HTTP_URL, NULL);
+        char url[256] = { 0 };
+        util_build_url(RESOURCE_PROTO_HTTP,
+                       RESOURCE_TYPE_PROVISION,
+                       url,
+                       sizeof(url),
+                       "/time");
+        http_rsp *rsp = http_get(url, NULL);
         if(rsp == NULL) {
-            log("%s: no response from %s\n", __func__, CONNCHECK_HTTP_URL);
+            log("%s: no response from %s\n", __func__, url);
             ret = -1; // non-recoverable
             break;
         } else if((rsp->code / 100) != 2) {
             log_dbg("%s: error %d from %s\n",
-                    __func__, rsp->code, CONNCHECK_HTTP_URL);
+                    __func__, rsp->code, url);
             free_rsp(rsp);
             break;
         }
@@ -893,17 +894,23 @@ static void conncheck(THRD_PARAM_t *p)
         // the server time
         if(cur_t < start_tb_t && cc_st.slist_ready)
         {
+            char url[256] = { 0 };
             conncheck_update_state_event(CSTATE_CONNECTING,
                                          ((cur_t - wake_up_t) * 100) /
                                          (start_tb_t - wake_up_t));
-            http_rsp *rsp = http_get_no_retry(CONNCHECK_HTTPS_URL, NULL);
+            util_build_url(RESOURCE_PROTO_HTTPS,
+                           RESOURCE_TYPE_PROVISION,
+                           url,
+                           sizeof(url),
+                           "/time");
+            http_rsp *rsp = http_get_no_retry(url, NULL);
             if(rsp == NULL) {
-                log_dbg("%s: cannot get %s\n", __func__, CONNCHECK_HTTPS_URL);
+                log_dbg("%s: cannot get %s\n", __func__, url);
                 continue;
             }
             if((rsp->code / 100) != 2) {
                 log_dbg("%s: error %d from %s\n",
-                        __func__, rsp->code, CONNCHECK_HTTPS_URL);
+                        __func__, rsp->code, url);
                 free_rsp(rsp);
                 continue;
             }

@@ -46,8 +46,8 @@ static void util_get_txt_record_static(char *txt, int len)
     strncpy(txt,
             "api:api.minim.co:80:18.215.222.49;"
             "api:api.minim.co:443:18.215.222.49;"
-            "my:my.minim.co:443:18.215.222.49;"
             "releases:releases.minim.co:443:18.215.222.49;"
+            "provision:provision.minim.co:80:18.215.222.49;"
             "provision:provision.minim.co:443:18.215.222.49;",
             len);
     txt[len - 1] = '\0';
@@ -499,12 +499,6 @@ void update_api_url_map_from_txt_record(char *txt)
                             RESOURCE_URL_LEN);
                     servers[RESOURCE_TYPE_API][RESOURCE_URL_LEN - 1] = '\0';
 
-                } else if(0 == strcmp(RESOURCE_TYPE_MY_STR, record_key))
-                {
-                    strncpy(servers[RESOURCE_TYPE_MY], token,
-                            RESOURCE_URL_LEN);
-                    servers[RESOURCE_TYPE_MY][RESOURCE_URL_LEN - 1] = '\0';
-
                 } else if(0 == strcmp(RESOURCE_TYPE_RELEASES_STR, record_key))
                 {
                     strncpy(servers[RESOURCE_TYPE_RELEASES], token,
@@ -954,7 +948,6 @@ static void test_update_api_url_map()
     // Print Out API URL Map
     printf("API MAP (PRE UPDATE):\n");
     printf("\tAPI Server: %s\n", servers[RESOURCE_TYPE_API]);
-    printf("\tMY Server: %s\n", servers[RESOURCE_TYPE_MY]);
     printf("\tRELEASES Server: %s\n", servers[RESOURCE_TYPE_RELEASES]);
     printf("\tPROVISION Server: %s\n", servers[RESOURCE_TYPE_PROVISION]);
     printf("\n");
@@ -974,7 +967,6 @@ static void test_update_api_url_map()
     // Print Out Map Again -- Should Be Updated
     printf("API MAP (POST UPDATE):\n");
     printf("\tAPI Server: %s\n", servers[RESOURCE_TYPE_API]);
-    printf("\tMY Server: %s\n", servers[RESOURCE_TYPE_MY]);
     printf("\tRELEASES Server: %s\n", servers[RESOURCE_TYPE_RELEASES]);
     printf("\tPROVISION Server: %s\n", servers[RESOURCE_TYPE_PROVISION]);
 
