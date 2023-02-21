@@ -740,7 +740,7 @@ int util_get_radio_kind(char *ifname)
     return -1;
 }
 
-#if DEVICE_PRODUCT_NAME == minim_r14
+#ifdef FEATURE_SUPPORTS_LUCI_RPC
 // These functions indicate if a platform supports the luci rpc
 // mechanism and, if so, which WAN interface configuration mechanisms
 // are supported.
