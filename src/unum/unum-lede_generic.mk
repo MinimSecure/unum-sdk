@@ -31,10 +31,5 @@ LDFLAGS += -lnl-tiny
 # Added to enable IPv6 prefixes
 LDFLAGS += -lubox -lubus
 
-# ebpf POC - added to enable ebpf filtering for performance improvement
-ifneq ($(findstring TPCAP_USES_EBPF, $(RELEASE_DEFINES)),)
-	LDFLAGS += -lbpf
-endif
-
 # Add hardware ID this LEDE build is for
 CPPFLAGS += -DDEVICE_PRODUCT_NAME=\"$(HARDWARE)\"
