@@ -17,6 +17,7 @@ static TPCAP_IF_t tp_ifs[TPCAP_IF_MAX];
 // Array of stats for monitored interfaces plus the WAN interface
 static TPCAP_IF_STATS_t tp_if_stats[TPCAP_STAT_IF_MAX];
 
+#ifdef FEATURE_TPCAP_USES_CBPF
 // SW-3453 hard coded BPF filter containing all protocols currently of interest. WIP.
 static struct sock_filter bpf_hardcoded_bytecode[] = {
     // tcpdump -dd -i lo udp port 67 or udp port 68 or udp port 5353 or udp port 53 or udp port 1900 or tcp port 80
@@ -71,6 +72,7 @@ static struct sock_fprog bpf_hardcoded_program = {
     .len = ARRAY_SIZE(bpf_hardcoded_bytecode),
     .filter = bpf_hardcoded_bytecode,
 };
+#endif
 
 // Initialize interface stats data structure
 // (stores timestamp and inital values of the counters)
@@ -236,13 +238,14 @@ static int tpcap_setup_if(TPCAP_IF_t *tpif)
         close(fd);
         return -2;
     }
-
+#ifdef FEATURE_TPCAP_USES_CBPF
     if(setsockopt(fd, SOL_SOCKET, SO_ATTACH_FILTER, &bpf_hardcoded_program, sizeof(bpf_hardcoded_program))) {
         log("%s: error setting SO_ATTACH_FILTER, %s\n",
             __func__, strerror(errno));
         close(fd);
         return -2;
     }
+#endif
 
     memset(&addr, 0, sizeof(addr));
     addr.sll_family = PF_PACKET;
