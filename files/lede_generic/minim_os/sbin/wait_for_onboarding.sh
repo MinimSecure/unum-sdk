@@ -19,6 +19,7 @@ while [ 1 ] ; do
 	for freq in $FREQLIST ; do
 		iw $INTERFACE scan freq $freq flush | grep -q $ssid
 		[ $? == 0 ] && {
+			uci set wireless.default_radio1.disabled=1
 			uci set wireless.sta0.disabled=0
 			uci commit wireless
 			wifi
