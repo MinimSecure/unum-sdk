@@ -441,7 +441,12 @@ static inline unsigned dns_atomic_fetch_sub(dns_atomic_t *i) {
 #define DNS_RANDOM_OPENSSL	(DNS_RANDOM_RAND_bytes == DNS_PP_XPASTE(DNS_RANDOM_, DNS_RANDOM))
 
 #if DNS_RANDOM_OPENSSL
-#include <openssl/rand.h>
+#  include <openssl/rand.h>
+#elif !defined(USE_OPEN_SSL)
+#  include "mbedtls/ctr_drbg.h"
+#  include "mbedtls/entropy.h"
+static mbedtls_ctr_drbg_context ctr_drbg;
+static mbedtls_ctr_drbg_context* ctr_drbg_p = NULL;
 #endif
 
 static unsigned dns_random_(void) {
@@ -453,6 +458,24 @@ static unsigned dns_random_(void) {
 	assert(ok && "1 == RAND_bytes()");
 
 	return r;
+#elif !defined(USE_OPEN_SSL)
+    unsigned r;
+    if (!ctr_drbg_p) {
+        static  mbedtls_entropy_context entropy;
+        mbedtls_entropy_init(&entropy);
+        mbedtls_ctr_drbg_init(&ctr_drbg);
+        const unsigned char personalization[] = "Minim unum";
+        mbedtls_ctr_drbg_seed(&ctr_drbg,
+                              mbedtls_entropy_func,
+                              &entropy,
+                              personalization,
+                              sizeof(personalization)-1);
+        ctr_drbg_p = &ctr_drbg;
+    }
+
+    mbedtls_ctr_drbg_random(ctr_drbg_p, (unsigned char*) &r, sizeof(r));
+
+    return r;
 #else
 	return DNS_RANDOM();
 #endif
