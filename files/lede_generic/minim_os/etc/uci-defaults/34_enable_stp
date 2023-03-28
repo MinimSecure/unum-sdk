@@ -1,0 +1,8 @@
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+# Ensure stp is enabled on br-lan bridge
+uci -q get network.@device[0].stp || uci set network.@device[0].stp=1
+
+uci -q commit network
+exit 0
