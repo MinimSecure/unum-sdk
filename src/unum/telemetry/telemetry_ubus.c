@@ -129,16 +129,16 @@ static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *
                             _uuid = blobmsg_get_string(pos2);
                         } else if (!strcmp(name, "mount")) {
                             _mount = blobmsg_get_string(pos2);
-                            if(!strncmp(base_path, _mount, strlen(base_path))) {
-                                mount_count++;
-                                if(mount_count == 1) {
-                                    uuid = _uuid;
-                                    mount = _mount;
-                                }
-                            }
                         }
                     }
                 }
+                if(_mount != NULL && !strncmp(base_path, _mount, strlen(base_path))) {
+                    mount_count++;
+                    if(mount_count == 1) {
+                        uuid = _uuid;
+                        mount = _mount;
+                    }
+		}
             }
         }
     }
@@ -148,10 +148,14 @@ static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *
         if(ret < 0) {
             log("%s: statvfs failed %d\n", __func__, ret);
         } else {
-            strncpy(smbt_device_state.id, uuid, sizeof(smbt_device_state.id));
-            smbt_device_state.id[sizeof(smbt_device_state.id) - 1] = 0;
-            smbt_device_state.bytes_free = (buf.f_bavail * buf.f_bsize);
-            smbt_device_state.bytes_total = (buf.f_blocks * buf.f_bsize);
+            if (uuid != NULL) {
+                strncpy(smbt_device_state.id, uuid, sizeof(smbt_device_state.id));
+                smbt_device_state.id[sizeof(smbt_device_state.id) - 1] = 0;
+                smbt_device_state.bytes_free = (buf.f_bavail * buf.f_bsize);
+                smbt_device_state.bytes_total = (buf.f_blocks * buf.f_bsize);
+	    } else {
+                memset(&smbt_device_state, 0, sizeof(smbt_device_state));
+            }
         }
     } else {
         memset(&smbt_device_state, 0, sizeof(smbt_device_state));
