@@ -2,7 +2,7 @@ ARG builder=minimsecure/unum-builder:debian-stretch-slim
 
 FROM ${builder} as build
 
-FROM debian:stretch-slim
+FROM debian:bullseye-slim
 
 RUN apt-get update && \
     apt-get install -y \
@@ -16,7 +16,7 @@ RUN apt-get update && \
         iputils-ping \
         iproute2 \
         iw \
-        libcurl3 \
+        libcurl4 \
         libnl-3-200 \
         libnl-genl-3-200 \
         libjansson4 \
