@@ -105,10 +105,10 @@ static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *
     size_t rem0, rem1, rem2;
     int ret;
     int mount_count = 0;
-    char * uuid = NULL;
-    char * mount = NULL;
-    const char * name = NULL;
-    const char * base_path = "/mnt/sd";
+    char *uuid = NULL;
+    char *mount = NULL;
+    const char *name = NULL;
+    const char *base_path = "/mnt/sd";
     struct statvfs buf;
 
     if (!msg)
@@ -133,10 +133,21 @@ static void block_info_cb(struct ubus_request *req, int type, struct blob_attr *
                     }
                 }
                 if(_mount != NULL && !strncmp(base_path, _mount, strlen(base_path))) {
-                    mount_count++;
-                    if(mount_count == 1) {
+                    if(mount_count == 0) {
+			// First match
                         uuid = _uuid;
                         mount = _mount;
+                        mount_count++;
+                    } else {
+                        // Differerntiate between multiple partitions vs disks
+                        // Compare mount with _mount and check for base names
+                        // like sda vs sdb
+                        if (strncmp(mount, _mount, strlen(base_path) + 1)) {
+                            // Another disk detected
+                            // Exit the loop
+                            mount_count++;
+                            break;
+                        }
                     }
 		}
             }
