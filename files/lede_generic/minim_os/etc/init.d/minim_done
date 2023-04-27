@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# (C) 2023 minim.co
+
+# Use this place for platform specific scripts
+START=99
+boot() {
+  /sbin/platform_boot.sh
+}
