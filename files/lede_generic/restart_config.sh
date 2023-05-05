@@ -105,6 +105,7 @@ if [ $restart_inits -eq 1 ]; then
 	[-x /etc/init.d/miniupnpd ] && /etc/init.d/miniupnpd restart
 	# Maybe restart usteer 
         [-x /etc/init.d/usteer ] && /etc/init.d/usteer restart
+	[ -f /sbin/platform_restart_config.sh ] && /sbin/platform_restart_config.sh
 
 fi
 if [ $mode_change -eq 1 ]; then
