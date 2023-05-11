@@ -1,0 +1,4 @@
+uci -q batch <<-EOF
+	set network.dummywan='interface'
+	set network.dummywan.device='eth1'
+	set network.dummywan.proto='none'
