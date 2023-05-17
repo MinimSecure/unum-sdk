@@ -924,6 +924,9 @@ int devtelemetry_init(int level)
 {
     if(level == INIT_LEVEL_DEVTELEMETRY)
     {
+        if (!unum_config.devtelemetry_enabled) {
+	    return 0;
+        }
 #if !defined(FEATURE_LAN_ONLY) && !defined(FEATURE_GUEST_NAT)
         // Unless it is a standalone AP device firmware we do not do device
         // telemetry in the AP operation mode (i.e. gateway firmware in the

@@ -185,10 +185,13 @@ static JSON_VAL_TPL_t *tpl_con_array_f(DT_DEVICE_t *dev, int idx)
 //       and all the objects are released after JSON is generated.
 static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
 {
-    int ii;
+  int ii, ij;
     // Buffer for device MAC & IP address strings
     static char dev_mac[MAC_ADDRSTRLEN];
     static char dev_ip[INET6_ADDRSTRLEN];
+    static int total_in = 0;
+    static int total_out = 0;
+    DT_CONN_t* p_conn = NULL;
 
     // Template for generating device info object JSON.
     static JSON_OBJ_TPL_t tpl_tbl_dev_obj = {
@@ -199,6 +202,8 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
       { "ip",     { .type = JSON_VAL_STR, {.s = dev_ip}}},
       { "mac",    { .type = JSON_VAL_STR, {.s = dev_mac}}},
       { "conn",   { .type = JSON_VAL_FARRAY, {.fa = tpl_devcon_array_f}}},
+      { "total_in",  { .type = JSON_VAL_PINT, {.pi = &total_in}}},
+      { "total_out", { .type = JSON_VAL_PINT, {.pi = &total_out}}},
       { NULL }
     };
     static JSON_VAL_TPL_t tpl_tbl_dev_obj_val = {
@@ -211,7 +216,12 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
     // If we are called for connections, call the helper and pass it the
     // pointer to the device being handled.
     if(tpl_dt_root[0].key != key) {
+      if (unum_config.devtelemetry_detail) {
         return tpl_con_array_f(last_dev, idx);
+      } else {
+	// connection detail disabled
+	return NULL;
+      }
     }
 
     // If starting over
@@ -264,6 +274,12 @@ static JSON_VAL_TPL_t *tpl_devcon_array_f(char *key, int idx)
             tpl_tbl_dev_obj[1].val.a = ipv6_address_tpl;
         }
 #endif // FEATURE_IPV6_TELEMETRY
+	for (p_conn = &dev->conn; p_conn != NULL; p_conn = p_conn->next) {
+	  for(ij = 0; ij < DEVTELEMETRY_NUM_SLICES; ij++) {
+	    total_in += p_conn->bytes_to[ij];
+	    total_out += p_conn->bytes_from[ij];
+	  }
+	}
         last_dev = dev;
         break;
     }

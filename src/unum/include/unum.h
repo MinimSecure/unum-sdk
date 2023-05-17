@@ -201,6 +201,8 @@ typedef struct {
                                    // list of custom lan interface names
     int lan_ifcount;               // specified lan interface count
     int wan_ifcount;               // 1 if wan interface was specified
+    int devtelemetry_enabled;      // 0 if device telemetry disabled
+    int devtelemetry_detail;       // 0 if detailed device telemetry disabled
 } UNUM_CONFIG_t;
 
 // Startup info (passed by the monitor to the agent at startup to identify
