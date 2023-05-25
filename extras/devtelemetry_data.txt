@@ -28,7 +28,9 @@ Device telemetry JSON:
             0                      // outgoing (from device) bytes, time slice 2
           ]
         }
-      ]
+      ],
+      "total_in": 0,               // total incoming (to device) bytes, all time slices
+      "total_out": 60              // total outgoing (from device) bytes, all time slices
     },
     {
       "mac": "c0:a8:00:67:62:72",
@@ -100,7 +102,9 @@ Device telemetry JSON:
             54
           ]
         }
-      ]
+      ],
+      "total_in": 68430,           // total incoming (to device) bytes, all time slices
+      "total_out": 27314           // total outgoing (from device) bytes, all time slices
     }
   ],
   "dns": [                         // discovered (during the telemetry time period)
