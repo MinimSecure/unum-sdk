@@ -43,6 +43,7 @@ case $(board_name) in
 motorola,r14)
 	uci -q set wireless.radio1.htmode=HE80
 	uci -q set wireless.radio1.channel=36
+	uci -q set wireless.radio1.channels="36-165"
 	uci -q set wireless.radio1.acs_exclude_dfs=1
 	;;
 esac
