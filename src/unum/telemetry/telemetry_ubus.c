@@ -224,6 +224,12 @@ void telemetry_ubus_refresh(void)
 // initialise the ubus telemetry
 void telemetry_ubus_init(void)
 {
+#ifdef FEATURE_IPV6_TELEMETRY
+    memset(ipv6_prefixes, '\0', sizeof(ipv6_prefixes));
+#endif
+#ifdef FEATURE_SUPPORTS_SAMBA
+    smbt_device_state.id[0] = 0;
+#endif    
     ctx = ubus_connect(NULL);
     if (!ctx) {
         log("%s: failed to connect to ubus\n", __func__);
