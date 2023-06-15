@@ -545,8 +545,21 @@ int util_get_ipv6cfg(const char *dev, DEV_IPV6_CFG_t *ipcfg) {
             }
         }
     }
+    // nothing found, look for first infinite lifetime
+    if (longest_lifetime_index == -1) {
+      for(unsigned ix=0; ipcfg[ix].addr.b[0] != 0; ix++) {
+        if (!IS_ADDR_SITELOCAL(ipcfg[ix].addr.s.h) &&
+            !IS_ADDR_LINKLOCAL(ipcfg[ix].addr.s.h) &&
+            !IS_ADDR_ULA(ipcfg[ix].addr.s.h)) {
+	    if (ipcfg[ix].ifa_preferred == INFINITY_LIFE_TIME) {
+                longest_lifetime_index = ix;
+		break;
+            }
+        }
+      }
+    }
+    // add primary flag to appropriate address
     if (longest_lifetime_index != -1) {
-        // add primary flag to appropriate address
         ipcfg[longest_lifetime_index].flags |= DEV_IPV6_CFG_FLAG_PRIMARY;
     }
 
