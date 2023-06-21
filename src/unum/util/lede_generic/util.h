@@ -79,7 +79,7 @@
 // per router. It is used to get device external IP.
 #define PLATFORM_GET_MAIN_WAN_NET_DEV() (util_main_wan_ifname())
 #undef GET_MAIN_WAN_L3_NET_DEV
-#define GET_MAIN_WAN_L3_NET_DEV() (util_l3_wan_ifname())
+#define GET_MAIN_WAN_L3_NET_DEV(proto) (util_l3_wan_ifname())
 
 // Max stack size for the platform threads (unless the system
 // default is not good)

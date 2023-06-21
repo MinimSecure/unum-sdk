@@ -76,7 +76,7 @@
     (unum_config.wan_ifcount > 0) ? (unum_config.wan_ifname) :        \
                                     (PLATFORM_GET_MAIN_WAN_NET_DEV()) \
 )
-#define GET_MAIN_WAN_L3_NET_DEV() GET_MAIN_WAN_NET_DEV()
+#define GET_MAIN_WAN_L3_NET_DEV(proto) GET_MAIN_WAN_NET_DEV()
 #define GET_MAIN_LAN_NET_DEV() (                                      \
     (unum_config.lan_ifcount > 0) ? (unum_config.lan_ifname[0]) :     \
                                     (PLATFORM_GET_MAIN_LAN_NET_DEV()) \

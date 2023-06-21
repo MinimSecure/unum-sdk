@@ -78,7 +78,7 @@ static char *router_telemetry_json()
     // Get WAN IP and MAC (only if working as a gateway)
     if(IS_OPM(UNUM_OPM_GW))
     {
-        if(util_get_ipv4(GET_MAIN_WAN_L3_NET_DEV(), new_data.wan_ip) == 0 &&
+        if(util_get_ipv4(GET_MAIN_WAN_L3_NET_DEV(AF_INET), new_data.wan_ip) == 0 &&
            strncmp(last_sent.wan_ip, new_data.wan_ip, INET_ADDRSTRLEN) != 0)
         {
             wan_ip = new_data.wan_ip;
@@ -150,7 +150,7 @@ static char *router_telemetry_json()
 
     DEV_IPV6_CFG_t* wan_ipv6_addresses = new_data.wan_ipv6;
     memset(wan_ipv6_addresses, '\0', sizeof(new_data.wan_ipv6));
-    if (util_get_ipv6cfg(GET_MAIN_WAN_L3_NET_DEV(), wan_ipv6_addresses) == 0) {
+    if (util_get_ipv6cfg(GET_MAIN_WAN_L3_NET_DEV(AF_INET6), wan_ipv6_addresses) == 0) {
         for (ix = 0; ix < MAX_IPV6_ADDRESSES_PER_MAC; ix++) {
             // mask out address lifetimes for cache check, report only when addresses change
             last_sent.wan_ipv6[ix].ifa_valid     = new_data.wan_ipv6[ix].ifa_valid;
