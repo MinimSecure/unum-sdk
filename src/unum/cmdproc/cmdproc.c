@@ -175,6 +175,7 @@ int cmd_to_shell(char *cmd, char *s, int s_len)
 int cmdproc_add_cmd(const char *cmd)
 {
     unsigned int ii;
+    unsigned int jj;
     int ret = 0;
 
     if(!cmd) {
@@ -192,12 +193,26 @@ int cmdproc_add_cmd(const char *cmd)
             ret = -1;
             break;
         }
-        ii = (cmd_q_start + cmd_q_len) % CMD_Q_MAX_SIZE;
+        // Prioritize pull router config over other commands
+        if (strncmp(cmd, "pull_router_config", CMD_STR_MAX_LEN - 1) == 0) {
+            ii = cmd_q_start;
+            jj = (cmd_q_start + 1 ) % CMD_Q_MAX_SIZE;
+            // Shift - right all the pending commands
+            while (jj != cmd_q_start) {
+                strncpy(cmd_q[jj], cmd_q[ii], CMD_STR_MAX_LEN - 1);
+                jj = (jj + 1 ) % CMD_Q_MAX_SIZE;
+                ii = (ii + 1 ) % CMD_Q_MAX_SIZE;
+            }
+            strncpy(cmd_q[cmd_q_start], cmd, CMD_STR_MAX_LEN - 1);
+            cmd_q[cmd_q_start][CMD_STR_MAX_LEN - 1] = 0;
+        } else {
+            ii = (cmd_q_start + cmd_q_len) % CMD_Q_MAX_SIZE;
+            strncpy(cmd_q[ii], cmd, CMD_STR_MAX_LEN - 1);
+            cmd_q[ii][CMD_STR_MAX_LEN - 1] = 0;
+        }
         ++cmd_q_len;
-        strncpy(cmd_q[ii], cmd, CMD_STR_MAX_LEN - 1);
-        cmd_q[ii][CMD_STR_MAX_LEN - 1] = 0;
         // Notify the command processor that a command is ready
-        log("%s: set command received event for <%s>\n", __func__, cmd);
+        log("%s: set command received event for <%s> md_q_len = %d cmd_q_start = %d ii = %d\n", __func__, cmd, cmd_q_len, cmd_q_start, ii);
         UTIL_EVENT_SET(&cmd_ready);
         break;
     }
